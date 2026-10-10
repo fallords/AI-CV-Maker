@@ -2,35 +2,37 @@
 
 import Link from "next/link";
 import { useI18n } from "@/lib/i18n";
-import { Logo } from "./SiteHeader";
 
 const linkClass = "inline-flex min-h-8 items-center rounded-sm text-fg-muted transition-colors hover:text-fg hover:underline underline-offset-4";
+
+// Inlined by Next.js at build time. Without it the footer shows no contact line at all (no dummy address).
+const rawContactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL;
+const contactEmail = typeof rawContactEmail === "string" ? rawContactEmail.trim() : "";
 
 export function SiteFooter() {
   const { t } = useI18n();
   return (
     <footer className="no-print mt-auto border-t border-line">
-      <div className="mx-auto max-w-6xl px-4 text-sm">
-        <div className="py-8">
-          <Logo />
-          <p className="mt-2 max-w-[65ch] leading-relaxed text-fg-muted">{t.footer.tagline}</p>
-        </div>
-        <div className="flex flex-col gap-x-12 gap-y-3 border-t border-line py-4 sm:flex-row sm:items-center">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-8 gap-y-2 px-4 py-6 text-sm text-fg-subtle">
+        <p>
+          © {new Date().getFullYear()} {t.footer.rights}
+        </p>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
           <nav aria-label="Footer">
-            <ul className="flex flex-wrap items-center gap-x-6 gap-y-1">
-              <li><Link className={linkClass} href="/builder/">{t.nav.builder}</Link></li>
+            <ul className="flex flex-wrap items-center gap-x-5 gap-y-1">
               <li><Link className={linkClass} href="/help/">{t.nav.help}</Link></li>
               <li><Link className={linkClass} href="/privacy/">{t.nav.privacy}</Link></li>
             </ul>
           </nav>
-          <p className="flex flex-wrap items-baseline gap-x-3">
-            <span className="text-fg">{t.footer.contact}</span>
-            <span className="text-fg-muted">{t.footer.contactPlaceholder}</span>
-          </p>
+          {contactEmail && (
+            <p>
+              {t.footer.contact}:{" "}
+              <a className={linkClass} href={`mailto:${contactEmail}`}>
+                {contactEmail}
+              </a>
+            </p>
+          )}
         </div>
-        <p className="border-t border-line py-4 text-xs text-fg-subtle">
-          © {new Date().getFullYear()} {t.footer.rights}
-        </p>
       </div>
     </footer>
   );

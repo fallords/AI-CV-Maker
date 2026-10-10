@@ -270,9 +270,9 @@ export function BuilderApp() {
                 </select>
               </label>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
               <p
-                className={`mr-2 hidden items-center gap-1.5 font-mono text-xs md:flex ${
+                className={`mr-2 hidden items-center gap-1.5 text-xs md:flex ${
                   saveState === "unavailable" || saveState === "quota" ? "text-danger-text" : "text-fg-muted"
                 }`}
                 role="status"
@@ -320,7 +320,7 @@ export function BuilderApp() {
                   </button>
                 </div>
               </details>
-              <button type="button" className={btn.primary} onClick={onDownload}>
+              <button type="button" className={`${btn.primary} max-sm:grow`} onClick={onDownload}>
                 <Download /> {b.downloadPdf}
               </button>
             </div>
@@ -352,21 +352,26 @@ export function BuilderApp() {
           ))}
         </div>
 
+        {/* Errors keep a danger bar; info and success are a plain line, since the toolbar already shows save state. */}
         {notice && (
-          <div
-            role={notice.kind === "error" ? "alert" : "status"}
-            className={`mx-auto mt-3 flex w-[min(100%-2rem,1600px)] items-start justify-between gap-4 rounded-sm border border-l-2 border-line bg-surface px-4 py-2.5 text-sm text-fg ${
-              notice.kind === "error" ? "border-l-danger-text" : "border-l-accent-control"
-            }`}
-          >
-            <span>{notice.msg ? b.messages[notice.msg] : notice.text}</span>
-            <button
-              type="button"
-              className="shrink-0 text-fg-muted underline underline-offset-2 hover:text-fg"
-              onClick={() => setNotice(null)}
+          <div className="mx-auto w-full max-w-[1600px] px-4 pt-3">
+            <div
+              role={notice.kind === "error" ? "alert" : "status"}
+              className={`flex items-baseline justify-between gap-4 text-sm ${
+                notice.kind === "error"
+                  ? "rounded-sm border border-l-2 border-line border-l-danger-text bg-surface px-4 py-2.5 text-fg"
+                  : "text-fg-muted"
+              }`}
             >
-              {b.dismiss}
-            </button>
+              <span>{notice.msg ? b.messages[notice.msg] : notice.text}</span>
+              <button
+                type="button"
+                className="shrink-0 text-fg-muted underline underline-offset-2 hover:text-fg"
+                onClick={() => setNotice(null)}
+              >
+                {b.dismiss}
+              </button>
+            </div>
           </div>
         )}
 

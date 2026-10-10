@@ -15,84 +15,63 @@ const id: Dictionary = {
   landing: {
     title: "Tulis CV di browser, lalu unduh sebagai PDF",
     subtitle:
-      "Isi formulir, pilih salah satu dari tiga template, dan periksa pratinjau A4 sambil mengetik. Setelah selesai, simpan CV sebagai PDF lewat dialog cetak browser Anda.",
+      "Saat Anda mengisi formulir, CV langsung tersusun di pratinjau berukuran A4. Setelah hasilnya sesuai, simpan sebagai PDF lewat jendela cetak browser.",
     ctaPrimary: "Buat CV Gratis Anda",
     ctaSecondary: "Lihat template",
     ctaContinue: "Lanjutkan draf yang tersimpan",
     facts: [
-      { label: "Biaya", value: "Gratis. Tanpa iklan, paket berbayar, atau batas unduhan." },
-      { label: "Akun", value: "Tidak perlu. Buka Pembuat CV dan langsung isi." },
-      { label: "Penyimpanan", value: "Di browser pada perangkat Anda. Tidak ada yang diunggah ke server." },
-      { label: "Hasil", value: "PDF A4 dengan teks yang bisa dipilih, tanpa watermark." },
-    ],
-    stepsTitle: "Cara kerjanya",
-    steps: [
+      { label: "Biaya", value: "Memakai Pembuat CV dan mengunduh PDF tidak dipungut biaya. Tidak ada iklan atau paket berbayar." },
+      { label: "Akun", value: "Tidak perlu membuat akun." },
       {
-        title: "Isi data Anda",
-        body: "Isi bagian yang sesuai dengan Anda saja. Bagian yang dibiarkan kosong tidak akan muncul di CV.",
+        label: "Tempat draf disimpan",
+        value: "Di penyimpanan lokal browser ini, pada perangkat Anda. CV Anda tidak diunggah ke server.",
       },
-      {
-        title: "Pilih template",
-        body: "Template bisa diganti kapan saja. Teks yang Anda tulis tetap sama persis.",
-      },
-      {
-        title: "Unduh PDF",
-        body: "CV disimpan sebagai PDF A4 lewat dialog cetak browser. Pengaturan untuk tiap browser ada di halaman Bantuan.",
-      },
+      { label: "PDF", value: "Halaman A4 dengan teks yang bisa dipilih, tanpa watermark." },
     ],
     templatesTitle: "Template",
     templatesBody:
-      "Ketiga template memakai data yang sama, jadi Anda bisa berganti template tanpa mengetik ulang. Contoh di bawah ini memakai CV fiktif.",
+      "Template bisa diganti kapan saja di Pembuat CV tanpa mengetik ulang, karena ketiganya memakai data yang sama. Contoh di bawah ini diisi dengan CV fiktif.",
     privacyTitle: "Privasi",
     privacyBody:
-      "Tidak ada akun pengguna dan tidak ada basis data. Draf Anda disimpan di penyimpanan lokal browser ini dan tidak dikirim ke server. Bantuan menulis dengan AI nonaktif secara bawaan. Jika pengelola situs mengaktifkannya, teks hanya dikirim setelah Anda menyetujui setiap permintaan.",
-    privacyLink: "Baca kebijakan privasi",
+      "Tidak ada akun pengguna dan tidak ada basis data. Seperti layanan hosting pada umumnya, penyedia hosting dapat menyimpan log teknis standar, misalnya alamat IP. Pemberitahuan privasi menjelaskan apa saja yang disimpan di browser Anda dan kapan teks bisa dikirim ke layanan AI.",
+    privacyLink: "Baca pemberitahuan privasi",
     faqTitle: "Pertanyaan umum",
     faq: [
       {
-        q: "Apakah gratis?",
-        a: "Ya. Membuat CV dan mengunduh PDF tidak dipungut biaya, tanpa watermark dan tanpa batas unduhan. Situs ini tidak memasang iklan dan tidak punya paket berbayar.",
-      },
-      {
-        q: "Apakah saya perlu membuat akun?",
-        a: "Tidak. Buka Pembuat CV dan langsung mulai. Draf Anda tersimpan otomatis di browser.",
+        q: "Mengapa ada kata “AI” di nama situs ini?",
+        a: "Pembuat CV punya fitur AI opsional yang bisa menyarankan versi ringkasan yang lebih baik. Fitur ini tidak aktif kecuali pengelola situs mengaktifkannya, dan selalu meminta persetujuan Anda sebelum mengirim teks apa pun. Semua fitur lain bisa dipakai tanpa AI.",
       },
       {
         q: "Di mana CV saya disimpan?",
-        a: "Di penyimpanan lokal browser, hanya di perangkat ini. Draf bisa hilang jika data browser dihapus atau jika Anda memakai jendela pribadi, jadi simpan cadangannya dengan mengekspor JSON.",
+        a: "Di penyimpanan lokal browser, hanya di perangkat ini. Draf bisa hilang jika data browser dihapus atau jika Anda memakai mode penyamaran (incognito), jadi ekspor salinan JSON sebagai cadangan.",
       },
       {
         q: "Bagaimana cara mendapatkan PDF?",
-        a: "Klik “Unduh PDF” di Pembuat CV, lalu pilih “Simpan sebagai PDF” di dialog cetak. Langkah untuk tiap browser ada di halaman Bantuan.",
+        a: "Klik “Unduh PDF” di Pembuat CV, lalu pilih “Simpan sebagai PDF” di jendela cetak browser. Pengaturan untuk tiap browser ada di halaman Bantuan.",
       },
       {
-        q: "Apakah CV ini bisa dibaca sistem pelacak pelamar (ATS)?",
-        a: "Template ATS Minimal memakai satu kolom, judul bagian standar, dan teks asli yang bisa dipilih, sehingga mudah dibaca oleh sebagian besar sistem. Namun, tidak ada alat yang bisa menjamin cara setiap ATS membaca dokumen.",
-      },
-      {
-        q: "Apakah aplikasi ini memakai AI?",
-        a: "Tidak secara bawaan, dan semua fitur berjalan tanpa AI. Bantuan menulis dengan AI hanya muncul jika pengelola situs mengaturnya, dan baru berjalan setelah Anda setuju mengirim teks tertentu.",
+        q: "Apakah CV saya bisa dibaca oleh sistem pelacak pelamar (ATS)?",
+        a: "Gunakan template ATS Minimal. Template ini memakai satu kolom dan judul bagian standar, dan PDF-nya berisi teks asli, bukan gambar, sehingga mudah dibaca sebagian besar sistem. Namun, tidak ada alat yang bisa menjamin cara setiap ATS membaca dokumen.",
       },
     ],
   },
   footer: {
-    tagline: "Pembuat CV yang berjalan di browser. Draf disimpan di perangkat Anda.",
     contact: "Kontak",
-    contactPlaceholder: "contact@example.com (contoh)",
     rights: "Free AI CV Maker",
   },
   templates: {
     "ats-minimal": {
       name: "ATS Minimal",
-      description: "Satu kolom dengan judul bagian standar, tanpa foto. Cocok untuk sistem lamaran kerja online.",
+      description: "Tata letak satu kolom yang polos dengan judul bagian standar dan tanpa foto, dibuat untuk sistem lamaran kerja online.",
     },
     "modern-professional": {
       name: "Profesional Modern",
-      description: "Nama berhuruf serif, garis di setiap judul bagian, dan satu warna aksen. Bisa memakai foto.",
+      description: "Nama ditulis dengan huruf serif, dan setiap judul bagian diikuti garis tipis berwarna aksen. Foto bisa ditambahkan.",
     },
     graduate: {
       name: "Lulusan / Mahasiswa",
-      description: "Pendidikan dan proyek ditaruh paling atas, keahlian ditampilkan sebagai tag. Untuk mahasiswa dan lulusan baru.",
+      description:
+        "Pendidikan dan proyek ditampilkan sebelum pengalaman kerja, dan keahlian muncul sebagai tag. Cocok untuk mahasiswa dan lulusan baru.",
     },
   },
   builder: {
@@ -124,7 +103,7 @@ const id: Dictionary = {
       saved: "Draf tersimpan di perangkat ini.",
       restored: "Draf sebelumnya dipulihkan. Draf yang tadi terbuka sekarang menjadi draf sebelumnya.",
       noBackup: "Tidak ada draf sebelumnya yang bisa dipulihkan.",
-      newCv: "CV baru dimulai. Draf lama bisa dikembalikan lewat “Pulihkan draf sebelumnya”.",
+      newCv: "CV baru dimulai. Draf sebelumnya bisa dipulihkan lewat “Pulihkan draf sebelumnya”.",
       deleted: "Draf dihapus dari browser ini.",
       imported: "CV berhasil diimpor.",
       importedMigrated: "CV diimpor dan dikonversi dari format file lama.",
@@ -157,7 +136,7 @@ const id: Dictionary = {
     },
     print: {
       title: "Unduh CV Anda sebagai PDF",
-      intro: "Setelah ini, dialog cetak browser akan terbuka. Agar hasilnya PDF A4 yang rapi:",
+      intro: "Setelah ini, jendela cetak browser akan terbuka. Agar hasilnya PDF A4 yang rapi:",
       steps: [
         "Atur Tujuan / Printer ke “Simpan sebagai PDF”.",
         "Atur Ukuran kertas ke A4 dan Margin ke “Default”.",
@@ -166,7 +145,7 @@ const id: Dictionary = {
       ],
       note: "Teks di PDF tetap bisa dipilih dan disalin. Tidak ada watermark yang ditambahkan.",
       dontShow: "Jangan tampilkan petunjuk ini lagi",
-      continue: "Buka dialog cetak",
+      continue: "Buka jendela cetak",
       cancel: "Batal",
       empty: "CV Anda masih kosong. Isi beberapa data sebelum mengunduh.",
       unavailable: "Fitur cetak tidak tersedia di browser ini. Coba Chrome, Edge, Firefox, atau Safari.",
@@ -198,7 +177,7 @@ const id: Dictionary = {
       website: "URL portofolio / situs web",
       photo: "Foto profil",
       photoHint:
-        "Opsional. Banyak perusahaan di luar Indonesia lebih suka CV tanpa foto, sedangkan di Indonesia foto masih umum dicantumkan.",
+        "Banyak perusahaan di luar Indonesia lebih suka CV tanpa foto, sedangkan di Indonesia foto masih umum dicantumkan.",
       photoUpload: "Unggah foto",
       photoChange: "Ganti foto",
       photoRemove: "Hapus foto",
@@ -316,13 +295,13 @@ const id: Dictionary = {
   },
   help: {
     title: "Cara menggunakan Pembuat CV",
-    intro: "Cara mengisi CV, menyimpan draf, dan mengunduh PDF di tiap browser.",
+    intro: "Petunjuk memakai Pembuat CV, termasuk pengaturan cetak untuk tiap browser.",
     sections: [
       {
         title: "Mengisi CV",
         body: [
           "Buka Pembuat CV, lalu isi bagian yang sesuai dengan Anda. Semua kolom boleh dikosongkan, dan bagian yang kosong tidak akan muncul di CV.",
-          "Gunakan tombol “Tambah …” untuk menambah entri dan tombol panah untuk mengubah urutannya. Biasanya entri terbaru ditaruh paling atas.",
+          "Gunakan tombol “Tambah …” untuk menambah entri dan tombol panah untuk mengubah urutannya. Biasanya entri terbaru diletakkan paling atas.",
           "Di kolom deskripsi, tulis satu poin per baris. Baris yang diawali “-” akan menjadi butir.",
         ],
       },
@@ -338,23 +317,26 @@ const id: Dictionary = {
         body: [
           "Draf tersimpan otomatis di browser ini sesaat setelah setiap perubahan, dan juga saat Anda mengklik “Simpan draf”.",
           "Saat Anda memulai CV baru atau mengimpor file, draf yang sedang dibuka disimpan sebagai “draf sebelumnya” dan bisa dipulihkan.",
-          "Penyimpanan browser bukan cadangan. Draf tidak akan ada jika Anda menghapus data browser, memakai jendela pribadi, atau membuka situs ini di perangkat lain. Gunakan “Ekspor JSON” untuk menyimpan salinan dan “Impor JSON” untuk memuatnya lagi.",
+          "Penyimpanan browser bukan cadangan. Draf tidak akan ada jika Anda menghapus data browser, memakai mode penyamaran (incognito), atau membuka situs ini di perangkat lain. Gunakan “Ekspor JSON” untuk menyimpan salinan dan “Impor JSON” untuk memuatnya lagi.",
         ],
       },
       {
         title: "Mengunduh PDF",
         body: [
-          "Klik “Unduh PDF”. Dialog cetak browser akan terbuka dan hanya berisi CV dalam halaman A4.",
+          "PDF dibuat oleh fungsi cetak di browser Anda sendiri. Teks di dalamnya tetap bisa dipilih, dan tidak ada watermark yang ditambahkan.",
+          "Di iPhone atau iPad, buka pratinjau cetak, ketuk tombol Bagikan, lalu pilih “Simpan ke File”. Di Android, pilih “Simpan sebagai PDF” sebagai printer.",
+        ],
+        steps: [
+          "Klik “Unduh PDF”. Jendela cetak browser akan terbuka dan hanya berisi CV dalam halaman A4.",
           "Pilih “Simpan sebagai PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows), atau “PDF → Simpan sebagai PDF” (macOS / Safari).",
-          "Atur ukuran kertas ke A4 dan margin ke Default, matikan “Header dan footer”, lalu aktifkan “Grafis latar belakang”.",
-          "Di iPhone atau iPad: buka pratinjau cetak, ketuk tombol Bagikan, lalu pilih “Simpan ke File”. Di Android: pilih “Simpan sebagai PDF” sebagai printer.",
-          "Teks di PDF tetap bisa dipilih, dan tidak ada watermark yang ditambahkan.",
+          "Atur ukuran kertas ke A4 dan margin ke Default.",
+          "Matikan “Header dan footer”, lalu aktifkan “Grafis latar belakang”.",
         ],
       },
       {
         title: "Tips menulis",
         body: [
-          "Awali setiap butir dengan kata kerja dan tulis hasil yang benar-benar Anda capai. Cantumkan angka hanya jika bisa dibuktikan.",
+          "Awali setiap butir dengan kata kerja aktif dan tulis hasil yang benar-benar Anda capai. Cantumkan angka hanya jika bisa dibuktikan.",
           "Tulis ringkasan dalam dua sampai empat kalimat, dan sesuaikan dengan lowongan yang Anda lamar.",
           "Jika perusahaan memakai sistem pelacak pelamar (ATS), pilih template ATS Minimal dan pertahankan judul bagian standar.",
         ],
@@ -362,7 +344,7 @@ const id: Dictionary = {
     ],
   },
   privacy: {
-    title: "Kebijakan privasi",
+    title: "Pemberitahuan privasi",
     updated: "Terakhir diperbarui: Oktober 2026",
     sections: [
       {
@@ -375,7 +357,7 @@ const id: Dictionary = {
         title: "Apa yang disimpan dan di mana",
         body: [
           "Draf CV, draf sebelumnya (disimpan saat Anda memulai CV baru atau mengimpor file), dan pilihan bahasa antarmuka disimpan di penyimpanan lokal browser, dengan kunci yang diawali “free-cv-maker:”.",
-          "Penyimpanan lokal bukan layanan cloud yang terenkripsi. Siapa pun yang bisa membuka profil browser ini dapat membacanya, dan datanya bisa terhapus saat Anda menghapus data penjelajahan, memakai jendela pribadi, atau saat browser perlu mengosongkan ruang. Ekspor salinan JSON jika Anda ingin punya cadangan.",
+          "Penyimpanan lokal bukan layanan cloud yang terenkripsi. Siapa pun yang bisa membuka profil browser ini dapat membacanya, dan datanya bisa terhapus saat Anda menghapus data penjelajahan, memakai mode penyamaran (incognito), atau saat browser perlu mengosongkan ruang. Ekspor salinan JSON jika Anda ingin punya cadangan.",
         ],
       },
       {
@@ -389,7 +371,7 @@ const id: Dictionary = {
       {
         title: "Fitur AI opsional",
         body: [
-          "Fitur AI nonaktif secara bawaan. Jika pengelola situs ini mengaktifkannya, tombol AI akan selalu meminta persetujuan Anda sebelum mengirim teks tertentu yang ditampilkan kepada Anda ke layanan AI yang telah dikonfigurasi. Tanpa persetujuan itu tidak ada yang dikirim, dan saran baru diterapkan setelah Anda meninjaunya.",
+          "Fitur AI tidak aktif kecuali pengelola situs ini mengaktifkannya. Jika fitur ini aktif, tombol AI akan selalu meminta persetujuan eksplisit Anda sebelum mengirim teks tertentu yang ditampilkan kepada Anda ke layanan AI yang telah diatur. Tanpa persetujuan itu tidak ada yang dikirim, dan saran baru diterapkan setelah Anda meninjaunya.",
         ],
       },
       {
@@ -399,7 +381,7 @@ const id: Dictionary = {
         ],
       },
     ],
-    eraseButton: "Hapus semua data yang tersimpan di browser ini",
+    eraseButton: "Hapus semua data aplikasi ini dari browser ini",
     eraseConfirmTitle: "Hapus semua data aplikasi ini?",
     eraseConfirmBody: "Draf dan preferensi Anda akan dihapus dari browser ini. Tindakan ini tidak bisa dibatalkan.",
     eraseConfirm: "Hapus semuanya",

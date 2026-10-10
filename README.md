@@ -99,7 +99,7 @@ The build is fully static, so no Workers, Functions or paid features are needed.
    - **Framework preset:** `Next.js (Static HTML Export)`
    - **Build command:** `npm run build`
    - **Build output directory:** `out`
-   - **Environment variable (optional):** `NODE_VERSION=22`. The `.nvmrc` already requests Node 22.
+   - **Environment variables (optional):** `NODE_VERSION=22` (the `.nvmrc` already requests Node 22), and `NEXT_PUBLIC_CONTACT_EMAIL` if the footer should show a contact address (see the notes below).
 4. Click **Save and Deploy**. Each push to the production branch redeploys, and other branches get preview URLs.
 
 ### Option B: Direct upload with Wrangler
@@ -113,7 +113,7 @@ Notes:
 - `trailingSlash: true` emits `/builder/index.html` and so on, which Cloudflare Pages serves as `/builder/`. `out/404.html` is used automatically for unknown paths.
 - `public/_headers` is copied to `out/_headers` and applies a Content-Security-Policy and other security headers. The CSP allows `'unsafe-inline'` scripts because Next.js static export inlines its bootstrap data. It was checked in Chromium without violations.
 - No secrets are needed or committed. `.env*` files are git-ignored except `.env.example`.
-- Replace the placeholder contact address in `lib/i18n/en.ts` and `lib/i18n/id.ts` (`footer.contactPlaceholder`) before going public.
+- Footer contact: set `NEXT_PUBLIC_CONTACT_EMAIL=you@your-domain.example` at build time (in the Cloudflare Pages build settings, in `.env.local`, or inline as `NEXT_PUBLIC_CONTACT_EMAIL=… npm run build`) and the footer shows "Contact: <address>" as a `mailto:` link. Without it the footer has no contact line, so no dummy address is ever shown. The value is inlined into the static HTML and JavaScript, so a change needs a rebuild and the address is public.
 
 ## Data model and schema migrations
 

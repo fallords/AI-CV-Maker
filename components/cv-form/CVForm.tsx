@@ -44,9 +44,15 @@ export function CVForm(props: SectionProps) {
   return (
     <div>
       <nav aria-label={f.sectionNav} className="border-b border-line">
-        <div className="flex gap-x-5 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+        {/* scroll-padding + scrollIntoView keep a focused link clear of the right-edge fade. */}
+        <div className="flex scroll-pr-10 scroll-pl-1 gap-x-5 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
           {sections.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="shrink-0 py-2 text-sm text-fg-muted hover:text-fg">
+            <a
+              key={s.id}
+              href={`#${s.id}`}
+              className="shrink-0 py-2 text-sm text-fg-muted hover:text-fg"
+              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" })}
+            >
               {s.title}
             </a>
           ))}

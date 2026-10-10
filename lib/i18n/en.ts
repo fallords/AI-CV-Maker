@@ -13,84 +13,64 @@ const en = {
   landing: {
     title: "Write your CV in the browser and download it as a PDF",
     subtitle:
-      "Fill in the form, choose one of three templates and check the A4 preview as you type. When you are finished, save the CV as a PDF through your browser's print dialog.",
+      "As you fill in the form, the preview lays out your CV on A4 pages. When it looks right, save it as a PDF from your browser's print dialog.",
     ctaPrimary: "Create Your Free CV",
     ctaSecondary: "See the templates",
     ctaContinue: "Continue your saved draft",
     facts: [
-      { label: "Cost", value: "Free. No ads, paid plans or download limits." },
-      { label: "Account", value: "Not needed. Open the builder and start typing." },
-      { label: "Storage", value: "Saved in this browser on your device. Nothing is uploaded to a server." },
-      { label: "Output", value: "A4 PDF with selectable text and no watermark." },
-    ],
-    stepsTitle: "How it works",
-    steps: [
+      { label: "Price", value: "Using the builder and downloading PDFs is free. There are no ads or paid plans." },
+      { label: "Account", value: "You do not need one." },
       {
-        title: "Fill in your details",
-        body: "Complete the sections that apply to you. Sections you leave empty do not appear on the CV.",
+        label: "Where drafts are kept",
+        value: "In this browser's local storage, on your device. Your CV is not uploaded to a server.",
       },
-      {
-        title: "Choose a template",
-        body: "Switch between the three templates whenever you like. Your text stays exactly as you wrote it.",
-      },
-      {
-        title: "Download the PDF",
-        body: "Your browser's print dialog saves the CV as an A4 PDF. The Help page lists the settings for each browser.",
-      },
+      { label: "PDF", value: "A4 pages with selectable text and no watermark." },
     ],
     templatesTitle: "Templates",
     templatesBody:
-      "All three templates use the same information, so you can switch without retyping anything. The examples below show a fictional sample CV.",
+      "You can change the template in the builder at any time without retyping anything, because all three use the same details. The examples below are filled in with a fictional CV.",
     privacyTitle: "Privacy",
     privacyBody:
-      "There are no user accounts and no database. Your draft is kept in this browser's local storage and is not sent to a server. AI writing help is switched off by default. If the site operator turns it on, text is only sent after you agree to each request.",
+      "There are no user accounts and no database. Like any web host, the hosting provider may keep standard technical logs such as IP addresses. The privacy notice explains what is stored in your browser and when text can be sent to an AI service.",
     privacyLink: "Read the privacy notice",
     faqTitle: "Common questions",
     faq: [
       {
-        q: "Is it free?",
-        a: "Yes. Making CVs and downloading PDFs costs nothing, and there are no watermarks or download limits. The site has no ads and no paid plans.",
+        q: "Why is “AI” in the name?",
+        a: "The builder has an optional AI helper that can suggest an improved version of your summary. It stays off unless the person running this site sets it up, and it asks for your consent before sending any text. Everything else works without it.",
       },
       {
-        q: "Do I need an account?",
-        a: "No. Open the builder and start. Your draft is saved in your browser automatically.",
-      },
-      {
-        q: "Where is my CV stored?",
-        a: "In your browser's local storage, on this device only. Clearing your browser data or using a private window can delete it, so export a JSON copy as a backup.",
+        q: "Where is my CV kept?",
+        a: "In this browser's local storage, on this device only. Clearing your browser data or using a private (incognito) window can delete it, so export a JSON copy if you want a backup.",
       },
       {
         q: "How do I get a PDF?",
-        a: "Click “Download PDF” in the builder, then choose “Save as PDF” in the print dialog. The Help page has the steps for each browser.",
+        a: "Click “Download PDF” in the builder, then choose “Save as PDF” in your browser's print dialog. The Help page has the settings for each browser.",
       },
       {
         q: "Will applicant tracking systems (ATS) read my CV?",
-        a: "The ATS Minimal template uses one column, standard headings and real, selectable text, which most systems handle well. No tool can promise how every ATS will read a document.",
-      },
-      {
-        q: "Does it use AI?",
-        a: "Not by default, and everything works without it. AI writing help only appears if the site operator sets it up, and it only runs after you agree to send a specific piece of text.",
+        a: "Use the ATS Minimal template. It has a single column and standard section headings, and the PDF contains real text rather than an image, which most systems read well. No tool can guarantee how every ATS will parse a document.",
       },
     ],
   },
   footer: {
-    tagline: "A CV builder that runs in your browser. Drafts are stored on your device.",
     contact: "Contact",
-    contactPlaceholder: "contact@example.com (placeholder)",
     rights: "Free AI CV Maker",
   },
   templates: {
     "ats-minimal": {
       name: "ATS Minimal",
-      description: "One column and standard headings, without a photo. Suited to online application systems.",
+      description: "A plain single-column layout with standard headings and no photo, made for online application systems.",
     },
     "modern-professional": {
       name: "Modern Professional",
-      description: "Serif name, ruled section headings and one accent colour. Can include a photo.",
+      description:
+        "Your name is set in a serif typeface, and each section heading is followed by a thin rule in the accent colour. You can add a photo.",
     },
     graduate: {
       name: "Graduate / Student",
-      description: "Education and projects come first, and skills are shown as tags. For students and recent graduates.",
+      description:
+        "Education and projects come before work experience, and skills are shown as tags. It suits students and recent graduates.",
     },
   },
   builder: {
@@ -121,7 +101,7 @@ const en = {
       saved: "Draft saved on this device.",
       restored: "Previous draft restored. The draft it replaced is now the previous draft.",
       noBackup: "There is no previous draft to restore.",
-      newCv: "New CV started. You can get the old draft back with “Restore previous draft”.",
+      newCv: "New CV started. You can bring the previous draft back with “Restore previous draft”.",
       deleted: "Draft deleted from this browser.",
       imported: "CV imported.",
       importedMigrated: "CV imported and converted from an older file format.",
@@ -194,7 +174,7 @@ const en = {
       linkedin: "LinkedIn URL",
       website: "Portfolio / website URL",
       photo: "Profile photo",
-      photoHint: "Optional. Many employers outside Indonesia prefer CVs without a photo. In Indonesia a photo is common.",
+      photoHint: "Many employers outside Indonesia prefer CVs without a photo. In Indonesia a photo is common.",
       photoUpload: "Upload photo",
       photoChange: "Change photo",
       photoRemove: "Remove photo",
@@ -313,7 +293,7 @@ const en = {
   },
   help: {
     title: "How to use the CV builder",
-    intro: "Filling in your CV, saving drafts and downloading a PDF in each browser.",
+    intro: "Instructions for the builder, including the print settings for each browser.",
     sections: [
       {
         title: "Fill in your CV",
@@ -341,17 +321,20 @@ const en = {
       {
         title: "Downloading a PDF",
         body: [
+          "The PDF is created by your browser's own print function. The text in it can still be selected, and no watermark is added.",
+          "On iPhone or iPad, open the print preview, tap the Share button and choose “Save to Files”. On Android, choose “Save as PDF” as the printer.",
+        ],
+        steps: [
           "Click “Download PDF”. Your browser's print dialog opens with only the CV, on A4 pages.",
           "Choose “Save as PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows) or “PDF → Save as PDF” (macOS / Safari).",
-          "Set paper size to A4 and margins to Default, turn off “Headers and footers” and turn on “Background graphics”.",
-          "On iPhone or iPad, open the print preview, tap the Share button and choose “Save to Files”. On Android, choose “Save as PDF” as the printer.",
-          "The text in the PDF can still be selected, and no watermark is added.",
+          "Set paper size to A4 and margins to Default.",
+          "Turn off “Headers and footers” and turn on “Background graphics”.",
         ],
       },
       {
         title: "Writing tips",
         body: [
-          "Start each bullet point with a verb and describe results you actually achieved. Only include numbers you can back up.",
+          "Start each bullet point with an action verb and describe results you actually achieved. Only include numbers you can back up.",
           "Keep the summary to two to four sentences, and adjust it for each job you apply for.",
           "If the employer uses an applicant tracking system, choose the ATS Minimal template and keep the standard section headings.",
         ],
@@ -386,7 +369,7 @@ const en = {
       {
         title: "Optional AI features",
         body: [
-          "AI features are off by default. If the operator of this website turns them on, the AI button asks for your consent every time, before it sends the specific text shown to you to the configured AI service. Nothing is sent without that consent, and a suggestion is only applied after you have reviewed it.",
+          "AI features are off unless the operator of this website turns them on. When they are on, the AI button asks for your explicit consent every time, before it sends the specific text shown to you to the configured AI service. Nothing is sent without that consent, and a suggestion is only applied after you have reviewed it.",
         ],
       },
       {

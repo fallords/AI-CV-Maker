@@ -117,9 +117,10 @@ export function RepeatableSection<S extends ListSection>({
               <li key={item.id} data-item-id={item.id} className="rounded-sm border border-line">
                 <div className="flex items-center justify-between gap-2 border-b border-line py-1 pr-1 pl-4">
                   <h4 className="min-w-0 truncate text-sm font-medium text-fg">
-                    <span className="mr-2 font-mono text-xs text-fg-subtle tabular-nums">
+                    <span aria-hidden="true" className="mr-2 font-mono text-xs text-fg-subtle tabular-nums">
                       {String(index + 1).padStart(2, "0")}
-                    </span>{" "}
+                    </span>
+                    <span className="sr-only">{index + 1}. </span>
                     <span className={rawTitle ? undefined : "text-fg-muted"}>{title}</span>
                   </h4>
                   {controls}

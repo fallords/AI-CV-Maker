@@ -117,3 +117,40 @@ export function sampleCV(template: TemplateId = "ats-minimal"): CVData {
     ],
   };
 }
+
+/**
+ * The sample CV with realistic, clearly fictional Indonesian names and contact details,
+ * for the landing page hero and template thumbnails. Content and layout are otherwise the
+ * same as sampleCV(), which stays unchanged because tests depend on it.
+ */
+export function showcaseCV(template: TemplateId = "modern-professional"): CVData {
+  const base = sampleCV(template);
+  const companies: Record<string, string> = {
+    exp1: "Lintas Raya Logistik",
+    exp2: "Toko Mitra Sejahtera",
+    exp3: "Lab Statistika Terapan",
+  };
+  const institutions: Record<string, string> = {
+    edu1: "Universitas Bandung Raya",
+    edu2: "SMA Tunas Harapan",
+  };
+  return {
+    ...base,
+    personal: {
+      ...base.personal,
+      fullName: "Nadia Rahmawati",
+      email: "nadia.rahmawati@example.com",
+      phone: "+62 812 3456 7890",
+      linkedin: "linkedin.com/in/nadiarahmawati",
+      website: "",
+    },
+    experience: base.experience.map((e) => ({ ...e, company: companies[e.id] ?? e.company })),
+    education: base.education.map((e) => ({ ...e, institution: institutions[e.id] ?? e.institution })),
+    projects: base.projects.map((p) => (p.id === "prj1" ? { ...p, url: "github.com/nadiarahmawati/transit" } : p)),
+    certifications: base.certifications.map((c) =>
+      c.id === "cert1"
+        ? { ...c, name: "Sertifikasi Analis Data", issuer: "Lembaga Sertifikasi Profesi Informatika" }
+        : c,
+    ),
+  };
+}

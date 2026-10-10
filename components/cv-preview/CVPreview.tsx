@@ -54,7 +54,7 @@ export function CVPreview({ cv }: { cv: CVData }) {
         {photoHidden && <span>{t.builder.preview.atsPhotoNote}</span>}
       </p>
       <div
-        className="relative mx-auto overflow-hidden rounded-sm bg-paper shadow-[0_2px_6px_rgba(0,0,0,0.45),0_16px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/40"
+        className="relative mx-auto overflow-hidden bg-paper shadow-[0_1px_2px_rgba(0,0,0,0.5),0_8px_16px_-8px_rgba(0,0,0,0.6)] ring-1 ring-black/40"
         style={{ width: PAGE_W * scale, height: height * scale }}
       >
         <div
@@ -77,7 +77,7 @@ export function CVPreview({ cv }: { cv: CVData }) {
               className="pointer-events-none absolute inset-x-0 border-t-2 border-dashed border-accent-line"
               style={{ top: y }}
             >
-              <span className="absolute right-2 -top-6 rounded-sm border border-accent-line bg-paper px-1.5 py-0.5 font-mono text-xs text-accent">
+              <span className="absolute right-2 -top-6 rounded-sm border border-accent-line bg-paper px-1.5 py-0.5 text-xs text-accent">
                 {t.builder.preview.pageGuide} · {i + 2}
               </span>
             </div>
