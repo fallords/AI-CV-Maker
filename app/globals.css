@@ -45,8 +45,11 @@
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans",
     "Liberation Sans", sans-serif;
   --font-serif: Georgia, Cambria, "Times New Roman", "Noto Serif", "Liberation Serif", serif;
-  /* Display headings on the website: the clean sans, set tighter by the components */
-  --font-display: var(--font-sans);
+  /* Website UI type (self-hosted IBM Plex, see app/layout.tsx). --font-sans above stays
+     the CV document font so CV output is unchanged. */
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-ui);
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 :root {
@@ -56,7 +59,8 @@
 body {
   background: var(--color-canvas);
   color: var(--color-fg);
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
+  font-feature-settings: "kern", "liga";
 }
 
 ::selection {
