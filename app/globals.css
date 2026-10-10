@@ -1,40 +1,76 @@
 @import "tailwindcss";
 
+/*
+ * Website theme: elegant dark, inspired by Doctor Doom — deep cloak green on
+ * near-black, gunmetal/steel neutrals, no neon. Every text pairing below meets
+ * WCAG AA (4.5:1); control borders meet 3:1 against their backgrounds.
+ * The CV document further down keeps its own white "paper" colours.
+ */
 @theme {
-  --color-brand-50: #eff6f1;
-  --color-brand-100: #d8eadf;
-  --color-brand-200: #b2d4bf;
-  --color-brand-300: #82b79a;
-  --color-brand-500: #3b7f5c;
-  --color-brand-600: #2d6a4f;
-  --color-brand-700: #245740;
-  --color-brand-800: #1b4332;
-  --color-brand-900: #12301f;
-  --color-canvas: #faf8f4;
-  --color-ink: #1c1917;
+  /* Surfaces, darkest to lightest */
+  --color-canvas: #0c0f0d; /* page background */
+  --color-surface: #131815; /* cards, header, footer */
+  --color-raised: #19201b; /* inputs, menus, dialogs */
+  --color-overlay: #1f2722; /* hover on raised surfaces */
+  /* Lines */
+  --color-line: #29322d; /* dividers, card borders */
+  --color-line-strong: #3a4540; /* emphasised dividers */
+  --color-control-line: #65716a; /* form control borders (>= 3:1) */
+  /* Text */
+  --color-fg: #e4e8e3;
+  --color-fg-muted: #a9b3ac;
+  --color-fg-subtle: #8a958e;
+  /* Doom green */
+  --color-accent: #2e5b40; /* solid buttons, selected states */
+  --color-accent-hover: #356849;
+  --color-accent-fg: #eef3ee; /* text on accent */
+  --color-accent-text: #9cc0a8; /* links, active nav, focus ring */
+  --color-accent-soft: #15241b; /* tinted panels */
+  --color-accent-line: #4a7a5c; /* borders of accent elements */
+  /* Gunmetal */
+  --color-steel: #8d979e;
+  /* Status (muted, never bright) */
+  --color-danger: #7d302c;
+  --color-danger-hover: #8e3833;
+  --color-danger-text: #e3a6a2;
+  --color-danger-soft: #251413;
+  --color-danger-line: #5a2b28;
+  --color-warn-text: #e2cf9e;
+  --color-warn-soft: #262013;
+  --color-warn-line: #4d4126;
+  /* The CV preview sheet */
+  --color-paper: #ffffff;
+
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans",
     "Liberation Sans", sans-serif;
   --font-serif: Georgia, Cambria, "Times New Roman", "Noto Serif", "Liberation Serif", serif;
+  /* Display headings on the website (system serif: no remote fonts) */
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, Cambria, "Noto Serif", serif;
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
   background: var(--color-canvas);
-  color: var(--color-ink);
+  color: var(--color-fg);
   font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
 }
 
 /* Visible, consistent keyboard focus everywhere. */
 :focus-visible {
-  outline: 3px solid var(--color-brand-500);
+  outline: 2px solid var(--color-accent-text);
   outline-offset: 2px;
 }
 
 dialog::backdrop {
-  background: rgb(28 25 23 / 0.45);
+  background: rgb(0 0 0 / 0.7);
 }
 
 /* ===================================================================== */
@@ -335,9 +371,13 @@ dialog::backdrop {
 }
 
 @media print {
+  :root {
+    color-scheme: light;
+  }
   html,
   body {
     background: #fff !important;
+    color: #000 !important;
     margin: 0 !important;
     padding: 0 !important;
   }
