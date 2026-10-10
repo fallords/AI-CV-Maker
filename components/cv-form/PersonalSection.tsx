@@ -75,7 +75,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
     <div className="grid gap-4 sm:grid-cols-2">
       <TextField
         className="sm:col-span-2"
-        label={`${f.fullName} (${t.form.required})`}
+        label={f.fullName}
         value={p.fullName}
         onChange={(v) => set({ fullName: v })}
         autoComplete="name"

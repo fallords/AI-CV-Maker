@@ -44,6 +44,11 @@ export function HelpContent() {
                     ))}
                   </ol>
                 )}
+                {s.after?.map((para) => (
+                  <p key={para} className={prose}>
+                    {para}
+                  </p>
+                ))}
               </div>
             </section>
           );

@@ -119,9 +119,10 @@ export function sampleCV(template: TemplateId = "ats-minimal"): CVData {
 }
 
 /**
- * The sample CV with realistic, clearly fictional Indonesian names and contact details,
- * for the landing page hero and template thumbnails. Content and layout are otherwise the
- * same as sampleCV(), which stays unchanged because tests depend on it.
+ * The sample CV with realistic, fictional Indonesian names, for the landing page hero and
+ * template thumbnails. It has no phone number, profile handles, links or credential IDs, so
+ * nothing on it points at a real person or organisation. Content and layout are otherwise
+ * the same as sampleCV(), which stays unchanged because tests depend on it.
  */
 export function showcaseCV(template: TemplateId = "modern-professional"): CVData {
   const base = sampleCV(template);
@@ -131,7 +132,7 @@ export function showcaseCV(template: TemplateId = "modern-professional"): CVData
     exp3: "Lab Statistika Terapan",
   };
   const institutions: Record<string, string> = {
-    edu1: "Universitas Bandung Raya",
+    edu1: "Universitas Cendekia Raya",
     edu2: "SMA Tunas Harapan",
   };
   return {
@@ -140,16 +141,21 @@ export function showcaseCV(template: TemplateId = "modern-professional"): CVData
       ...base.personal,
       fullName: "Nadia Rahmawati",
       email: "nadia.rahmawati@example.com",
-      phone: "+62 812 3456 7890",
-      linkedin: "linkedin.com/in/nadiarahmawati",
+      phone: "",
+      linkedin: "",
       website: "",
     },
     experience: base.experience.map((e) => ({ ...e, company: companies[e.id] ?? e.company })),
     education: base.education.map((e) => ({ ...e, institution: institutions[e.id] ?? e.institution })),
-    projects: base.projects.map((p) => (p.id === "prj1" ? { ...p, url: "github.com/nadiarahmawati/transit" } : p)),
+    projects: base.projects.map((p) => ({ ...p, url: "" })),
     certifications: base.certifications.map((c) =>
       c.id === "cert1"
-        ? { ...c, name: "Sertifikasi Analis Data", issuer: "Lembaga Sertifikasi Profesi Informatika" }
+        ? {
+            ...c,
+            name: "Pelatihan Analisis Data dengan SQL",
+            issuer: "Pelatihan internal Lintas Raya Logistik",
+            credential: "",
+          }
         : c,
     ),
   };

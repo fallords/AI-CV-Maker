@@ -28,7 +28,7 @@ test("interface language switch to Indonesian persists and leaves CV content alo
   await expect(preview.getByRole("heading", { name: "Pengalaman Kerja" })).toBeVisible();
   await expect(preview).toContainText("Maintain weekly delivery-performance dashboards");
   await page.goto("/");
-  await expect(page.getByRole("link", { name: "Buat CV Gratis Anda" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Buat CV gratis" }).first()).toBeVisible();
 });
 
 test("keyboard users can reach and operate the main controls", async ({ page }) => {

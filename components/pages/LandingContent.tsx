@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CVDocument } from "@/components/templates";
 import { btn } from "@/components/ui/styles";
+import { isAIEnabled } from "@/lib/ai/provider";
 import { TEMPLATE_IDS } from "@/lib/cv-schema";
 import { useI18n } from "@/lib/i18n";
 import { showcaseCV } from "@/lib/sample-cv";
@@ -18,6 +19,8 @@ const THUMB_H = 403;
  * Hero sheet: a real A4 page scaled to HERO_W and cut off at HERO_H, in the white gap
  * between Projects and Education. The gap moves by one line depending on whether the
  * summary wraps to two or three lines (font dependent); 461 sits inside it in both cases.
+ * 461 cuts the unscaled sheet at y ≈ 871px. Measured gap: 869–892 (three-line summary) and
+ * 850–873 (two-line summary). It relies on the showcase contact line fitting on one row.
  */
 const HERO_W = 420;
 const HERO_H = 461;
@@ -33,12 +36,26 @@ const paper =
 /** Heading in the left third, content in the right two thirds (shared with Help and Privacy). */
 const splitRow = "grid gap-x-12 gap-y-4 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]";
 
+/**
+ * Below the `sm` breakpoint the template strip scrolls sideways, so keyboard users need to be
+ * able to focus it. From `sm` up it is a static grid and must not be a Tab stop.
+ */
+const NARROW = "(max-width: 639.98px)";
+function subscribeNarrow(onChange: () => void) {
+  const mq = window.matchMedia(NARROW);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+const getNarrow = () => window.matchMedia(NARROW).matches;
+const getNarrowOnServer = () => false;
+
 export function LandingContent() {
   const { t } = useI18n();
   const l = t.landing;
   const [draftExists, setDraftExists] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
   useEffect(() => setDraftExists(hasDraft()), []);
+  const stripScrolls = useSyncExternalStore(subscribeNarrow, getNarrow, getNarrowOnServer);
 
   return (
     <main id="main" className="flex-1">
@@ -98,10 +115,11 @@ export function LandingContent() {
             {l.templatesTitle}
           </h2>
           <p className={`mt-3 max-w-[65ch] ${prose}`}>{l.templatesBody}</p>
+          {/* The ring is drawn inside the strip (it is full-bleed on phones); `!` beats the global :focus-visible rule. */}
           <ul
-            tabIndex={0}
-            aria-label={l.templatesTitle}
-            className="-mx-4 mt-8 flex snap-x snap-mandatory scroll-px-4 gap-6 overflow-x-auto px-4 pt-1 pb-2 sm:mx-0 sm:mt-10 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-12 sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-0 lg:grid-cols-3"
+            tabIndex={stripScrolls ? 0 : undefined}
+            aria-label={stripScrolls ? l.templatesTitle : undefined}
+            className="-mx-4 mt-8 flex snap-x snap-mandatory scroll-px-4 gap-6 overflow-x-auto px-4 pt-1 pb-2 sm:mx-0 sm:mt-10 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-12 sm:overflow-visible sm:px-0 sm:pt-0 sm:pb-0 lg:grid-cols-3 focus-visible:outline-offset-[-2px]!"
           >
             {TEMPLATE_IDS.map((id) => (
               <li key={id} className="shrink-0 snap-start">
@@ -152,6 +170,10 @@ export function LandingContent() {
                 <dd className={`mt-1.5 ${prose}`}>{item.a}</dd>
               </div>
             ))}
+            <div className="py-5 first:pt-0 last:pb-0">
+              <dt className="text-[15px] leading-relaxed font-semibold text-fg">{l.aiFaq.q}</dt>
+              <dd className={`mt-1.5 ${prose}`}>{isAIEnabled() ? l.aiFaq.on : l.aiFaq.off}</dd>
+            </div>
           </dl>
         </div>
       </section>

@@ -13,45 +13,47 @@ const en = {
   landing: {
     title: "Write your CV in the browser and download it as a PDF",
     subtitle:
-      "As you fill in the form, the preview lays out your CV on A4 pages. When it looks right, save it as a PDF from your browser's print dialog.",
+      "As you fill in the form, the preview lays out your CV on A4 pages. When it looks right, save it as a PDF from your browser’s print dialog.",
     ctaPrimary: "Create Your Free CV",
     ctaSecondary: "See the templates",
     ctaContinue: "Continue your saved draft",
     facts: [
       { label: "Price", value: "Using the builder and downloading PDFs is free. There are no ads or paid plans." },
-      { label: "Account", value: "You do not need one." },
+      { label: "Account", value: "You don’t need one." },
       {
         label: "Where drafts are kept",
-        value: "In this browser's local storage, on your device. Your CV is not uploaded to a server.",
+        value: "In this browser’s local storage, on your device. Your CV isn’t uploaded to a server.",
       },
       { label: "PDF", value: "A4 pages with selectable text and no watermark." },
     ],
     templatesTitle: "Templates",
     templatesBody:
-      "You can change the template in the builder at any time without retyping anything, because all three use the same details. The examples below are filled in with a fictional CV.",
+      "You can switch templates at any time in the builder, and your details carry over.",
     privacyTitle: "Privacy",
     privacyBody:
-      "There are no user accounts and no database. Like any web host, the hosting provider may keep standard technical logs such as IP addresses. The privacy notice explains what is stored in your browser and when text can be sent to an AI service.",
+      "There are no user accounts and no database. Like any web host, the hosting provider may keep standard technical logs such as IP addresses. The privacy notice explains what’s stored in your browser and when text can be sent to an AI service.",
     privacyLink: "Read the privacy notice",
     faqTitle: "Common questions",
     faq: [
       {
-        q: "Why is “AI” in the name?",
-        a: "The builder has an optional AI helper that can suggest an improved version of your summary. It stays off unless the person running this site sets it up, and it asks for your consent before sending any text. Everything else works without it.",
+        q: "Can I lose my draft?",
+        a: "Yes, if you clear your browsing data or work in a private (incognito) window. It also won’t be there on another device. Use More → Export JSON to keep a copy, and Import JSON to load it again.",
       },
       {
-        q: "Where is my CV kept?",
-        a: "In this browser's local storage, on this device only. Clearing your browser data or using a private (incognito) window can delete it, so export a JSON copy if you want a backup.",
-      },
-      {
-        q: "How do I get a PDF?",
-        a: "Click “Download PDF” in the builder, then choose “Save as PDF” in your browser's print dialog. The Help page has the settings for each browser.",
+        q: "Can the CV be in Indonesian?",
+        a: "Yes. Set “CV language” to Indonesian and the section headings and month names switch to Indonesian. Your own text isn’t translated, so write it in the language you want.",
       },
       {
         q: "Will applicant tracking systems (ATS) read my CV?",
-        a: "Use the ATS Minimal template. It has a single column and standard section headings, and the PDF contains real text rather than an image, which most systems read well. No tool can guarantee how every ATS will parse a document.",
+        a: "Use the ATS Minimal template. It has a single column and standard section headings, and the PDF contains real text rather than an image. Most systems read that well, though each ATS works a little differently.",
       },
     ],
+    /** Rendered after `faq`; `on` or `off` depending on whether AI is configured for this deployment. */
+    aiFaq: {
+      q: "Why is “AI” in the name?",
+      on: "Under the summary field there’s a button that asks an AI service to suggest a rewrite of your summary. Before anything is sent, it shows you the exact text and asks for your permission. Everything else works without it.",
+      off: "The builder has an optional AI feature that suggests a rewrite of your summary. It’s switched off on this site, so nothing you type is sent to an AI service, and every part of the builder works without it. The site’s operator can turn it on.",
+    },
   },
   footer: {
     contact: "Contact",
@@ -60,17 +62,16 @@ const en = {
   templates: {
     "ats-minimal": {
       name: "ATS Minimal",
-      description: "A plain single-column layout with standard headings and no photo, made for online application systems.",
+      description: "For job portals and online application forms. It has one column and no photo.",
     },
     "modern-professional": {
       name: "Modern Professional",
-      description:
-        "Your name is set in a serif typeface, and each section heading is followed by a thin rule in the accent colour. You can add a photo.",
+      description: "For applications you send by email or hand over in person. It has an accent colour and room for a photo.",
     },
     graduate: {
       name: "Graduate / Student",
       description:
-        "Education and projects come before work experience, and skills are shown as tags. It suits students and recent graduates.",
+        "For students and recent graduates. Education and projects come before work experience, and skills are shown as tags.",
     },
   },
   builder: {
@@ -78,7 +79,7 @@ const en = {
     loading: "Loading your draft…",
     template: "Template",
     cvLanguage: "CV language",
-    cvLanguageHint: "Sets the language of the CV's headings and dates. Your own text is not translated.",
+    cvLanguageHint: "Sets the language of the CV’s headings and dates. Your own text isn’t translated.",
     languageNames: { en: "English", id: "Indonesian" },
     tabs: { edit: "Edit", preview: "Preview" },
     actions: "Draft actions",
@@ -94,24 +95,24 @@ const en = {
     status: {
       saved: "Saved on this device",
       unsaved: "Unsaved changes…",
-      unavailable: "Browser storage is not available, so changes will not be saved. Use Export JSON to keep a copy.",
+      unavailable: "Browser storage isn’t available, so changes won’t be saved. Use Export JSON to keep a copy.",
       quota: "Browser storage is full. Remove the photo or use Export JSON to keep a copy.",
     },
     messages: {
       saved: "Draft saved on this device.",
       restored: "Previous draft restored. The draft it replaced is now the previous draft.",
-      noBackup: "There is no previous draft to restore.",
+      noBackup: "There’s no previous draft to restore.",
       newCv: "New CV started. You can bring the previous draft back with “Restore previous draft”.",
       deleted: "Draft deleted from this browser.",
       imported: "CV imported.",
       importedMigrated: "CV imported and converted from an older file format.",
       exported: "JSON file downloaded.",
-      corrupted: "Your saved draft could not be read, so it has been set aside. The editor starts with an empty CV.",
+      corrupted: "Your saved draft could not be read, so it’s been set aside. The editor starts with an empty CV.",
       recovered: "Your draft was restored from this browser.",
       importErrors: {
         invalid_json: "This file is not valid JSON.",
-        not_object: "This file does not contain CV data.",
-        unsupported_version: "This file comes from a newer or unknown version of the app and cannot be imported.",
+        not_object: "This file doesn’t contain CV data.",
+        unsupported_version: "This file comes from a newer or unknown version of the app and can’t be imported.",
         too_large: "This file is too large. The limit is 5 MB.",
         read_failed: "The file could not be read.",
       },
@@ -129,12 +130,12 @@ const en = {
       restoreBody: "The current draft and the previous draft swap places, so nothing is lost.",
       restoreConfirm: "Restore",
       importTitle: "Replace your current draft?",
-      importBody: "The imported CV replaces what is in the editor. Your current draft becomes the previous draft.",
+      importBody: "The imported CV replaces what’s in the editor. Your current draft becomes the previous draft.",
       importConfirm: "Import",
     },
     print: {
       title: "Download your CV as PDF",
-      intro: "Your browser's print dialog opens next. For a clean A4 PDF:",
+      intro: "Your browser’s print dialog opens next. For a clean A4 PDF:",
       steps: [
         "Set Destination (or Printer) to “Save as PDF”.",
         "Set Paper size to A4 and Margins to “Default”.",
@@ -146,7 +147,7 @@ const en = {
       continue: "Open print dialog",
       cancel: "Cancel",
       empty: "Your CV is empty. Add some details before downloading.",
-      unavailable: "Printing is not available in this browser. Try Chrome, Edge, Firefox or Safari.",
+      unavailable: "Printing isn’t available in this browser. Try Chrome, Edge, Firefox or Safari.",
     },
     preview: {
       label: "CV preview",
@@ -154,13 +155,12 @@ const en = {
       pageGuide: "Approximate page break",
       pageOne: "1 page",
       pageMany: "{count} pages",
-      atsPhotoNote: "The ATS Minimal template does not show a photo.",
+      atsPhotoNote: "The ATS Minimal template doesn’t show a photo.",
     },
     restorePrompt: "Draft restored",
   },
   form: {
     sectionNav: "CV sections",
-    required: "recommended",
     optional: "optional",
     personal: {
       title: "Personal information",
@@ -200,7 +200,7 @@ const en = {
       current: "I currently work here",
       description: "Responsibilities and achievements",
       descriptionHint: "One point per line. Start a line with “-” to make it a bullet point.",
-      empty: "No work experience yet. If this does not apply to you, leave it empty and it will not appear on the CV.",
+      empty: "No work experience yet. If it doesn’t apply to you, leave it empty and it won’t appear on the CV.",
     },
     education: {
       title: "Education",
@@ -283,12 +283,12 @@ const en = {
     working: "Waiting for the AI service…",
     reviewTitle: "Review the suggestion",
     reviewWarning:
-      "AI suggestions may contain errors or made-up details. Read every word and keep only what is true.",
+      "AI suggestions may contain errors or made-up details. Read every word and keep only what’s true.",
     original: "Your text",
     suggestion: "Suggestion",
     apply: "Replace my summary",
     discard: "Discard",
-    error: "The AI service could not be reached. Your text has not been changed.",
+    error: "The AI service could not be reached. Your text hasn’t been changed.",
     empty: "Write a summary first.",
   },
   help: {
@@ -306,8 +306,8 @@ const en = {
       {
         title: "Template and CV language",
         body: [
-          "You can switch between ATS Minimal, Modern Professional and Graduate / Student at any time. Your content does not change.",
-          "“CV language” sets the language of the CV's headings and month names (English or Indonesian). Your own text is not translated.",
+          "You can switch between ATS Minimal, Modern Professional and Graduate / Student at any time. Your content stays the same.",
+          "“CV language” sets the language of the CV’s headings and month names (English or Indonesian). Your own text isn’t translated.",
         ],
       },
       {
@@ -315,20 +315,22 @@ const en = {
         body: [
           "Your draft is saved in this browser automatically, a moment after each change, and also when you click “Save draft”.",
           "When you start a new CV or import a file, the current draft is kept as the “previous draft”, and you can restore it.",
-          "Browser storage is not a backup. If you clear browser data, use a private window or switch to another device, the draft will not be there. Use “Export JSON” to keep a copy and “Import JSON” to load it again.",
+          "Browser storage isn’t a backup. If you clear browser data, use a private window or switch to another device, the draft won’t be there. Use “Export JSON” to keep a copy and “Import JSON” to load it again.",
         ],
       },
       {
         title: "Downloading a PDF",
         body: [
-          "The PDF is created by your browser's own print function. The text in it can still be selected, and no watermark is added.",
-          "On iPhone or iPad, open the print preview, tap the Share button and choose “Save to Files”. On Android, choose “Save as PDF” as the printer.",
+          "The PDF is created by your browser’s own print function. The text in it can still be selected, and no watermark is added.",
         ],
         steps: [
-          "Click “Download PDF”. Your browser's print dialog opens with only the CV, on A4 pages.",
+          "Click “Download PDF”. Your browser’s print dialog opens with only the CV, on A4 pages.",
           "Choose “Save as PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows) or “PDF → Save as PDF” (macOS / Safari).",
           "Set paper size to A4 and margins to Default.",
           "Turn off “Headers and footers” and turn on “Background graphics”.",
+        ],
+        after: [
+          "On iPhone or iPad, open the print preview, tap the Share button and choose “Save to Files”. On Android, choose “Save as PDF” as the printer.",
         ],
       },
       {
@@ -354,22 +356,22 @@ const en = {
       {
         title: "What is stored and where",
         body: [
-          "Your CV draft, a previous draft (kept when you start a new CV or import a file) and your interface language are stored in your browser's local storage, under keys that start with “free-cv-maker:”.",
-          "Local storage is not an encrypted cloud service. Anyone with access to this browser profile can read it, and it can be deleted when you clear browsing data, use a private window, or when the browser needs to free up space. Export a JSON copy if you want a backup.",
+          "Your CV draft, a previous draft (kept when you start a new CV or import a file) and your interface language are stored in your browser’s local storage, under keys that start with “free-cv-maker:”.",
+          "Local storage isn’t an encrypted cloud service. Anyone with access to this browser profile can read it, and it can be deleted when you clear browsing data, use a private window, or when the browser needs to free up space. Export a JSON copy if you want a backup.",
         ],
       },
       {
         title: "What is sent over the internet",
         body: [
           "When you load the website, its files come from the hosting provider (for example, Cloudflare). Like any web host, it may keep standard technical logs such as your IP address and browser type.",
-          "Your CV content is not sent anywhere. PDF files are created by your own browser's print function.",
+          "Your CV content isn’t sent anywhere. PDF files are created by your own browser’s print function.",
           "Exported JSON files are downloaded straight to your device.",
         ],
       },
       {
         title: "Optional AI features",
         body: [
-          "AI features are off unless the operator of this website turns them on. When they are on, the AI button asks for your explicit consent every time, before it sends the specific text shown to you to the configured AI service. Nothing is sent without that consent, and a suggestion is only applied after you have reviewed it.",
+          "AI features are off unless the operator of this website turns them on. When they are on, the AI button asks for your explicit consent every time, before it sends the specific text shown to you to the configured AI service. Nothing is sent without that consent, and a suggestion is only applied after you’ve reviewed it.",
         ],
       },
       {
@@ -381,10 +383,10 @@ const en = {
     ],
     eraseButton: "Erase all locally stored data",
     eraseConfirmTitle: "Erase all data stored by this app?",
-    eraseConfirmBody: "This removes your drafts and preferences from this browser. It cannot be undone.",
+    eraseConfirmBody: "This removes your drafts and preferences from this browser. It can’t be undone.",
     eraseConfirm: "Erase everything",
     erased: "All locally stored data was erased.",
-    eraseFailed: "Browser storage is not available, so there is nothing to erase.",
+    eraseFailed: "Browser storage isn’t available, so there’s nothing to erase.",
   },
 };
 

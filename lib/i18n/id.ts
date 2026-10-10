@@ -16,11 +16,11 @@ const id: Dictionary = {
     title: "Tulis CV di browser, lalu unduh sebagai PDF",
     subtitle:
       "Saat Anda mengisi formulir, CV langsung tersusun di pratinjau berukuran A4. Setelah hasilnya sesuai, simpan sebagai PDF lewat jendela cetak browser.",
-    ctaPrimary: "Buat CV Gratis Anda",
+    ctaPrimary: "Buat CV gratis",
     ctaSecondary: "Lihat template",
     ctaContinue: "Lanjutkan draf yang tersimpan",
     facts: [
-      { label: "Biaya", value: "Memakai Pembuat CV dan mengunduh PDF tidak dipungut biaya. Tidak ada iklan atau paket berbayar." },
+      { label: "Biaya", value: "Pembuat CV dan unduhan PDF-nya gratis. Tidak ada iklan atau paket berbayar." },
       { label: "Akun", value: "Tidak perlu membuat akun." },
       {
         label: "Tempat draf disimpan",
@@ -30,7 +30,7 @@ const id: Dictionary = {
     ],
     templatesTitle: "Template",
     templatesBody:
-      "Template bisa diganti kapan saja di Pembuat CV tanpa mengetik ulang, karena ketiganya memakai data yang sama. Contoh di bawah ini diisi dengan CV fiktif.",
+      "Template bisa diganti kapan saja di Pembuat CV, dan data yang sudah Anda isi tetap terbawa.",
     privacyTitle: "Privasi",
     privacyBody:
       "Tidak ada akun pengguna dan tidak ada basis data. Seperti layanan hosting pada umumnya, penyedia hosting dapat menyimpan log teknis standar, misalnya alamat IP. Pemberitahuan privasi menjelaskan apa saja yang disimpan di browser Anda dan kapan teks bisa dikirim ke layanan AI.",
@@ -38,22 +38,23 @@ const id: Dictionary = {
     faqTitle: "Pertanyaan umum",
     faq: [
       {
-        q: "Mengapa ada kata “AI” di nama situs ini?",
-        a: "Pembuat CV punya fitur AI opsional yang bisa menyarankan versi ringkasan yang lebih baik. Fitur ini tidak aktif kecuali pengelola situs mengaktifkannya, dan selalu meminta persetujuan Anda sebelum mengirim teks apa pun. Semua fitur lain bisa dipakai tanpa AI.",
+        q: "Apakah draf bisa hilang?",
+        a: "Bisa, jika Anda menghapus data browser atau menulisnya di mode penyamaran (incognito). Draf juga tidak akan ada di perangkat lain. Simpan salinan lewat Lainnya → Ekspor JSON, lalu muat lagi dengan Impor JSON.",
       },
       {
-        q: "Di mana CV saya disimpan?",
-        a: "Di penyimpanan lokal browser, hanya di perangkat ini. Draf bisa hilang jika data browser dihapus atau jika Anda memakai mode penyamaran (incognito), jadi ekspor salinan JSON sebagai cadangan.",
-      },
-      {
-        q: "Bagaimana cara mendapatkan PDF?",
-        a: "Klik “Unduh PDF” di Pembuat CV, lalu pilih “Simpan sebagai PDF” di jendela cetak browser. Pengaturan untuk tiap browser ada di halaman Bantuan.",
+        q: "Apakah CV bisa dibuat dalam bahasa Indonesia?",
+        a: "Bisa. Pilih Indonesia di “Bahasa CV”, dan judul bagian serta nama bulan akan berganti ke bahasa Indonesia. Teks yang Anda tulis sendiri tidak diterjemahkan, jadi tulis dalam bahasa yang Anda inginkan.",
       },
       {
         q: "Apakah CV saya bisa dibaca oleh sistem pelacak pelamar (ATS)?",
-        a: "Gunakan template ATS Minimal. Template ini memakai satu kolom dan judul bagian standar, dan PDF-nya berisi teks asli, bukan gambar, sehingga mudah dibaca sebagian besar sistem. Namun, tidak ada alat yang bisa menjamin cara setiap ATS membaca dokumen.",
+        a: "Gunakan template ATS Minimal. Template ini memakai satu kolom dan judul bagian standar, dan PDF-nya berisi teks asli, bukan gambar. Sebagian besar sistem bisa membacanya dengan baik, meski cara kerja tiap ATS sedikit berbeda.",
       },
     ],
+    aiFaq: {
+      q: "Mengapa ada kata “AI” di nama situs ini?",
+      on: "Di bawah kolom ringkasan ada tombol untuk meminta layanan AI menyarankan tulisan ulang ringkasan Anda. Sebelum ada yang dikirim, Anda akan melihat teks persis yang akan dikirim dan diminta persetujuan. Semua fitur lain bisa dipakai tanpa AI.",
+      off: "Pembuat CV punya fitur AI opsional untuk menyarankan tulisan ulang ringkasan Anda. Di situs ini fitur tersebut dimatikan, jadi teks Anda tidak dikirim ke layanan AI mana pun, dan semua bagian Pembuat CV tetap bisa dipakai. Pengelola situs bisa mengaktifkannya.",
+    },
   },
   footer: {
     contact: "Kontak",
@@ -62,16 +63,16 @@ const id: Dictionary = {
   templates: {
     "ats-minimal": {
       name: "ATS Minimal",
-      description: "Tata letak satu kolom yang polos dengan judul bagian standar dan tanpa foto, dibuat untuk sistem lamaran kerja online.",
+      description: "Untuk portal lowongan kerja dan formulir lamaran online. Satu kolom, tanpa foto.",
     },
     "modern-professional": {
       name: "Profesional Modern",
-      description: "Nama ditulis dengan huruf serif, dan setiap judul bagian diikuti garis tipis berwarna aksen. Foto bisa ditambahkan.",
+      description: "Untuk lamaran yang dikirim lewat email atau diserahkan langsung. Ada warna aksen dan tempat untuk foto.",
     },
     graduate: {
       name: "Lulusan / Mahasiswa",
       description:
-        "Pendidikan dan proyek ditampilkan sebelum pengalaman kerja, dan keahlian muncul sebagai tag. Cocok untuk mahasiswa dan lulusan baru.",
+        "Untuk mahasiswa dan lulusan baru. Pendidikan dan proyek ditampilkan sebelum pengalaman kerja, dan keahlian muncul sebagai tag.",
     },
   },
   builder: {
@@ -162,7 +163,6 @@ const id: Dictionary = {
   },
   form: {
     sectionNav: "Bagian CV",
-    required: "disarankan",
     optional: "opsional",
     personal: {
       title: "Informasi pribadi",
@@ -324,13 +324,15 @@ const id: Dictionary = {
         title: "Mengunduh PDF",
         body: [
           "PDF dibuat oleh fungsi cetak di browser Anda sendiri. Teks di dalamnya tetap bisa dipilih, dan tidak ada watermark yang ditambahkan.",
-          "Di iPhone atau iPad, buka pratinjau cetak, ketuk tombol Bagikan, lalu pilih “Simpan ke File”. Di Android, pilih “Simpan sebagai PDF” sebagai printer.",
         ],
         steps: [
           "Klik “Unduh PDF”. Jendela cetak browser akan terbuka dan hanya berisi CV dalam halaman A4.",
           "Pilih “Simpan sebagai PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows), atau “PDF → Simpan sebagai PDF” (macOS / Safari).",
           "Atur ukuran kertas ke A4 dan margin ke Default.",
           "Matikan “Header dan footer”, lalu aktifkan “Grafis latar belakang”.",
+        ],
+        after: [
+          "Di iPhone atau iPad, buka pratinjau cetak, ketuk tombol Bagikan, lalu pilih “Simpan ke File”. Di Android, pilih “Simpan sebagai PDF” sebagai printer.",
         ],
       },
       {
@@ -381,7 +383,7 @@ const id: Dictionary = {
         ],
       },
     ],
-    eraseButton: "Hapus semua data aplikasi ini dari browser ini",
+    eraseButton: "Hapus semua data aplikasi ini",
     eraseConfirmTitle: "Hapus semua data aplikasi ini?",
     eraseConfirmBody: "Draf dan preferensi Anda akan dihapus dari browser ini. Tindakan ini tidak bisa dibatalkan.",
     eraseConfirm: "Hapus semuanya",

@@ -48,9 +48,11 @@ export function CVPreview({ cv }: { cv: CVData }) {
   return (
     <div ref={outerRef} className="w-full">
       <p className="mb-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-fg-muted" aria-live="polite">
-        <span className="font-mono">
-          A4 · {fmt(pages === 1 ? t.builder.preview.pageOne : t.builder.preview.pageMany, { count: pages })}
-        </span>
+        {!empty && (
+          <span className="tabular-nums">
+            A4 · {fmt(pages === 1 ? t.builder.preview.pageOne : t.builder.preview.pageMany, { count: pages })}
+          </span>
+        )}
         {photoHidden && <span>{t.builder.preview.atsPhotoNote}</span>}
       </p>
       <div

@@ -278,8 +278,14 @@ export function BuilderApp() {
                 role="status"
                 data-testid="save-status"
               >
-                {saveState === "saved" && <Check width={14} height={14} />}
-                {loaded ? statusText : b.loading}
+                {!loaded ? (
+                  b.loading
+                ) : isCVEmpty(cv) && saveState === "saved" ? null : (
+                  <>
+                    {saveState === "saved" && <Check width={14} height={14} />}
+                    {statusText}
+                  </>
+                )}
               </p>
               <button type="button" className={btn.secondary} onClick={onSaveNow}>
                 {b.saveNow}

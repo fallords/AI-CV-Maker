@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: "%s | Free AI CV Maker",
   },
   description:
-    "A free CV builder that runs in your browser. Fill in a form, choose one of three templates and download an A4 PDF. No account is needed, and drafts are saved on your device.",
+    "Write a CV in your browser and save it as an A4 PDF. It’s free, there’s no sign-up, and your draft stays on your device.",
 };
 
 export const viewport: Viewport = {
