@@ -1,0 +1,356 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eff6f1;
+  --color-brand-100: #d8eadf;
+  --color-brand-200: #b2d4bf;
+  --color-brand-300: #82b79a;
+  --color-brand-500: #3b7f5c;
+  --color-brand-600: #2d6a4f;
+  --color-brand-700: #245740;
+  --color-brand-800: #1b4332;
+  --color-brand-900: #12301f;
+  --color-canvas: #faf8f4;
+  --color-ink: #1c1917;
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    "Liberation Sans", sans-serif;
+  --font-serif: Georgia, Cambria, "Times New Roman", "Noto Serif", "Liberation Serif", serif;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+/* Visible, consistent keyboard focus everywhere. */
+:focus-visible {
+  outline: 3px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(28 25 23 / 0.45);
+}
+
+/* ===================================================================== */
+/* CV document — shared by preview and print. Sized in physical units.   */
+/* ===================================================================== */
+
+.cv-doc {
+  --cv-accent: #1b4332;
+  --cv-text: #1c1917;
+  --cv-muted: #57534e;
+  --cv-rule: #d6d3d1;
+  --cv-pad-x: 16mm;
+  width: 210mm;
+  box-sizing: border-box;
+  padding: 0 var(--cv-pad-x);
+  background: #fff;
+  color: var(--cv-text);
+  font-family: var(--font-sans);
+  font-size: 10pt;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.cv-doc *,
+.cv-doc *::before,
+.cv-doc *::after {
+  box-sizing: border-box;
+}
+.cv-doc h1,
+.cv-doc h2,
+.cv-doc h3,
+.cv-doc p,
+.cv-doc ul {
+  margin: 0;
+  padding: 0;
+}
+.cv-doc a {
+  color: inherit;
+  text-decoration: none;
+}
+.cv-name {
+  font-size: 21pt;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cv-title {
+  font-size: 11.5pt;
+  color: var(--cv-muted);
+  margin-top: 1mm !important;
+}
+.cv-contact {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 0;
+  row-gap: 0.5mm;
+  margin-top: 2.5mm !important;
+  font-size: 9pt;
+  color: var(--cv-muted);
+}
+.cv-contact li + li::before {
+  content: "|";
+  margin: 0 2mm;
+  color: var(--cv-rule);
+}
+.cv-section {
+  margin-top: 5mm;
+}
+.cv-heading {
+  font-size: 10.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2mm !important;
+}
+.cv-entry + .cv-entry,
+.cv-keep + .cv-entry,
+.cv-skill-line + .cv-skill-line,
+.cv-skill-group + .cv-skill-group {
+  margin-top: 3mm;
+}
+.cv-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4mm;
+}
+.cv-entry-titles {
+  min-width: 0;
+}
+.cv-entry-title {
+  font-size: 10.5pt;
+  font-weight: 650;
+}
+.cv-entry-sub {
+  color: var(--cv-muted);
+}
+.cv-entry-date {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 9pt;
+  color: var(--cv-muted);
+}
+.cv-rich {
+  margin-top: 1mm;
+}
+.cv-rich p + p,
+.cv-rich p + ul,
+.cv-rich ul + p {
+  margin-top: 1mm !important;
+}
+.cv-rich ul {
+  padding-left: 4.5mm !important;
+  list-style: disc;
+}
+.cv-rich li + li {
+  margin-top: 0.6mm;
+}
+.cv-section-summary .cv-rich {
+  margin-top: 0;
+}
+.cv-meta-line {
+  margin-top: 1mm !important;
+  font-size: 9pt;
+  color: var(--cv-muted);
+}
+.cv-meta-label {
+  font-weight: 600;
+  color: var(--cv-text);
+}
+.cv-photo {
+  width: 28mm;
+  height: 28mm;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Template A — ATS Minimal */
+.tpl-ats .cv-header {
+  padding-bottom: 3mm;
+  border-bottom: 0.4mm solid var(--cv-text);
+}
+.tpl-ats .cv-heading {
+  border-bottom: 0.25mm solid var(--cv-rule);
+  padding-bottom: 1mm;
+}
+
+/* Template B — Modern Professional */
+.tpl-modern {
+  --cv-accent: #245740;
+}
+.tpl-modern .cv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6mm;
+  padding-bottom: 4mm;
+  border-bottom: 0.8mm solid var(--cv-accent);
+}
+.tpl-modern .cv-header-text {
+  min-width: 0;
+}
+.tpl-modern .cv-name {
+  font-family: var(--font-serif);
+  font-size: 24pt;
+  font-weight: 700;
+  color: var(--cv-accent);
+}
+.tpl-modern .cv-title {
+  font-size: 12pt;
+  color: var(--cv-text);
+}
+.tpl-modern .cv-photo {
+  border-radius: 50%;
+}
+.tpl-modern .cv-section {
+  margin-top: 6mm;
+}
+.tpl-modern .cv-heading {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  color: var(--cv-accent);
+  letter-spacing: 0.1em;
+  font-size: 10pt;
+}
+.tpl-modern .cv-heading::after {
+  content: "";
+  flex: 1;
+  height: 0.25mm;
+  background: var(--cv-accent);
+  opacity: 0.35;
+}
+.tpl-modern .cv-entry-date {
+  color: var(--cv-accent);
+  font-weight: 600;
+}
+.tpl-modern .cv-rich li::marker {
+  color: var(--cv-accent);
+}
+
+/* Template C — Graduate / Student */
+.tpl-graduate {
+  --cv-accent: #2d6a4f;
+}
+.tpl-graduate .cv-header {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  padding: 5mm 6mm;
+  background: #eff6f1;
+  border-left: 1.5mm solid var(--cv-accent);
+}
+.tpl-graduate .cv-header-text {
+  min-width: 0;
+}
+.tpl-graduate .cv-photo {
+  width: 26mm;
+  height: 26mm;
+  border-radius: 2mm;
+}
+.tpl-graduate .cv-name {
+  font-size: 20pt;
+}
+.tpl-graduate .cv-title {
+  color: var(--cv-accent);
+  font-weight: 600;
+}
+.tpl-graduate .cv-heading {
+  color: var(--cv-accent);
+  font-size: 11pt;
+  letter-spacing: 0.04em;
+  padding-bottom: 1mm;
+  border-bottom: 0.5mm solid var(--cv-accent);
+}
+.tpl-graduate .cv-skill-label {
+  font-size: 9.5pt;
+  font-weight: 650;
+  margin-bottom: 1.5mm;
+}
+.tpl-graduate .cv-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5mm;
+}
+.tpl-graduate .cv-chips li {
+  font-size: 9pt;
+  padding: 0.6mm 2.4mm;
+  border: 0.25mm solid var(--cv-accent);
+  border-radius: 3mm;
+  color: var(--cv-text);
+}
+.tpl-graduate .cv-entry-compact + .cv-entry-compact {
+  margin-top: 1.5mm;
+}
+
+/* ===================================================================== */
+/* Page-break behaviour (applies to print; harmless on screen).          */
+/* ===================================================================== */
+.cv-keep,
+.cv-entry-head,
+.cv-entry-compact,
+.cv-skill-group,
+.cv-skill-line,
+.cv-rich li,
+.cv-header {
+  break-inside: avoid;
+}
+.cv-entry {
+  break-inside: avoid-page;
+}
+.cv-heading {
+  break-after: avoid;
+}
+
+/* Screen-only: the preview sheet has the same top/bottom margin as the printed page. */
+@media screen {
+  .cv-sheet .cv-doc {
+    padding-top: 14mm;
+    padding-bottom: 14mm;
+    min-height: 297mm;
+  }
+}
+
+/* ===================================================================== */
+/* Print: only the CV, on A4.                                            */
+/* ===================================================================== */
+@page {
+  size: A4;
+  margin: 14mm 0;
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  #cv-print-root {
+    display: block !important;
+  }
+  #cv-print-root .cv-doc {
+    width: 100%;
+    min-height: 0;
+  }
+  /* Long entries may still break, but never leave a lone line at a page edge. */
+  .cv-doc p,
+  .cv-doc li {
+    orphans: 3;
+    widows: 3;
+  }
+}
