@@ -22,7 +22,7 @@ export function LandingContent() {
   return (
     <main id="main" className="flex-1">
       {/* Hero */}
-      <section className="border-b border-line bg-linear-to-b from-accent-soft to-surface">
+      <section className="border-b border-line bg-surface">
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-14 sm:py-20 lg:grid-cols-[1.1fr_0.9fr]">
           <div>
             <p className="text-sm font-semibold tracking-wide text-accent-text">{l.eyebrow}</p>
