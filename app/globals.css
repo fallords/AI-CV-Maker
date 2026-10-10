@@ -18,6 +18,7 @@
   --color-control-line: #6e7075; /* form control borders (>= 3:1) */
   /* Text */
   --color-fg: #e8e7e4;
+  --color-fg-body: #d6d5d1; /* running prose: softer than fg, not grey */
   --color-fg-muted: #b0b2b5;
   --color-fg-subtle: #939599;
   /* Prussian blue accent (print-ink blue, not a UI-kit blue) */
