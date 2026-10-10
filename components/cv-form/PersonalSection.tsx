@@ -137,7 +137,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         <div className="flex flex-wrap items-center gap-3">
           {p.photo && (
             // eslint-disable-next-line @next/next/no-img-element -- local data URL
-            <img src={p.photo} alt={f.photoAlt} className="size-16 rounded-md border border-line object-cover" />
+            <img src={p.photo} alt={f.photoAlt} className="size-16 rounded-sm border border-line object-cover" />
           )}
           <input
             ref={fileRef}

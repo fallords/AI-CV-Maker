@@ -5,7 +5,7 @@ import { HelpContent } from "@/components/pages/HelpContent";
 
 export const metadata: Metadata = {
   title: "Help",
-  description: "How to create, save and download your CV as a PDF.",
+  description: "How to fill in your CV, save drafts and download a PDF in each browser.",
 };
 
 export default function Page() {

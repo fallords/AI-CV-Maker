@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/layout/SiteHeader";
 
 export const metadata: Metadata = {
   title: "CV Builder",
-  description: "Edit your CV with a live A4 preview. Drafts are saved in your browser.",
+  description: "Fill in your CV and check it on an A4 preview as you type. Drafts are saved in this browser.",
 };
 
 export default function BuilderPage() {

@@ -5,7 +5,7 @@ import { PrivacyContent } from "@/components/pages/PrivacyContent";
 
 export const metadata: Metadata = {
   title: "Privacy",
-  description: "How Free AI CV Maker handles your data",
+  description: "What Free AI CV Maker stores, where it is stored and what is sent over the internet.",
 };
 
 export default function Page() {

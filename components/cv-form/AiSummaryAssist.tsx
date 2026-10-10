@@ -86,7 +86,7 @@ export function AiSummaryAssist({
         }
       >
         <p>{t.ai.consentBody}</p>
-        <blockquote className="mt-3 max-h-40 overflow-auto rounded-md border border-line bg-canvas p-3 whitespace-pre-wrap">
+        <blockquote className="mt-3 max-h-40 overflow-auto rounded-sm border border-line bg-canvas p-3 whitespace-pre-wrap">
           {sent}
         </blockquote>
         <label className="mt-3 flex items-start gap-2">
@@ -127,7 +127,7 @@ export function AiSummaryAssist({
           </>
         }
       >
-        <p role="note" className="rounded-md border border-warn-line bg-warn-soft p-3 text-warn-text">
+        <p role="note" className="rounded-sm border-l-2 border-warn-text bg-surface py-2 pr-3 pl-3 text-fg">
           {t.ai.reviewWarning}
         </p>
         <h3 className="mt-3 font-semibold text-fg">{t.ai.original}</h3>

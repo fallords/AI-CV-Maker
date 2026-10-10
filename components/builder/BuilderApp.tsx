@@ -26,7 +26,8 @@ import {
 const AUTOSAVE_MS = 600;
 
 type SaveState = "saved" | "dirty" | "unavailable" | "quota";
-type Notice = { kind: "success" | "error" | "info"; text: string } | null;
+// `msg` marks notices set before the stored UI language is applied, so they are looked up at render time.
+type Notice = { kind: "success" | "error" | "info"; text: string; msg?: "recovered" | "corrupted" } | null;
 type Confirm = "new" | "delete" | "restore" | "import" | null;
 
 export function BuilderApp() {
@@ -59,9 +60,9 @@ export function BuilderApp() {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time hydration from localStorage */
     if (result.status === "ok") {
       dispatch({ type: "replace", data: result.data });
-      if (!isCVEmpty(result.data)) setNotice({ kind: "info", text: b.messages.recovered });
+      if (!isCVEmpty(result.data)) setNotice({ kind: "info", msg: "recovered", text: b.messages.recovered });
     } else if (result.status === "corrupted") {
-      setNotice({ kind: "error", text: b.messages.corrupted });
+      setNotice({ kind: "error", msg: "corrupted", text: b.messages.corrupted });
     } else if (result.status === "unavailable") {
       setSaveState("unavailable");
     }
@@ -228,20 +229,22 @@ export function BuilderApp() {
   }[saveState];
 
   // Colour lives outside the base so the delete item's danger colours never compete with the default ones.
-  const menuItemBase = "block w-full rounded-md px-3 py-2 text-left text-sm transition-colors disabled:opacity-50";
+  const menuItemBase = "block w-full px-3 py-2 text-left text-sm transition-colors disabled:opacity-50";
   const menuItem = `${menuItemBase} text-fg hover:bg-overlay disabled:hover:bg-transparent`;
+  const selectClass =
+    "mt-1 min-h-10 rounded-sm border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel";
 
   return (
     <>
       <div className="no-print flex min-h-0 flex-1 flex-col">
         {/* Toolbar */}
-        <div className="z-20 border-b border-line bg-surface shadow-sm shadow-black/40 lg:sticky lg:top-0">
+        <div className="z-20 border-b border-line bg-surface lg:sticky lg:top-0">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-3 px-4 py-3">
-            <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
-              <label className="flex flex-col text-xs font-medium tracking-wide text-fg-muted">
+            <div className="flex min-w-0 flex-auto flex-wrap items-end gap-3">
+              <label className="flex flex-col text-xs text-fg-muted">
                 {b.template}
                 <select
-                  className="mt-1 min-h-10 rounded-md border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel"
+                  className={selectClass}
                   value={cv.meta.template}
                   onChange={(e) => dispatch({ type: "setMeta", patch: { template: e.target.value as TemplateId } })}
                 >
@@ -252,10 +255,10 @@ export function BuilderApp() {
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col text-xs font-medium tracking-wide text-fg-muted" title={b.cvLanguageHint}>
+              <label className="flex flex-col text-xs text-fg-muted" title={b.cvLanguageHint}>
                 {b.cvLanguage}
                 <select
-                  className="mt-1 min-h-10 rounded-md border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel"
+                  className={selectClass}
                   value={cv.meta.cvLanguage}
                   onChange={(e) => dispatch({ type: "setMeta", patch: { cvLanguage: e.target.value as Language } })}
                 >
@@ -269,13 +272,13 @@ export function BuilderApp() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <p
-                className={`hidden items-center gap-1 text-xs md:flex ${
+                className={`mr-2 hidden items-center gap-1.5 font-mono text-xs md:flex ${
                   saveState === "unavailable" || saveState === "quota" ? "text-danger-text" : "text-fg-muted"
                 }`}
                 role="status"
                 data-testid="save-status"
               >
-                {saveState === "saved" && <Check className="text-accent-text" width={14} height={14} />}
+                {saveState === "saved" && <Check width={14} height={14} />}
                 {loaded ? statusText : b.loading}
               </p>
               <button type="button" className={btn.secondary} onClick={onSaveNow}>
@@ -286,7 +289,7 @@ export function BuilderApp() {
                   {b.more} <Chevron width={16} height={16} />
                 </summary>
                 <div
-                  className="absolute right-0 z-30 mt-2 w-60 rounded-lg border border-line-strong bg-raised p-1 shadow-xl shadow-black/50"
+                  className="absolute right-0 z-30 mt-1 w-60 rounded-sm border border-line-strong bg-raised py-1 shadow-lg shadow-black/40"
                   role="group"
                   aria-label={b.actions}
                 >
@@ -323,14 +326,14 @@ export function BuilderApp() {
             </div>
           </div>
           {(saveState === "unavailable" || saveState === "quota") && (
-            <p className="border-t border-danger-line bg-danger-soft px-4 py-2 text-sm text-danger-text md:hidden" role="alert">
+            <p className="border-t border-l-2 border-line border-l-danger-text px-4 py-2 text-sm text-fg md:hidden" role="alert">
               {statusText}
             </p>
           )}
         </div>
 
         {/* Mobile: switch between editor and preview instead of a cramped split screen. */}
-        <div className="sticky top-0 z-20 grid grid-cols-2 border-b border-line bg-surface lg:hidden" role="tablist">
+        <div className="sticky top-0 z-20 flex gap-6 border-b border-line bg-surface px-4 lg:hidden" role="tablist">
           {(["edit", "preview"] as const).map((key) => (
             <button
               key={key}
@@ -340,8 +343,8 @@ export function BuilderApp() {
               aria-controls={`panel-${key}`}
               id={`tab-${key}`}
               onClick={() => setTab(key)}
-              className={`min-h-11 text-sm font-medium transition-colors ${
-                tab === key ? "border-b-2 border-accent-text text-accent-text" : "text-fg-muted hover:text-fg"
+              className={`-mb-px min-h-11 border-b-2 px-1 text-sm font-medium transition-colors ${
+                tab === key ? "border-accent-text text-fg" : "border-transparent text-fg-muted hover:text-fg"
               }`}
             >
               {b.tabs[key]}
@@ -352,14 +355,16 @@ export function BuilderApp() {
         {notice && (
           <div
             role={notice.kind === "error" ? "alert" : "status"}
-            className={`mx-auto mt-3 flex w-[min(100%-2rem,1600px)] items-start justify-between gap-3 rounded-md border px-4 py-2 text-sm ${
-              notice.kind === "error"
-                ? "border-danger-line bg-danger-soft text-danger-text"
-                : "border-accent-line bg-accent-soft text-fg"
+            className={`mx-auto mt-3 flex w-[min(100%-2rem,1600px)] items-start justify-between gap-4 rounded-sm border border-l-2 border-line bg-surface px-4 py-2.5 text-sm text-fg ${
+              notice.kind === "error" ? "border-l-danger-text" : "border-l-accent-control"
             }`}
           >
-            <span>{notice.text}</span>
-            <button type="button" className="shrink-0 underline" onClick={() => setNotice(null)}>
+            <span>{notice.msg ? b.messages[notice.msg] : notice.text}</span>
+            <button
+              type="button"
+              className="shrink-0 text-fg-muted underline underline-offset-2 hover:text-fg"
+              onClick={() => setNotice(null)}
+            >
               {b.dismiss}
             </button>
           </div>

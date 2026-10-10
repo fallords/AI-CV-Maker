@@ -14,7 +14,7 @@ test("complete user journey: create, switch templates, refresh, export PDF, dele
   await expectNoExternalRequests(page, baseURL!, async () => {
     // 1–2. Landing page → start creating.
     await page.goto("/");
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("Create a professional CV for free");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Write your CV in the browser");
     await page.getByRole("link", { name: "Create Your Free CV" }).first().click();
     await expect(page).toHaveURL(/\/builder\/$/);
 

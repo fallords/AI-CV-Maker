@@ -13,14 +13,15 @@ import { PersonalSection } from "./PersonalSection";
 import { SummarySection } from "./SummarySection";
 import type { SectionProps } from "./types";
 
-function FormCard({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+/** One form section: a rule-separated group (no boxed card), headed by an H2. */
+function FormSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
     <section
       id={id}
       aria-labelledby={`${id}-title`}
-      className="scroll-mt-32 rounded-lg border border-line bg-surface p-4 shadow-sm shadow-black/40 sm:p-6"
+      className="scroll-mt-32 border-t border-line pt-6 pb-8 first-of-type:border-t-0"
     >
-      <h2 id={`${id}-title`} className="mb-4 font-display text-xl font-semibold tracking-tight text-fg">
+      <h2 id={`${id}-title`} className="mb-5 font-display text-lg font-semibold text-fg">
         {title}
       </h2>
       {children}
@@ -41,22 +42,20 @@ export function CVForm(props: SectionProps) {
     { id: "certifications", title: f.certifications.title, node: <CertificationsSection {...props} /> },
   ];
   return (
-    <div className="space-y-4">
-      <nav aria-label={f.sectionNav} className="flex gap-1 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
-        {sections.map((s) => (
-          <a
-            key={s.id}
-            href={`#${s.id}`}
-            className="shrink-0 rounded-full border border-line bg-raised px-3 py-1.5 text-xs font-medium text-fg-muted hover:border-accent-line hover:text-accent-text"
-          >
-            {s.title}
-          </a>
-        ))}
+    <div>
+      <nav aria-label={f.sectionNav} className="border-b border-line">
+        <div className="flex gap-x-5 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+          {sections.map((s) => (
+            <a key={s.id} href={`#${s.id}`} className="shrink-0 py-2 text-sm text-fg-muted hover:text-fg">
+              {s.title}
+            </a>
+          ))}
+        </div>
       </nav>
       {sections.map((s) => (
-        <FormCard key={s.id} id={s.id} title={s.title}>
+        <FormSection key={s.id} id={s.id} title={s.title}>
           {s.node}
-        </FormCard>
+        </FormSection>
       ))}
     </div>
   );

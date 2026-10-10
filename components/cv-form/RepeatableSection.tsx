@@ -63,13 +63,14 @@ export function RepeatableSection<S extends ListSection>({
   return (
     <div>
       {items.length === 0 ? (
-        <p className="rounded-md border border-dashed border-line-strong px-4 py-3 text-sm text-fg-muted">
+        <p className="rounded-sm border border-dashed border-line-strong px-4 py-3 text-sm text-fg-muted">
           {emptyText}
         </p>
       ) : (
-        <ol ref={listRef} className={compact ? "space-y-2" : "space-y-4"}>
+        <ol ref={listRef} className={compact ? "space-y-2" : "space-y-3"}>
           {items.map((item, index) => {
-            const title = getTitle(item).trim() || c.untitled;
+            const rawTitle = getTitle(item).trim();
+            const title = rawTitle || c.untitled;
             const name = `${itemLabel} ${index + 1}: ${title}`;
             const controls = (
               <div className="flex shrink-0 items-center" role="group" aria-label={name}>
@@ -113,18 +114,17 @@ export function RepeatableSection<S extends ListSection>({
                 {controls}
               </li>
             ) : (
-              <li
-                key={item.id}
-                data-item-id={item.id}
-                className="rounded-lg border border-line bg-canvas/40 p-4"
-              >
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h4 className="min-w-0 truncate text-sm font-semibold text-fg">
-                    <span className="text-fg-subtle">{index + 1}.</span> {title}
+              <li key={item.id} data-item-id={item.id} className="rounded-sm border border-line">
+                <div className="flex items-center justify-between gap-2 border-b border-line py-1 pr-1 pl-4">
+                  <h4 className="min-w-0 truncate text-sm font-medium text-fg">
+                    <span className="mr-2 font-mono text-xs text-fg-subtle tabular-nums">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>{" "}
+                    <span className={rawTitle ? undefined : "text-fg-muted"}>{title}</span>
                   </h4>
                   {controls}
                 </div>
-                {renderFields(item, update)}
+                <div className="p-4">{renderFields(item, update)}</div>
               </li>
             );
           })}

@@ -47,12 +47,14 @@ export function CVPreview({ cv }: { cv: CVData }) {
 
   return (
     <div ref={outerRef} className="w-full">
-      <p className="mb-2 flex justify-between text-xs tracking-wide text-fg-muted" aria-live="polite">
-        <span>A4 · {fmt(pages === 1 ? t.builder.preview.pageOne : t.builder.preview.pageMany, { count: pages })}</span>
+      <p className="mb-2 flex flex-wrap justify-between gap-x-4 gap-y-1 text-xs text-fg-muted" aria-live="polite">
+        <span className="font-mono">
+          A4 · {fmt(pages === 1 ? t.builder.preview.pageOne : t.builder.preview.pageMany, { count: pages })}
+        </span>
         {photoHidden && <span>{t.builder.preview.atsPhotoNote}</span>}
       </p>
       <div
-        className="relative mx-auto overflow-hidden rounded-sm bg-paper shadow-[0_2px_6px_rgba(0,0,0,0.45),0_16px_40px_rgba(0,0,0,0.4)] ring-1 ring-line"
+        className="relative mx-auto overflow-hidden rounded-sm bg-paper shadow-[0_2px_6px_rgba(0,0,0,0.45),0_16px_40px_rgba(0,0,0,0.4)] ring-1 ring-black/40"
         style={{ width: PAGE_W * scale, height: height * scale }}
       >
         <div
@@ -75,7 +77,7 @@ export function CVPreview({ cv }: { cv: CVData }) {
               className="pointer-events-none absolute inset-x-0 border-t-2 border-dashed border-accent-line"
               style={{ top: y }}
             >
-              <span className="absolute right-2 -top-6 rounded border border-accent-line bg-accent-soft px-2 py-0.5 text-xs text-accent-text">
+              <span className="absolute right-2 -top-6 rounded-sm border border-accent-line bg-paper px-1.5 py-0.5 font-mono text-xs text-accent">
                 {t.builder.preview.pageGuide} · {i + 2}
               </span>
             </div>

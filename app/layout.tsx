@@ -10,11 +10,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "Free AI CV Maker – Create a professional CV for free",
-    template: "%s · Free AI CV Maker",
+    default: "Free AI CV Maker | Write a CV and download it as a PDF",
+    template: "%s | Free AI CV Maker",
   },
   description:
-    "Create a professional CV for free, without an account. Choose a template, save your draft in your browser and download a clean A4 PDF with no watermark.",
+    "A free CV builder that runs in your browser. Fill in a form, choose one of three templates and download an A4 PDF. No account is needed, and drafts are saved on your device.",
 };
 
 export const viewport: Viewport = {
