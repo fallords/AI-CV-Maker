@@ -44,7 +44,7 @@ export function LandingContent() {
               </p>
             )}
           </div>
-          <div aria-hidden="true" className="relative mx-auto hidden h-[420px] w-[330px] sm:block">
+          <div aria-hidden="true" inert className="relative mx-auto hidden h-[420px] w-[330px] sm:block">
             <div className="absolute inset-0 translate-x-6 translate-y-4 rotate-3 rounded-md bg-brand-100" />
             <div className="absolute inset-0 overflow-hidden rounded-md bg-white shadow-xl ring-1 ring-stone-200">
               <div className="origin-top-left" style={{ transform: `scale(${330 / A4_PX})`, width: A4_PX }}>
@@ -86,6 +86,7 @@ export function LandingContent() {
                   className="relative mx-auto overflow-hidden rounded-md bg-white shadow-md ring-1 ring-stone-200"
                   style={{ width: A4_PX * THUMB_SCALE, height: A4_PX * THUMB_SCALE * 1.414 }}
                   aria-hidden="true"
+                  inert
                 >
                   <div className="origin-top-left" style={{ transform: `scale(${THUMB_SCALE})`, width: A4_PX }}>
                     <div className="cv-sheet">

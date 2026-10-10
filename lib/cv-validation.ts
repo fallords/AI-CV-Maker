@@ -171,7 +171,7 @@ export function migrate(raw: Raw): { raw: Raw; from: number } | null {
   // Data without a version is treated as v1 (the first released format).
   let version = typeof declared === "number" && Number.isInteger(declared) ? declared : 1;
   const from = version;
-  if (version > CV_SCHEMA_VERSION || version < 1) return null;
+  if (version > CV_SCHEMA_VERSION || version < 0) return null;
   let current = raw;
   while (version < CV_SCHEMA_VERSION) {
     const step = migrations[version];

@@ -45,6 +45,8 @@ export function BuilderApp() {
   const fileRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDetailsElement>(null);
   const cvRef = useRef(cv);
+  // True while there are edits that have not been written to storage yet.
+  const dirtyRef = useRef(false);
   const skipNextSave = useRef(true);
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export function BuilderApp() {
 
   const persist = useCallback((data: CVData): boolean => {
     const res = saveDraft(data);
+    if (res.ok) dirtyRef.current = false;
     setSaveState(res.ok ? "saved" : res.reason);
     return res.ok;
   }, []);
@@ -82,23 +85,27 @@ export function BuilderApp() {
       skipNextSave.current = false;
       return;
     }
+    dirtyRef.current = true;
     setSaveState((s) => (s === "unavailable" ? s : "dirty"));
     const timer = window.setTimeout(() => persist(cv), AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
   }, [cv, loaded, persist]);
 
-  // Flush pending changes when the tab is hidden or closed.
+  // Flush pending edits when the tab is hidden or closed. Only unsaved edits are
+  // written, so an idle second tab never overwrites newer work from another tab.
   useEffect(() => {
     if (!loaded) return;
     const flush = () => {
-      if (document.visibilityState === "hidden" || document.visibilityState === undefined) saveDraft(cvRef.current);
+      if (dirtyRef.current && saveDraft(cvRef.current).ok) dirtyRef.current = false;
     };
-    const onUnload = () => saveDraft(cvRef.current);
-    document.addEventListener("visibilitychange", flush);
-    window.addEventListener("pagehide", onUnload);
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", flush);
     return () => {
-      document.removeEventListener("visibilitychange", flush);
-      window.removeEventListener("pagehide", onUnload);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", flush);
     };
   }, [loaded]);
 
@@ -146,6 +153,7 @@ export function BuilderApp() {
     setBackupExists(false);
     dispatch({ type: "replace", data: createEmptyCV(cv.meta.cvLanguage) });
     skipNextSave.current = true;
+    dirtyRef.current = false;
     setSaveState("saved");
     setNotice({ kind: "success", text: b.messages.deleted });
   };
@@ -225,7 +233,7 @@ export function BuilderApp() {
     <>
       <div className="no-print flex min-h-0 flex-1 flex-col">
         {/* Toolbar */}
-        <div className="sticky top-0 z-20 border-b border-stone-200 bg-white/95 backdrop-blur">
+        <div className="z-20 border-b border-stone-200 bg-white/95 backdrop-blur lg:sticky lg:top-0">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-3 px-4 py-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
               <label className="flex flex-col text-xs font-medium text-stone-700">
@@ -317,25 +325,26 @@ export function BuilderApp() {
               {statusText}
             </p>
           )}
-          {/* Mobile: switch between editor and preview instead of a cramped split screen. */}
-          <div className="grid grid-cols-2 border-t border-stone-200 lg:hidden" role="tablist">
-            {(["edit", "preview"] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                role="tab"
-                aria-selected={tab === key}
-                aria-controls={`panel-${key}`}
-                id={`tab-${key}`}
-                onClick={() => setTab(key)}
-                className={`min-h-11 text-sm font-medium ${
-                  tab === key ? "border-b-2 border-brand-700 text-brand-800" : "text-stone-600"
-                }`}
-              >
-                {b.tabs[key]}
-              </button>
-            ))}
-          </div>
+        </div>
+
+        {/* Mobile: switch between editor and preview instead of a cramped split screen. */}
+        <div className="sticky top-0 z-20 grid grid-cols-2 border-b border-stone-200 bg-white lg:hidden" role="tablist">
+          {(["edit", "preview"] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              aria-controls={`panel-${key}`}
+              id={`tab-${key}`}
+              onClick={() => setTab(key)}
+              className={`min-h-11 text-sm font-medium ${
+                tab === key ? "border-b-2 border-brand-700 text-brand-800" : "text-stone-600"
+              }`}
+            >
+              {b.tabs[key]}
+            </button>
+          ))}
         </div>
 
         {notice && (

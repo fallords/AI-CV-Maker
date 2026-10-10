@@ -87,20 +87,21 @@ dialog::backdrop {
   color: var(--cv-muted);
   margin-top: 1mm !important;
 }
+/* Separators are left borders; the one starting each wrapped line is clipped away. */
 .cv-contact {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
-  column-gap: 0;
   row-gap: 0.5mm;
-  margin-top: 2.5mm !important;
+  overflow: hidden;
+  margin: 2.5mm 0 0 -2mm !important;
   font-size: 9pt;
   color: var(--cv-muted);
 }
-.cv-contact li + li::before {
-  content: "|";
-  margin: 0 2mm;
-  color: var(--cv-rule);
+.cv-contact li {
+  padding: 0 2mm;
+  margin-left: -0.3mm;
+  border-left: 0.3mm solid var(--cv-rule);
 }
 .cv-section {
   margin-top: 5mm;
@@ -112,11 +113,17 @@ dialog::backdrop {
   letter-spacing: 0.06em;
   margin-bottom: 2mm !important;
 }
+/* The first item of a section lives inside .cv-keep, so spacing targets both cases. */
 .cv-entry + .cv-entry,
-.cv-keep + .cv-entry,
-.cv-skill-line + .cv-skill-line,
-.cv-skill-group + .cv-skill-group {
+.cv-skill-group + .cv-skill-group,
+.cv-section > .cv-keep + * {
   margin-top: 3mm;
+}
+.cv-skill-line + .cv-skill-line,
+.cv-section > .cv-keep + .cv-skill-line,
+.cv-entry-compact + .cv-entry-compact,
+.cv-section > .cv-keep + .cv-entry-compact {
+  margin-top: 1.5mm;
 }
 .cv-entry-head {
   display: flex;
@@ -289,9 +296,6 @@ dialog::backdrop {
   border: 0.25mm solid var(--cv-accent);
   border-radius: 3mm;
   color: var(--cv-text);
-}
-.tpl-graduate .cv-entry-compact + .cv-entry-compact {
-  margin-top: 1.5mm;
 }
 
 /* ===================================================================== */

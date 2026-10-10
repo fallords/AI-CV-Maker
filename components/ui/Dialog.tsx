@@ -22,8 +22,12 @@ export function Dialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  // The native "close" event also fires when we close the dialog ourselves;
+  // only report closes that happen while the dialog is meant to be open.
+  const openRef = useRef(open);
 
   useEffect(() => {
+    openRef.current = open;
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
@@ -34,7 +38,9 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onClose={() => {
+        if (openRef.current) onClose();
+      }}
       onCancel={(e) => {
         e.preventDefault();
         onClose();
