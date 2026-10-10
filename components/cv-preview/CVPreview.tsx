@@ -47,12 +47,12 @@ export function CVPreview({ cv }: { cv: CVData }) {
 
   return (
     <div ref={outerRef} className="w-full">
-      <p className="mb-2 flex justify-between text-xs text-stone-600" aria-live="polite">
+      <p className="mb-2 flex justify-between text-xs tracking-wide text-fg-muted" aria-live="polite">
         <span>A4 · {fmt(pages === 1 ? t.builder.preview.pageOne : t.builder.preview.pageMany, { count: pages })}</span>
         {photoHidden && <span>{t.builder.preview.atsPhotoNote}</span>}
       </p>
       <div
-        className="relative mx-auto overflow-hidden rounded-sm shadow-[0_1px_3px_rgba(0,0,0,0.12),0_8px_24px_rgba(0,0,0,0.06)] ring-1 ring-stone-200"
+        className="relative mx-auto overflow-hidden rounded-sm bg-paper shadow-[0_2px_6px_rgba(0,0,0,0.45),0_16px_40px_rgba(0,0,0,0.4)] ring-1 ring-line"
         style={{ width: PAGE_W * scale, height: height * scale }}
       >
         <div
@@ -64,7 +64,7 @@ export function CVPreview({ cv }: { cv: CVData }) {
         >
           <CVDocument cv={cv} />
           {empty && (
-            <p className="absolute inset-x-0 top-1/3 px-16 text-center text-lg text-stone-400">
+            <p className="absolute inset-x-0 top-1/3 px-16 text-center text-lg text-stone-500">
               {t.builder.preview.empty}
             </p>
           )}
@@ -72,10 +72,10 @@ export function CVPreview({ cv }: { cv: CVData }) {
             <div
               key={y}
               aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 border-t-2 border-dashed border-brand-300"
+              className="pointer-events-none absolute inset-x-0 border-t-2 border-dashed border-accent-line"
               style={{ top: y }}
             >
-              <span className="absolute right-2 -top-6 rounded bg-brand-50 px-2 py-0.5 text-xs text-brand-800">
+              <span className="absolute right-2 -top-6 rounded border border-accent-line bg-accent-soft px-2 py-0.5 text-xs text-accent-text">
                 {t.builder.preview.pageGuide} · {i + 2}
               </span>
             </div>

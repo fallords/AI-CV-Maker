@@ -15,8 +15,12 @@ import type { SectionProps } from "./types";
 
 function FormCard({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-32 rounded-lg border border-stone-200 bg-white p-4 shadow-xs sm:p-6">
-      <h2 id={`${id}-title`} className="mb-4 text-base font-semibold text-stone-900">
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className="scroll-mt-32 rounded-lg border border-line bg-surface p-4 shadow-sm shadow-black/40 sm:p-6"
+    >
+      <h2 id={`${id}-title`} className="mb-4 text-base font-semibold tracking-tight text-fg">
         {title}
       </h2>
       {children}
@@ -43,7 +47,7 @@ export function CVForm(props: SectionProps) {
           <a
             key={s.id}
             href={`#${s.id}`}
-            className="shrink-0 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-xs font-medium text-stone-700 hover:border-brand-300 hover:text-brand-800"
+            className="shrink-0 rounded-full border border-line bg-raised px-3 py-1.5 text-xs font-medium text-fg-muted hover:border-accent-line hover:text-accent-text"
           >
             {s.title}
           </a>

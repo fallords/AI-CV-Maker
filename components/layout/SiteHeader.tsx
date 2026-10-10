@@ -7,8 +7,8 @@ import { useI18n } from "@/lib/i18n";
 
 export function Logo() {
   return (
-    <span className="flex items-center gap-2 font-semibold tracking-tight text-stone-900">
-      <span aria-hidden="true" className="grid size-8 place-items-center rounded-md bg-brand-700 text-sm font-bold text-white">
+    <span className="flex items-center gap-2.5 font-display text-lg font-semibold tracking-tight text-fg">
+      <span aria-hidden="true" className="grid size-8 place-items-center rounded-md border border-accent-line bg-accent text-sm font-semibold tracking-wide text-accent-fg shadow-sm shadow-black/40">
         CV
       </span>
       Free AI CV Maker
@@ -19,7 +19,7 @@ export function Logo() {
 export function LanguageSwitcher() {
   const { lang, setLang, t } = useI18n();
   return (
-    <div role="group" aria-label={t.nav.language} className="flex rounded-md border border-stone-300 bg-white p-0.5 text-xs font-semibold">
+    <div role="group" aria-label={t.nav.language} className="flex rounded-md border border-line-strong bg-raised p-0.5 text-xs font-semibold">
       {LANGUAGES.map((l) => (
         <button
           key={l}
@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           aria-label={l === "en" ? "English" : "Bahasa Indonesia"}
-          className={`min-h-8 min-w-10 rounded px-2 uppercase ${lang === l ? "bg-brand-700 text-white" : "text-stone-700 hover:bg-stone-100"}`}
+          className={`min-h-8 min-w-10 rounded px-2 uppercase ${lang === l ? "bg-accent text-accent-fg" : "text-fg-muted hover:bg-overlay hover:text-fg"}`}
         >
           {l}
         </button>
@@ -46,10 +46,10 @@ export function SiteHeader() {
     { href: "/privacy/", label: t.nav.privacy },
   ];
   return (
-    <header className="no-print border-b border-stone-200 bg-white">
+    <header className="no-print border-b border-line bg-surface">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:border focus:border-line-strong focus:bg-raised focus:px-3 focus:py-2 focus:text-fg focus:shadow-lg focus:shadow-black/40"
       >
         {t.nav.skip}
       </a>
@@ -67,8 +67,8 @@ export function SiteHeader() {
                     <Link
                       href={l.href}
                       aria-current={active ? "page" : undefined}
-                      className={`inline-flex min-h-10 items-center rounded-md px-2 sm:px-3 ${
-                        active ? "font-semibold text-brand-800" : "text-stone-700 hover:bg-stone-100"
+                      className={`inline-flex min-h-10 items-center rounded-md px-2 transition-colors sm:px-3 ${
+                        active ? "bg-accent-soft font-semibold text-accent-text" : "text-fg-muted hover:bg-overlay hover:text-fg"
                       }`}
                     >
                       {l.label}

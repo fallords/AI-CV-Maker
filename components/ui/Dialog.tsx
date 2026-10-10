@@ -45,14 +45,14 @@ export function Dialog({
         e.preventDefault();
         onClose();
       }}
-      className="no-print m-auto w-[min(92vw,32rem)] rounded-xl border border-stone-200 bg-white p-0 text-stone-900 shadow-xl"
+      className="no-print m-auto w-[min(92vw,32rem)] rounded-xl border border-line-strong bg-raised p-0 text-fg shadow-2xl shadow-black/60"
     >
       {open && (
         <div className="p-6">
           <h2 id={titleId} className="text-lg font-semibold">
             {title}
           </h2>
-          <div className="mt-3 text-sm leading-relaxed text-stone-700">{children}</div>
+          <div className="mt-3 text-sm leading-relaxed text-fg-muted">{children}</div>
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">{footer}</div>
         </div>
       )}

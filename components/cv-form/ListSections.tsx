@@ -175,11 +175,11 @@ export function SkillsSection(props: SectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-stone-800">{t.form.skills.technical}</h3>
+        <h3 className="mb-3 text-sm font-semibold text-fg">{t.form.skills.technical}</h3>
         <SkillList {...props} section="technicalSkills" />
       </div>
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-stone-800">{t.form.skills.soft}</h3>
+        <h3 className="mb-3 text-sm font-semibold text-fg">{t.form.skills.soft}</h3>
         <SkillList {...props} section="softSkills" />
       </div>
     </div>

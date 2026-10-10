@@ -63,7 +63,7 @@ export function RepeatableSection<S extends ListSection>({
   return (
     <div>
       {items.length === 0 ? (
-        <p className="rounded-md border border-dashed border-stone-300 px-4 py-3 text-sm text-stone-600">
+        <p className="rounded-md border border-dashed border-line-strong px-4 py-3 text-sm text-fg-muted">
           {emptyText}
         </p>
       ) : (
@@ -95,7 +95,7 @@ export function RepeatableSection<S extends ListSection>({
                 </button>
                 <button
                   type="button"
-                  className={`${btn.icon} hover:!bg-red-50 hover:!text-red-700`}
+                  className={`${btn.icon} hover:!bg-danger-soft hover:!text-danger-text`}
                   onClick={() => remove(item)}
                   aria-label={`${c.remove}: ${title}`}
                   title={c.remove}
@@ -116,11 +116,11 @@ export function RepeatableSection<S extends ListSection>({
               <li
                 key={item.id}
                 data-item-id={item.id}
-                className="rounded-lg border border-stone-200 bg-stone-50/60 p-4"
+                className="rounded-lg border border-line bg-canvas/40 p-4"
               >
                 <div className="mb-3 flex items-center justify-between gap-2">
-                  <h4 className="min-w-0 truncate text-sm font-semibold text-stone-800">
-                    <span className="text-stone-500">{index + 1}.</span> {title}
+                  <h4 className="min-w-0 truncate text-sm font-semibold text-fg">
+                    <span className="text-fg-subtle">{index + 1}.</span> {title}
                   </h4>
                   {controls}
                 </div>

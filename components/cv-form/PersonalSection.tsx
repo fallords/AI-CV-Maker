@@ -131,13 +131,13 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         error={urlError(p.website)}
       />
       <div className="sm:col-span-2">
-        <p className="mb-1 text-sm font-medium text-stone-800">
-          {f.photo} <span className="font-normal text-stone-500">({t.form.optional})</span>
+        <p className="mb-1 text-sm font-medium text-fg">
+          {f.photo} <span className="font-normal text-fg-subtle">({t.form.optional})</span>
         </p>
         <div className="flex flex-wrap items-center gap-3">
           {p.photo && (
             // eslint-disable-next-line @next/next/no-img-element -- local data URL
-            <img src={p.photo} alt={f.photoAlt} className="size-16 rounded-md border border-stone-200 object-cover" />
+            <img src={p.photo} alt={f.photoAlt} className="size-16 rounded-md border border-line object-cover" />
           )}
           <input
             ref={fileRef}
@@ -156,9 +156,9 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
             </button>
           )}
         </div>
-        <p className="mt-1 text-xs text-stone-600">{f.photoHint}</p>
+        <p className="mt-1 text-xs text-fg-muted">{f.photoHint}</p>
         {photoError && (
-          <p className="mt-1 text-xs font-medium text-red-700" role="alert">
+          <p className="mt-1 text-xs font-medium text-danger-text" role="alert">
             {photoError}
           </p>
         )}

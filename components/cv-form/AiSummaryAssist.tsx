@@ -86,20 +86,20 @@ export function AiSummaryAssist({
         }
       >
         <p>{t.ai.consentBody}</p>
-        <blockquote className="mt-3 max-h-40 overflow-auto rounded-md border border-stone-200 bg-stone-50 p-3 whitespace-pre-wrap">
+        <blockquote className="mt-3 max-h-40 overflow-auto rounded-md border border-line bg-canvas p-3 whitespace-pre-wrap">
           {sent}
         </blockquote>
         <label className="mt-3 flex items-start gap-2">
           <input
             type="checkbox"
-            className="mt-0.5 size-5 accent-brand-700"
+            className="mt-0.5 size-5 accent-accent"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
           />
           <span>{t.ai.consentCheckbox}</span>
         </label>
         {step === "error" && (
-          <p role="alert" className="mt-3 font-medium text-red-700">
+          <p role="alert" className="mt-3 font-medium text-danger-text">
             {t.ai.error}
           </p>
         )}
@@ -127,12 +127,12 @@ export function AiSummaryAssist({
           </>
         }
       >
-        <p role="note" className="rounded-md bg-amber-50 p-3 text-amber-900">
+        <p role="note" className="rounded-md border border-warn-line bg-warn-soft p-3 text-warn-text">
           {t.ai.reviewWarning}
         </p>
-        <h3 className="mt-3 font-semibold">{t.ai.original}</h3>
+        <h3 className="mt-3 font-semibold text-fg">{t.ai.original}</h3>
         <p className="whitespace-pre-wrap">{sent}</p>
-        <h3 className="mt-3 font-semibold">{t.ai.suggestion}</h3>
+        <h3 className="mt-3 font-semibold text-fg">{t.ai.suggestion}</h3>
         <p className="whitespace-pre-wrap">{suggestion}</p>
       </Dialog>
     </div>

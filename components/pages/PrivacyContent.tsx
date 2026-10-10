@@ -14,25 +14,25 @@ export function PrivacyContent() {
 
   return (
     <main id="main" className="mx-auto w-full max-w-3xl flex-1 px-4 py-12">
-      <h1 className="text-3xl font-bold tracking-tight text-stone-900">{p.title}</h1>
-      <p className="mt-2 text-sm text-stone-600">{p.updated}</p>
+      <h1 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">{p.title}</h1>
+      <p className="mt-3 text-sm tracking-wide text-fg-subtle">{p.updated}</p>
       <div className="mt-10 space-y-8">
         {p.sections.map((s) => (
-          <section key={s.title}>
-            <h2 className="text-xl font-semibold text-stone-900">{s.title}</h2>
+          <section key={s.title} className="border-t border-line pt-8">
+            <h2 className="font-display text-2xl font-semibold tracking-tight text-fg">{s.title}</h2>
             {s.body.map((para) => (
-              <p key={para} className="mt-3 leading-relaxed text-stone-700">
+              <p key={para} className="mt-3 leading-relaxed text-fg-muted">
                 {para}
               </p>
             ))}
           </section>
         ))}
       </div>
-      <div className="mt-10 rounded-lg border border-red-200 bg-red-50/50 p-5">
+      <div className="mt-12 rounded-lg border border-danger-line bg-danger-soft p-5 shadow-sm shadow-black/40">
         <button type="button" className={btn.danger} onClick={() => setConfirmOpen(true)}>
           {p.eraseButton}
         </button>
-        <p role="status" className="mt-3 text-sm text-stone-800 empty:hidden">
+        <p role="status" className="mt-3 text-sm text-fg empty:hidden">
           {result}
         </p>
       </div>

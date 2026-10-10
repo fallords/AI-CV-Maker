@@ -46,7 +46,7 @@ export function MonthField({
 
   return (
     <fieldset className={className} disabled={disabled} aria-describedby={error ? `${id}-error` : undefined}>
-      <legend className="mb-1 block text-sm font-medium text-stone-800">{label}</legend>
+      <legend className="mb-1 block text-sm font-medium text-fg">{label}</legend>
       <div className="grid grid-cols-2 gap-2">
         <select
           aria-label={`${label}: ${t.form.month}`}
@@ -79,7 +79,7 @@ export function MonthField({
         </select>
       </div>
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-red-700" role="alert">
+        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-danger-text" role="alert">
           {error}
         </p>
       )}

@@ -227,19 +227,21 @@ export function BuilderApp() {
     quota: b.status.quota,
   }[saveState];
 
-  const menuItem = "block w-full rounded-md px-3 py-2 text-left text-sm text-stone-800 hover:bg-stone-100 disabled:opacity-50";
+  // Colour lives outside the base so the delete item's danger colours never compete with the default ones.
+  const menuItemBase = "block w-full rounded-md px-3 py-2 text-left text-sm transition-colors disabled:opacity-50";
+  const menuItem = `${menuItemBase} text-fg hover:bg-overlay disabled:hover:bg-transparent`;
 
   return (
     <>
       <div className="no-print flex min-h-0 flex-1 flex-col">
         {/* Toolbar */}
-        <div className="z-20 border-b border-stone-200 bg-white/95 backdrop-blur lg:sticky lg:top-0">
+        <div className="z-20 border-b border-line bg-surface/95 shadow-sm shadow-black/40 backdrop-blur lg:sticky lg:top-0">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-3 px-4 py-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
-              <label className="flex flex-col text-xs font-medium text-stone-700">
+              <label className="flex flex-col text-xs font-medium tracking-wide text-fg-muted">
                 {b.template}
                 <select
-                  className="mt-1 min-h-10 rounded-md border border-stone-300 bg-white px-2 text-sm"
+                  className="mt-1 min-h-10 rounded-md border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel"
                   value={cv.meta.template}
                   onChange={(e) => dispatch({ type: "setMeta", patch: { template: e.target.value as TemplateId } })}
                 >
@@ -250,10 +252,10 @@ export function BuilderApp() {
                   ))}
                 </select>
               </label>
-              <label className="flex flex-col text-xs font-medium text-stone-700" title={b.cvLanguageHint}>
+              <label className="flex flex-col text-xs font-medium tracking-wide text-fg-muted" title={b.cvLanguageHint}>
                 {b.cvLanguage}
                 <select
-                  className="mt-1 min-h-10 rounded-md border border-stone-300 bg-white px-2 text-sm"
+                  className="mt-1 min-h-10 rounded-md border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel"
                   value={cv.meta.cvLanguage}
                   onChange={(e) => dispatch({ type: "setMeta", patch: { cvLanguage: e.target.value as Language } })}
                 >
@@ -268,12 +270,12 @@ export function BuilderApp() {
             <div className="flex flex-wrap items-center gap-2">
               <p
                 className={`hidden items-center gap-1 text-xs md:flex ${
-                  saveState === "unavailable" || saveState === "quota" ? "text-red-700" : "text-stone-600"
+                  saveState === "unavailable" || saveState === "quota" ? "text-danger-text" : "text-fg-muted"
                 }`}
                 role="status"
                 data-testid="save-status"
               >
-                {saveState === "saved" && <Check className="text-brand-600" width={14} height={14} />}
+                {saveState === "saved" && <Check className="text-accent-text" width={14} height={14} />}
                 {loaded ? statusText : b.loading}
               </p>
               <button type="button" className={btn.secondary} onClick={onSaveNow}>
@@ -284,7 +286,7 @@ export function BuilderApp() {
                   {b.more} <Chevron width={16} height={16} />
                 </summary>
                 <div
-                  className="absolute right-0 z-30 mt-2 w-60 rounded-lg border border-stone-200 bg-white p-1 shadow-lg"
+                  className="absolute right-0 z-30 mt-2 w-60 rounded-lg border border-line-strong bg-raised p-1 shadow-xl shadow-black/50"
                   role="group"
                   aria-label={b.actions}
                 >
@@ -305,10 +307,10 @@ export function BuilderApp() {
                   <button type="button" className={menuItem} onClick={() => { closeMenu(); onExport(); }}>
                     {b.exportJson}
                   </button>
-                  <hr className="my-1 border-stone-200" />
+                  <hr className="my-1 border-line" />
                   <button
                     type="button"
-                    className={`${menuItem} text-red-800 hover:bg-red-50`}
+                    className={`${menuItemBase} text-danger-text hover:bg-danger-soft`}
                     onClick={() => { closeMenu(); setConfirm("delete"); }}
                   >
                     {b.deleteDraft}
@@ -321,14 +323,14 @@ export function BuilderApp() {
             </div>
           </div>
           {(saveState === "unavailable" || saveState === "quota") && (
-            <p className="bg-red-50 px-4 py-2 text-sm text-red-800 md:hidden" role="alert">
+            <p className="border-t border-danger-line bg-danger-soft px-4 py-2 text-sm text-danger-text md:hidden" role="alert">
               {statusText}
             </p>
           )}
         </div>
 
         {/* Mobile: switch between editor and preview instead of a cramped split screen. */}
-        <div className="sticky top-0 z-20 grid grid-cols-2 border-b border-stone-200 bg-white lg:hidden" role="tablist">
+        <div className="sticky top-0 z-20 grid grid-cols-2 border-b border-line bg-surface lg:hidden" role="tablist">
           {(["edit", "preview"] as const).map((key) => (
             <button
               key={key}
@@ -338,8 +340,8 @@ export function BuilderApp() {
               aria-controls={`panel-${key}`}
               id={`tab-${key}`}
               onClick={() => setTab(key)}
-              className={`min-h-11 text-sm font-medium ${
-                tab === key ? "border-b-2 border-brand-700 text-brand-800" : "text-stone-600"
+              className={`min-h-11 text-sm font-medium transition-colors ${
+                tab === key ? "border-b-2 border-accent-text text-accent-text" : "text-fg-muted hover:text-fg"
               }`}
             >
               {b.tabs[key]}
@@ -352,8 +354,8 @@ export function BuilderApp() {
             role={notice.kind === "error" ? "alert" : "status"}
             className={`mx-auto mt-3 flex w-[min(100%-2rem,1600px)] items-start justify-between gap-3 rounded-md border px-4 py-2 text-sm ${
               notice.kind === "error"
-                ? "border-red-200 bg-red-50 text-red-900"
-                : "border-brand-200 bg-brand-50 text-brand-900"
+                ? "border-danger-line bg-danger-soft text-danger-text"
+                : "border-accent-line bg-accent-soft text-fg"
             }`}
           >
             <span>{notice.text}</span>
@@ -371,7 +373,7 @@ export function BuilderApp() {
             className={`${tab === "edit" ? "block" : "hidden"} min-w-0 lg:block`}
           >
             <h1 className="sr-only">{b.title}</h1>
-            {loaded ? <CVForm cv={cv} dispatch={dispatch} /> : <p className="text-stone-600">{b.loading}</p>}
+            {loaded ? <CVForm cv={cv} dispatch={dispatch} /> : <p className="text-fg-muted">{b.loading}</p>}
           </div>
           <div
             id="panel-preview"
@@ -484,11 +486,11 @@ export function BuilderApp() {
             <li key={s}>{s}</li>
           ))}
         </ol>
-        <p className="mt-3 text-stone-600">{b.print.note}</p>
+        <p className="mt-3 text-fg-muted">{b.print.note}</p>
         <label className="mt-3 flex items-center gap-2">
           <input
             type="checkbox"
-            className="size-5 accent-brand-700"
+            className="size-5 accent-accent"
             checked={hidePrintHint}
             onChange={(e) => setHidePrintHint(e.target.checked)}
           />

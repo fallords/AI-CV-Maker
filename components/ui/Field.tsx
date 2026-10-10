@@ -14,12 +14,12 @@ function Describe({ id, hint, error }: { id: string; hint?: ReactNode; error?: s
   return (
     <>
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-stone-600">
+        <p id={`${id}-hint`} className="mt-1 text-xs text-fg-muted">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-red-700" role="alert">
+        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-danger-text" role="alert">
           {error}
         </p>
       )}
@@ -53,7 +53,7 @@ export function TextField({
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium text-stone-800">
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-fg">
         {label}
       </label>
       <input
@@ -92,7 +92,7 @@ export function TextAreaField({
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium text-stone-800">
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-fg">
         {label}
       </label>
       <textarea
@@ -126,7 +126,7 @@ export function SelectField<T extends string>({
   const id = useId();
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-sm font-medium text-stone-800">
+      <label htmlFor={id} className="mb-1 block text-sm font-medium text-fg">
         {label}
       </label>
       <select
@@ -166,9 +166,9 @@ export function CheckboxField({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="size-5 rounded border-stone-400 accent-brand-700"
+        className="size-5 rounded border-control-line accent-accent"
       />
-      <label htmlFor={id} className="text-sm text-stone-800">
+      <label htmlFor={id} className="text-sm text-fg">
         {label}
       </label>
     </div>
