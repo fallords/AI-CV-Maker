@@ -1,44 +1,44 @@
 @import "tailwindcss";
 
 /*
- * Website theme: professional dark slate with a confident blue accent.
- * Cool neutral surfaces, no neon. Every text pairing below meets WCAG AA
+ * Website theme: professional dark graphite with a Prussian blue accent.
+ * True-neutral surfaces, warm off-white text, one restrained accent, no neon. Every text pairing below meets WCAG AA
  * (4.5:1); control borders and checkbox fills meet 3:1 against their backgrounds.
  * The CV document further down keeps its own white "paper" colours.
  */
 @theme {
   /* Surfaces, darkest to lightest */
-  --color-canvas: #0b1018; /* page background */
-  --color-surface: #111827; /* cards, header, footer */
-  --color-raised: #172033; /* inputs, menus, dialogs */
-  --color-overlay: #1e293d; /* hover on raised surfaces */
+  --color-canvas: #121313; /* page background */
+  --color-surface: #18191a; /* cards, header, footer */
+  --color-raised: #1f2021; /* inputs, menus, dialogs */
+  --color-overlay: #27282b; /* hover on raised surfaces */
   /* Lines */
-  --color-line: #253047; /* dividers, card borders */
-  --color-line-strong: #33405a; /* emphasised dividers */
-  --color-control-line: #64748f; /* form control borders (>= 3:1) */
+  --color-line: #2b2c2f; /* dividers, card borders */
+  --color-line-strong: #3a3b3f; /* emphasised dividers */
+  --color-control-line: #6e7075; /* form control borders (>= 3:1) */
   /* Text */
-  --color-fg: #e5e9f0;
-  --color-fg-muted: #a7b1c2;
-  --color-fg-subtle: #8b95a8;
-  /* Blue accent */
-  --color-accent: #2f5fbf; /* solid buttons, selected states */
-  --color-accent-hover: #3a6dd0;
-  --color-accent-fg: #f5f8fd; /* text on accent */
-  --color-accent-text: #93b4ee; /* links, active nav, focus ring */
-  --color-accent-soft: #13203a; /* tinted panels */
-  --color-accent-line: #3d5f9e; /* borders of accent elements */
-  --color-accent-control: #5b8ee0; /* checkbox fill: >= 3:1 on dark surfaces */
-  /* Slate detail colour */
-  --color-steel: #8c97ab;
+  --color-fg: #e8e7e4;
+  --color-fg-muted: #b0b2b5;
+  --color-fg-subtle: #939599;
+  /* Prussian blue accent (print-ink blue, not a UI-kit blue) */
+  --color-accent: #21507a; /* solid buttons, selected states */
+  --color-accent-hover: #285a85;
+  --color-accent-fg: #f4f6f8; /* text on accent */
+  --color-accent-text: #a3bdd2; /* links, active nav, focus ring */
+  --color-accent-soft: #182128; /* tinted panels */
+  --color-accent-line: #2d5a80; /* borders of accent elements */
+  --color-accent-control: #5d8fb5; /* checkbox fill: >= 3:1 on dark surfaces */
+  /* Neutral detail colour */
+  --color-steel: #8f9296;
   /* Status (muted, never bright) */
-  --color-danger: #7d302c;
-  --color-danger-hover: #8e3833;
-  --color-danger-text: #e3a6a2;
-  --color-danger-soft: #251413;
-  --color-danger-line: #5a2b28;
-  --color-warn-text: #e2cf9e;
-  --color-warn-soft: #262013;
-  --color-warn-line: #4d4126;
+  --color-danger: #7e3029;
+  --color-danger-hover: #8f3830;
+  --color-danger-text: #e4a69f;
+  --color-danger-soft: #261614;
+  --color-danger-line: #5b2c27;
+  --color-warn-text: #e0cd9f;
+  --color-warn-soft: #242015;
+  --color-warn-line: #4a4029;
   /* The CV preview sheet */
   --color-paper: #ffffff;
 
@@ -76,7 +76,7 @@ body {
 
 /* Links inside the white CV preview need a dark ring to stay visible. */
 .cv-sheet :focus-visible {
-  outline: 3px solid #1e3a8a;
+  outline: 3px solid #21507a;
   outline-offset: 1px;
 }
 
