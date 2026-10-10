@@ -45,7 +45,7 @@ export function CVForm(props: SectionProps) {
     <div>
       <nav aria-label={f.sectionNav} className="border-b border-line">
         {/* scroll-padding + scrollIntoView keep a focused link clear of the right-edge fade. */}
-        <div className="flex scroll-pr-10 scroll-pl-1 gap-x-5 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
+        <div className="flex scroll-pr-10 scroll-pl-1 gap-x-5 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:flex-wrap md:gap-y-1 md:overflow-visible md:pr-1 md:[mask-image:none]">
           {sections.map((s) => (
             <a
               key={s.id}

@@ -50,7 +50,7 @@ const getNarrow = () => window.matchMedia(NARROW).matches;
 const getNarrowOnServer = () => false;
 
 export function LandingContent() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const l = t.landing;
   const [draftExists, setDraftExists] = useState(false);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
@@ -100,7 +100,7 @@ export function LandingContent() {
             <div className={paper} style={{ width: HERO_W, height: HERO_H }}>
               <div className="origin-top-left" style={{ transform: `scale(${HERO_W / A4_PX})`, width: A4_PX }}>
                 <div className="cv-sheet">
-                  <CVDocument cv={showcaseCV("modern-professional")} />
+                  <CVDocument cv={showcaseCV("modern-professional", lang)} />
                 </div>
               </div>
             </div>
@@ -126,7 +126,7 @@ export function LandingContent() {
                 <div className={paper} style={{ width: THUMB_W, height: THUMB_H }} aria-hidden="true" inert>
                   <div className="origin-top-left" style={{ transform: `scale(${THUMB_SCALE})`, width: A4_PX }}>
                     <div className="cv-sheet">
-                      <CVDocument cv={showcaseCV(id)} />
+                      <CVDocument cv={showcaseCV(id, lang)} />
                     </div>
                   </div>
                 </div>

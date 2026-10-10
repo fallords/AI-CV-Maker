@@ -31,7 +31,7 @@ const en = {
       "You can switch templates at any time in the builder, and your details carry over.",
     privacyTitle: "Privacy",
     privacyBody:
-      "There are no user accounts and no database. Like any web host, the hosting provider may keep standard technical logs such as IP addresses. The privacy notice explains what’s stored in your browser and when text can be sent to an AI service.",
+      "There are no accounts and no analytics. The privacy notice lists exactly what’s kept in your browser and how to delete it.",
     privacyLink: "Read the privacy notice",
     faqTitle: "Common questions",
     faq: [
@@ -52,7 +52,7 @@ const en = {
     aiFaq: {
       q: "Why is “AI” in the name?",
       on: "Under the summary field there’s a button that asks an AI service to suggest a rewrite of your summary. Before anything is sent, it shows you the exact text and asks for your permission. Everything else works without it.",
-      off: "The builder has an optional AI feature that suggests a rewrite of your summary. It’s switched off on this site, so nothing you type is sent to an AI service, and every part of the builder works without it. The site’s operator can turn it on.",
+      off: "Because the builder can include an AI helper that suggests a rewrite of your summary. It isn’t switched on here, so nothing you type is sent to an AI service, and everything in the builder works without it.",
     },
   },
   footer: {

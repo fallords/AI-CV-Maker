@@ -3,7 +3,7 @@
  * and as a realistic multi-page fixture in tests. It is never shown as real data.
  */
 
-import { CV_SCHEMA_VERSION, type CVData, type TemplateId } from "./cv-schema";
+import { CV_SCHEMA_VERSION, type CVData, type Language, type TemplateId } from "./cv-schema";
 
 export function sampleCV(template: TemplateId = "ats-minimal"): CVData {
   return {
@@ -124,8 +124,9 @@ export function sampleCV(template: TemplateId = "ats-minimal"): CVData {
  * nothing on it points at a real person or organisation. Content and layout are otherwise
  * the same as sampleCV(), which stays unchanged because tests depend on it.
  */
-export function showcaseCV(template: TemplateId = "modern-professional"): CVData {
+export function showcaseCV(template: TemplateId = "modern-professional", cvLanguage: Language = "en"): CVData {
   const base = sampleCV(template);
+  base.meta.cvLanguage = cvLanguage;
   const companies: Record<string, string> = {
     exp1: "Lintas Raya Logistik",
     exp2: "Toko Mitra Sejahtera",

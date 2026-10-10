@@ -33,7 +33,7 @@ const id: Dictionary = {
       "Template bisa diganti kapan saja di Pembuat CV, dan data yang sudah Anda isi tetap terbawa.",
     privacyTitle: "Privasi",
     privacyBody:
-      "Tidak ada akun pengguna dan tidak ada basis data. Seperti layanan hosting pada umumnya, penyedia hosting dapat menyimpan log teknis standar, misalnya alamat IP. Pemberitahuan privasi menjelaskan apa saja yang disimpan di browser Anda dan kapan teks bisa dikirim ke layanan AI.",
+      "Tidak ada akun dan tidak ada analitik. Pemberitahuan privasi menjelaskan apa saja yang disimpan di browser Anda dan cara menghapusnya.",
     privacyLink: "Baca pemberitahuan privasi",
     faqTitle: "Pertanyaan umum",
     faq: [
@@ -53,7 +53,7 @@ const id: Dictionary = {
     aiFaq: {
       q: "Mengapa ada kata “AI” di nama situs ini?",
       on: "Di bawah kolom ringkasan ada tombol untuk meminta layanan AI menyarankan tulisan ulang ringkasan Anda. Sebelum ada yang dikirim, Anda akan melihat teks persis yang akan dikirim dan diminta persetujuan. Semua fitur lain bisa dipakai tanpa AI.",
-      off: "Pembuat CV punya fitur AI opsional untuk menyarankan tulisan ulang ringkasan Anda. Di situs ini fitur tersebut dimatikan, jadi teks Anda tidak dikirim ke layanan AI mana pun, dan semua bagian Pembuat CV tetap bisa dipakai. Pengelola situs bisa mengaktifkannya.",
+      off: "Karena Pembuat CV bisa dilengkapi asisten AI yang menyarankan tulisan ulang ringkasan Anda. Di sini fitur itu belum diaktifkan, jadi teks Anda tidak dikirim ke layanan AI mana pun, dan semua bagian Pembuat CV tetap bisa dipakai.",
     },
   },
   footer: {
