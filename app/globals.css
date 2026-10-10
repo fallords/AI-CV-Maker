@@ -1,0 +1,413 @@
+@import "tailwindcss";
+
+/*
+ * Website theme: professional dark graphite with a Prussian blue accent.
+ * True-neutral surfaces, warm off-white text, one restrained accent, no neon. Every text pairing below meets WCAG AA
+ * (4.5:1); control borders and checkbox fills meet 3:1 against their backgrounds.
+ * The CV document further down keeps its own white "paper" colours.
+ */
+@theme {
+  /* Surfaces, darkest to lightest */
+  --color-canvas: #121313; /* page background */
+  --color-surface: #18191a; /* cards, header, footer */
+  --color-raised: #1f2021; /* inputs, menus, dialogs */
+  --color-overlay: #27282b; /* hover on raised surfaces */
+  /* Lines */
+  --color-line: #2b2c2f; /* dividers, card borders */
+  --color-line-strong: #3a3b3f; /* emphasised dividers */
+  --color-control-line: #6e7075; /* form control borders (>= 3:1) */
+  /* Text */
+  --color-fg: #e8e7e4;
+  --color-fg-body: #d6d5d1; /* running prose: softer than fg, not grey */
+  --color-fg-muted: #b0b2b5;
+  --color-fg-subtle: #939599;
+  /* Prussian blue accent (print-ink blue, not a UI-kit blue) */
+  --color-accent: #21507a; /* solid buttons, selected states */
+  --color-accent-hover: #285a85;
+  --color-accent-fg: #f4f6f8; /* text on accent */
+  --color-accent-text: #a3bdd2; /* links, active nav, focus ring */
+  --color-accent-soft: #182128; /* tinted panels */
+  --color-accent-line: #2d5a80; /* borders of accent elements */
+  --color-accent-control: #5d8fb5; /* checkbox fill: >= 3:1 on dark surfaces */
+  /* Neutral detail colour */
+  --color-steel: #8f9296;
+  /* Status (muted, never bright) */
+  --color-danger: #7e3029;
+  --color-danger-hover: #8f3830;
+  --color-danger-text: #e4a69f;
+  --color-danger-soft: #261614;
+  --color-danger-line: #5b2c27;
+  --color-warn-text: #e0cd9f;
+  --color-warn-soft: #242015;
+  --color-warn-line: #4a4029;
+  /* The CV preview sheet */
+  --color-paper: #ffffff;
+
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans",
+    "Liberation Sans", sans-serif;
+  --font-serif: Georgia, Cambria, "Times New Roman", "Noto Serif", "Liberation Serif", serif;
+  /* Website UI type (self-hosted IBM Plex, see app/layout.tsx). --font-sans above stays
+     the CV document font so CV output is unchanged. */
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-ui);
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-fg);
+  font-family: var(--font-ui);
+  font-feature-settings: "kern", "liga";
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-fg);
+}
+
+/* Visible, consistent keyboard focus everywhere. */
+:focus-visible {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 2px;
+}
+
+/* Links inside the white CV preview need a dark ring to stay visible. */
+.cv-sheet :focus-visible {
+  outline: 3px solid #21507a;
+  outline-offset: 1px;
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.7);
+}
+
+/* ===================================================================== */
+/* CV document — shared by preview and print. Sized in physical units.   */
+/* ===================================================================== */
+
+.cv-doc {
+  --cv-accent: #1b4332;
+  --cv-text: #1c1917;
+  --cv-muted: #57534e;
+  --cv-rule: #d6d3d1;
+  --cv-pad-x: 16mm;
+  width: 210mm;
+  box-sizing: border-box;
+  padding: 0 var(--cv-pad-x);
+  background: #fff;
+  color: var(--cv-text);
+  font-family: var(--font-sans);
+  font-size: 10pt;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.cv-doc *,
+.cv-doc *::before,
+.cv-doc *::after {
+  box-sizing: border-box;
+}
+.cv-doc h1,
+.cv-doc h2,
+.cv-doc h3,
+.cv-doc p,
+.cv-doc ul {
+  margin: 0;
+  padding: 0;
+}
+.cv-doc a {
+  color: inherit;
+  text-decoration: none;
+}
+.cv-name {
+  font-size: 21pt;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.cv-title {
+  font-size: 11.5pt;
+  color: var(--cv-muted);
+  margin-top: 1mm !important;
+}
+/* Separators are left borders; the one starting each wrapped line is clipped away. */
+.cv-contact {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 0.5mm;
+  /* Clip only horizontally, so focus rings on contact links are not cut off. */
+  overflow-x: clip;
+  margin: 2.5mm 0 0 -2mm !important;
+  font-size: 9pt;
+  color: var(--cv-muted);
+}
+.cv-contact li {
+  padding: 0 2mm;
+  margin-left: -0.3mm;
+  border-left: 0.3mm solid var(--cv-rule);
+}
+.cv-section {
+  margin-top: 5mm;
+}
+.cv-heading {
+  font-size: 10.5pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 2mm !important;
+}
+/* The first item of a section lives inside .cv-keep, so spacing targets both cases. */
+.cv-entry + .cv-entry,
+.cv-skill-group + .cv-skill-group,
+.cv-section > .cv-keep + * {
+  margin-top: 3mm;
+}
+.cv-skill-line + .cv-skill-line,
+.cv-section > .cv-keep + .cv-skill-line,
+.cv-entry-compact + .cv-entry-compact,
+.cv-section > .cv-keep + .cv-entry-compact {
+  margin-top: 1.5mm;
+}
+.cv-entry-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4mm;
+}
+.cv-entry-titles {
+  min-width: 0;
+}
+.cv-entry-title {
+  font-size: 10.5pt;
+  font-weight: 650;
+}
+.cv-entry-sub {
+  color: var(--cv-muted);
+}
+.cv-entry-date {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 9pt;
+  color: var(--cv-muted);
+}
+.cv-rich {
+  margin-top: 1mm;
+}
+.cv-rich p + p,
+.cv-rich p + ul,
+.cv-rich ul + p {
+  margin-top: 1mm !important;
+}
+.cv-rich ul {
+  padding-left: 4.5mm !important;
+  list-style: disc;
+}
+.cv-rich li + li {
+  margin-top: 0.6mm;
+}
+.cv-section-summary .cv-rich {
+  margin-top: 0;
+}
+.cv-meta-line {
+  margin-top: 1mm !important;
+  font-size: 9pt;
+  color: var(--cv-muted);
+}
+.cv-meta-label {
+  font-weight: 600;
+  color: var(--cv-text);
+}
+.cv-photo {
+  width: 28mm;
+  height: 28mm;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+/* Template A — ATS Minimal */
+.tpl-ats .cv-header {
+  padding-bottom: 3mm;
+  border-bottom: 0.4mm solid var(--cv-text);
+}
+.tpl-ats .cv-heading {
+  border-bottom: 0.25mm solid var(--cv-rule);
+  padding-bottom: 1mm;
+}
+
+/* Template B — Modern Professional */
+.tpl-modern {
+  --cv-accent: #245740;
+}
+.tpl-modern .cv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6mm;
+  padding-bottom: 4mm;
+  border-bottom: 0.8mm solid var(--cv-accent);
+}
+.tpl-modern .cv-header-text {
+  min-width: 0;
+}
+.tpl-modern .cv-name {
+  font-family: var(--font-serif);
+  font-size: 24pt;
+  font-weight: 700;
+  color: var(--cv-accent);
+}
+.tpl-modern .cv-title {
+  font-size: 12pt;
+  color: var(--cv-text);
+}
+.tpl-modern .cv-photo {
+  border-radius: 50%;
+}
+.tpl-modern .cv-section {
+  margin-top: 6mm;
+}
+.tpl-modern .cv-heading {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  color: var(--cv-accent);
+  letter-spacing: 0.1em;
+  font-size: 10pt;
+}
+.tpl-modern .cv-heading::after {
+  content: "";
+  flex: 1;
+  height: 0.25mm;
+  background: var(--cv-accent);
+  opacity: 0.35;
+}
+.tpl-modern .cv-entry-date {
+  color: var(--cv-accent);
+  font-weight: 600;
+}
+.tpl-modern .cv-rich li::marker {
+  color: var(--cv-accent);
+}
+
+/* Template C — Graduate / Student */
+.tpl-graduate {
+  --cv-accent: #2d6a4f;
+}
+.tpl-graduate .cv-header {
+  display: flex;
+  align-items: center;
+  gap: 6mm;
+  padding: 5mm 6mm;
+  background: #eff6f1;
+  border-left: 1.5mm solid var(--cv-accent);
+}
+.tpl-graduate .cv-header-text {
+  min-width: 0;
+}
+.tpl-graduate .cv-photo {
+  width: 26mm;
+  height: 26mm;
+  border-radius: 2mm;
+}
+.tpl-graduate .cv-name {
+  font-size: 20pt;
+}
+.tpl-graduate .cv-title {
+  color: var(--cv-accent);
+  font-weight: 600;
+}
+.tpl-graduate .cv-heading {
+  color: var(--cv-accent);
+  font-size: 11pt;
+  letter-spacing: 0.04em;
+  padding-bottom: 1mm;
+  border-bottom: 0.5mm solid var(--cv-accent);
+}
+.tpl-graduate .cv-skill-label {
+  font-size: 9.5pt;
+  font-weight: 650;
+  margin-bottom: 1.5mm;
+}
+.tpl-graduate .cv-chips {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5mm;
+}
+.tpl-graduate .cv-chips li {
+  font-size: 9pt;
+  padding: 0.6mm 2.4mm;
+  border: 0.25mm solid var(--cv-accent);
+  border-radius: 3mm;
+  color: var(--cv-text);
+}
+
+/* ===================================================================== */
+/* Page-break behaviour (applies to print; harmless on screen).          */
+/* ===================================================================== */
+.cv-keep,
+.cv-entry-head,
+.cv-entry-compact,
+.cv-skill-group,
+.cv-skill-line,
+.cv-rich li,
+.cv-header {
+  break-inside: avoid;
+}
+.cv-entry {
+  break-inside: avoid-page;
+}
+.cv-heading {
+  break-after: avoid;
+}
+
+/* Screen-only: the preview sheet has the same top/bottom margin as the printed page. */
+@media screen {
+  .cv-sheet .cv-doc {
+    padding-top: 14mm;
+    padding-bottom: 14mm;
+    min-height: 297mm;
+  }
+}
+
+/* ===================================================================== */
+/* Print: only the CV, on A4.                                            */
+/* ===================================================================== */
+@page {
+  size: A4;
+  margin: 14mm 0;
+}
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  #cv-print-root {
+    display: block !important;
+  }
+  #cv-print-root .cv-doc {
+    width: 100%;
+    min-height: 0;
+  }
+  /* Long entries may still break, but never leave a lone line at a page edge. */
+  .cv-doc p,
+  .cv-doc li {
+    orphans: 3;
+    widows: 3;
+  }
+}
