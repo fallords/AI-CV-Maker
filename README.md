@@ -87,6 +87,39 @@ npm run dev          # http://localhost:3000
 
 The end-to-end tests use Chromium. If it isn't installed, run `npx playwright install chromium` once. The PDF tests also extract text with `pdftotext` (poppler-utils) when it is available, and skip only that check otherwise. Generated PDFs are written to `test-results/` for manual inspection.
 
+## Deploying to Vercel
+
+The site is a fully static export, so it runs on Vercel without serverless functions. `vercel.json` sets the build
+commands and the same security headers as `public/_headers` (Vercel does not read `_headers`).
+
+### Option A: Git integration (recommended, no token needed)
+
+1. Open <https://vercel.com/new> and sign in with GitHub.
+2. Import the `AI-CV-Maker` repository. Vercel detects Next.js; keep the defaults (install `npm ci`, build
+   `npm run build`, both come from `vercel.json`). No environment variables are required.
+3. Optional environment variables: `NEXT_PUBLIC_CONTACT_EMAIL` (footer contact) and `NEXT_PUBLIC_AI_PROXY_URL`
+   (see "Optional AI integration").
+4. Click **Deploy**. Vercel builds the production branch (`main` by default) and gives you a `*.vercel.app` URL.
+   Every push to `main` redeploys; other branches get preview URLs.
+
+Vercel builds **production from `main`**. Merge the work branch into `main` first, or change the production branch in
+the project's **Settings → Environments → Production → Branch Tracking**. Preview deployments of other branches are
+protected by Vercel Authentication on new projects by default, so only you can open them until you change
+**Settings → Deployment Protection**.
+
+### Option B: Vercel CLI
+
+```bash
+npx vercel login
+npx vercel          # preview deployment
+npx vercel --prod   # production deployment
+```
+
+### Plan and cost
+
+Vercel's free **Hobby** plan is for personal, non-commercial use. A commercial deployment needs a paid Pro plan;
+Cloudflare Pages (below) is free for commercial use.
+
 ## Deploying to Cloudflare Pages (free plan)
 
 The build is fully static, so no Workers, Functions or paid features are needed.
@@ -144,7 +177,7 @@ AI is **off by default**, and nothing in the core workflow depends on it. To ena
    ```
    The proxy should enforce rate limits, request size limits and an allow-list of origins, and must not log CV text.
 2. Build with `NEXT_PUBLIC_AI_PROXY_URL=https://your-proxy.example.com/ai` (HTTPS only).
-3. Add the proxy origin to `connect-src` in `public/_headers`.
+3. Add the proxy origin to `connect-src` in `public/_headers` (Cloudflare) and `vercel.json` (Vercel).
 
 **Never** put a provider API key in a `NEXT_PUBLIC_*` variable or anywhere in the frontend, because those values are embedded in public JavaScript. The UI asks for explicit consent per request, shows exactly the text being sent, and requires the user to review a suggestion before applying it. Prompt templates in `lib/ai/prompts.ts` instruct the model to preserve facts and never invent experience, credentials or metrics. Only "rewrite summary" has UI today. Grammar, bullet conversion, keyword suggestions and translation exist as prompt templates only.
 
@@ -173,6 +206,7 @@ Run locally during development:
 
 - **AI provider API usage** (per token), plus hosting for the AI proxy beyond free tiers.
 - **Cloudflare** beyond the free Pages plan, for example Workers/Functions above free limits or a custom domain registration.
+- **Vercel**: the free Hobby plan is non-commercial only; commercial use or higher usage needs a paid Pro plan.
 - Any future cloud sync, accounts or analytics would need a backend, a database and an updated privacy notice.
 
 ## License
