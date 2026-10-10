@@ -13,6 +13,6 @@ export const btn = {
 };
 
 export const inputClass =
-  "block w-full rounded-md border border-control-line bg-raised px-3 py-2 text-base text-fg shadow-xs placeholder:text-fg-subtle focus:border-accent-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-text aria-[invalid=true]:border-danger-text sm:text-sm";
+  "block w-full rounded-md border border-control-line bg-raised px-3 py-2 text-base text-fg shadow-xs placeholder:text-fg-subtle focus:border-accent-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-text aria-[invalid=true]:border-danger-text disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-fg-subtle sm:text-sm";
 
 export const card = "rounded-lg border border-line bg-surface shadow-xs";

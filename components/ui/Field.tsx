@@ -166,7 +166,7 @@ export function CheckboxField({
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="size-5 rounded border-control-line accent-accent"
+        className="size-5 rounded border-control-line accent-accent-control"
       />
       <label htmlFor={id} className="text-sm text-fg">
         {label}

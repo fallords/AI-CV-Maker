@@ -92,7 +92,7 @@ export function AiSummaryAssist({
         <label className="mt-3 flex items-start gap-2">
           <input
             type="checkbox"
-            className="mt-0.5 size-5 accent-accent"
+            className="mt-0.5 size-5 accent-accent-control"
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
           />

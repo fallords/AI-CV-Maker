@@ -49,7 +49,7 @@ export function Dialog({
     >
       {open && (
         <div className="p-6">
-          <h2 id={titleId} className="text-lg font-semibold">
+          <h2 id={titleId} className="font-display text-xl font-semibold tracking-tight">
             {title}
           </h2>
           <div className="mt-3 text-sm leading-relaxed text-fg-muted">{children}</div>

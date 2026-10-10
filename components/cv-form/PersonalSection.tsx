@@ -143,11 +143,11 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
             ref={fileRef}
             type="file"
             accept="image/png,image/jpeg,image/webp"
-            className="sr-only"
+            className="peer sr-only"
             id="photo-input"
             onChange={(e) => void onPhoto(e.target.files?.[0])}
           />
-          <label htmlFor="photo-input" className={`${btn.secondary} cursor-pointer`}>
+          <label htmlFor="photo-input" className={`${btn.secondary} cursor-pointer peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent-text`}>
             {p.photo ? f.photoChange : f.photoUpload}
           </label>
           {p.photo && (

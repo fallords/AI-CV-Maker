@@ -86,7 +86,7 @@ export function LandingContent() {
           <p className="mt-3 max-w-2xl text-fg-muted">{l.templatesBody}</p>
           <ul className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
             {TEMPLATE_IDS.map((id) => (
-              <li key={id} className="flex flex-col">
+              <li key={id} className="flex flex-col rounded-xl border border-line bg-raised/60 p-5">
                 <div
                   className="relative mx-auto overflow-hidden rounded-md bg-paper shadow-lg shadow-black/50 ring-1 ring-line"
                   style={{ width: A4_PX * THUMB_SCALE, height: A4_PX * THUMB_SCALE * 1.414 }}

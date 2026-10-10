@@ -27,6 +27,7 @@
   --color-accent-text: #9cc0a8; /* links, active nav, focus ring */
   --color-accent-soft: #15241b; /* tinted panels */
   --color-accent-line: #4a7a5c; /* borders of accent elements */
+  --color-accent-control: #5f9a74; /* checkbox fill: >= 3:1 on dark surfaces */
   /* Gunmetal */
   --color-steel: #8d979e;
   /* Status (muted, never bright) */
@@ -67,6 +68,12 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-accent-text);
   outline-offset: 2px;
+}
+
+/* Links inside the white CV preview need a dark ring to stay visible. */
+.cv-sheet :focus-visible {
+  outline: 3px solid #1b4332;
+  outline-offset: 1px;
 }
 
 dialog::backdrop {
@@ -129,7 +136,8 @@ dialog::backdrop {
   display: flex;
   flex-wrap: wrap;
   row-gap: 0.5mm;
-  overflow: hidden;
+  /* Clip only horizontally, so focus rings on contact links are not cut off. */
+  overflow-x: clip;
   margin: 2.5mm 0 0 -2mm !important;
   font-size: 9pt;
   color: var(--cv-muted);

@@ -28,7 +28,7 @@ export function LanguageSwitcher() {
           onClick={() => setLang(l)}
           aria-pressed={lang === l}
           aria-label={l === "en" ? "English" : "Bahasa Indonesia"}
-          className={`min-h-8 min-w-10 rounded px-2 uppercase ${lang === l ? "bg-accent text-accent-fg" : "text-fg-muted hover:bg-overlay hover:text-fg"}`}
+          className={`min-h-8 min-w-10 rounded px-2 uppercase ${lang === l ? "bg-accent text-accent-fg ring-1 ring-accent-text" : "text-fg-muted hover:bg-overlay hover:text-fg"}`}
         >
           {l}
         </button>

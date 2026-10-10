@@ -20,7 +20,7 @@ function FormCard({ id, title, children }: { id: string; title: string; children
       aria-labelledby={`${id}-title`}
       className="scroll-mt-32 rounded-lg border border-line bg-surface p-4 shadow-sm shadow-black/40 sm:p-6"
     >
-      <h2 id={`${id}-title`} className="mb-4 text-base font-semibold tracking-tight text-fg">
+      <h2 id={`${id}-title`} className="mb-4 font-display text-xl font-semibold tracking-tight text-fg">
         {title}
       </h2>
       {children}
@@ -42,7 +42,7 @@ export function CVForm(props: SectionProps) {
   ];
   return (
     <div className="space-y-4">
-      <nav aria-label={f.sectionNav} className="flex gap-1 overflow-x-auto pb-1">
+      <nav aria-label={f.sectionNav} className="flex gap-1 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)]">
         {sections.map((s) => (
           <a
             key={s.id}

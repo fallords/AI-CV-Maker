@@ -28,7 +28,7 @@ export function PrivacyContent() {
           </section>
         ))}
       </div>
-      <div className="mt-12 rounded-lg border border-danger-line bg-danger-soft p-5 shadow-sm shadow-black/40">
+      <div className="mt-12 rounded-lg border border-danger-line bg-surface p-5 shadow-sm shadow-black/40">
         <button type="button" className={btn.danger} onClick={() => setConfirmOpen(true)}>
           {p.eraseButton}
         </button>

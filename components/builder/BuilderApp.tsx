@@ -235,7 +235,7 @@ export function BuilderApp() {
     <>
       <div className="no-print flex min-h-0 flex-1 flex-col">
         {/* Toolbar */}
-        <div className="z-20 border-b border-line bg-surface/95 shadow-sm shadow-black/40 backdrop-blur lg:sticky lg:top-0">
+        <div className="z-20 border-b border-line bg-surface shadow-sm shadow-black/40 lg:sticky lg:top-0">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-3 px-4 py-3">
             <div className="flex min-w-0 flex-1 flex-wrap items-end gap-3">
               <label className="flex flex-col text-xs font-medium tracking-wide text-fg-muted">
@@ -490,7 +490,7 @@ export function BuilderApp() {
         <label className="mt-3 flex items-center gap-2">
           <input
             type="checkbox"
-            className="size-5 accent-accent"
+            className="size-5 accent-accent-control"
             checked={hidePrintHint}
             onChange={(e) => setHidePrintHint(e.target.checked)}
           />
