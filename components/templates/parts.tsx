@@ -1,21 +1,90 @@
 /**
- * Building blocks shared by every CV template. All of them return null when their
- * data is empty, so empty sections are omitted from the CV automatically.
+ * Building blocks shared by every CV template (and the cover letter, which reuses the
+ * template headers). All of them return null when their data is empty, so empty
+ * sections are omitted from the document automatically.
  */
 
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 import { CV_LABELS, formatMonth, formatRange, joinNonEmpty, toBlocks, type CVLabels } from "@/lib/cv-format";
-import { filledItems, type CVData, type SkillItem } from "@/lib/cv-schema";
+import {
+  filledCustomItems,
+  filledItems,
+  type CVData,
+  type CustomSection,
+  type Language,
+  type LanguageItem,
+  type PersonalInfo,
+  type SkillItem,
+} from "@/lib/cv-schema";
+import {
+  customSectionKey,
+  findCustomSection,
+  isBuiltinSection,
+  visibleSectionsInOrder,
+  type BuiltinSectionKey,
+  type SectionKey,
+} from "@/lib/cv-sections";
 import { displayUrl, safeHref } from "@/lib/cv-validation";
+import type { DocStyle } from "@/lib/doc-style";
+import { docRootProps } from "./style";
 
-export type SectionKey = "summary" | "experience" | "education" | "projects" | "skills" | "certifications";
+export type { SectionKey } from "@/lib/cv-sections";
 
 export interface TemplateProps {
   cv: CVData;
 }
 
+/** How a template lists short items (skills, languages, interests) and certifications. */
+export interface TemplateOptions {
+  /** "list": label + comma-separated line (ATS friendly). "chips": scannable tags. */
+  tags: "list" | "chips";
+  /** One-line certification entries. */
+  compactCertifications: boolean;
+}
+
+/** Contact fields shared by a CV's personal section and a letter's sender. */
+export type ContactInfo = Pick<PersonalInfo, "email" | "phone" | "city" | "country" | "linkedin" | "website">;
+
+/** What a template header shows. CVs pass their personal section, letters their sender. */
+export interface HeaderProps {
+  name: string;
+  title: string;
+  contact: ContactInfo;
+  /** data: URL; only templates that show photos use it. */
+  photo?: string;
+}
+
+/**
+ * Heading for a custom section whose title was left blank (the checker asks the user to
+ * name it). Lives here, next to the other in-document labels, in the document's language.
+ */
+export const UNTITLED_SECTION_LABEL: Record<Language, string> = {
+  en: "Additional Information",
+  id: "Informasi Tambahan",
+};
+
 export function labelsFor(cv: CVData): CVLabels {
-  return CV_LABELS[cv.meta.cvLanguage];
+  return CV_LABELS[cv.meta.cvLanguage] ?? CV_LABELS.en;
+}
+
+/** The `.cv-doc` root element with the template class and the document's appearance settings. */
+export function DocRoot({
+  templateClass,
+  style,
+  extraClass,
+  children,
+}: {
+  templateClass: string;
+  style: DocStyle | undefined;
+  extraClass?: string;
+  children: ReactNode;
+}) {
+  const props = docRootProps(templateClass, style, extraClass);
+  return (
+    <div className={props.className} style={props.style}>
+      {children}
+    </div>
+  );
 }
 
 export function RichText({ text, className }: { text: string; className?: string }) {
@@ -44,17 +113,17 @@ export function MaybeLink({ value, children }: { value: string; children?: React
   return href ? <a href={href}>{content}</a> : <>{content}</>;
 }
 
+function MailLink({ email }: { email: string }) {
+  const value = email.trim();
+  return <a href={`mailto:${value}`}>{value}</a>;
+}
+
 /** Contact details in a fixed order; the caller decides layout via className. */
-export function ContactItems({ cv, className }: { cv: CVData; className?: string }) {
-  const p = cv.personal;
+export function ContactItems({ contact, className }: { contact: ContactInfo; className?: string }) {
+  const p = contact;
   const items: ReactNode[] = [];
   const location = joinNonEmpty([p.city, p.country]);
-  if (p.email.trim())
-    items.push(
-      <a key="email" href={`mailto:${p.email.trim()}`}>
-        {p.email.trim()}
-      </a>,
-    );
+  if (p.email.trim()) items.push(<MailLink key="email" email={p.email} />);
   if (p.phone.trim()) items.push(<span key="phone">{p.phone.trim()}</span>);
   if (location) items.push(<span key="loc">{location}</span>);
   if (p.linkedin.trim()) items.push(<MaybeLink key="li" value={p.linkedin} />);
@@ -73,11 +142,22 @@ export function ContactItems({ cv, className }: { cv: CVData; className?: string
  * A section whose heading is kept on the same page as its first entry
  * (headings never end up alone at the bottom of a page).
  */
-export function Section({ id, title, children }: { id: SectionKey; title: string; children: ReactNode[] }) {
+export function Section({
+  id,
+  sectionKey,
+  title,
+  children,
+}: {
+  /** Class suffix: the built-in key, or "custom". */
+  id: string;
+  sectionKey: SectionKey;
+  title: string;
+  children: ReactNode[];
+}) {
   if (children.length === 0) return null;
   const [first, ...rest] = children;
   return (
-    <section className={`cv-section cv-section-${id}`} aria-label={title}>
+    <section className={`cv-section cv-section-${id}`} aria-label={title} data-section={sectionKey}>
       <div className="cv-keep">
         <h2 className="cv-heading">{title}</h2>
         {first}
@@ -88,21 +168,31 @@ export function Section({ id, title, children }: { id: SectionKey; title: string
 }
 
 function EntryHead({ title, sub, date }: { title: string; sub?: string; date?: string }) {
+  const t = title.trim();
+  const s = sub?.trim() ?? "";
+  const d = date?.trim() ?? "";
+  if (!t && !s && !d) return null;
   return (
     <div className="cv-entry-head">
       <div className="cv-entry-titles">
-        {title && <h3 className="cv-entry-title">{title}</h3>}
-        {sub && <p className="cv-entry-sub">{sub}</p>}
+        {t && <h3 className="cv-entry-title">{t}</h3>}
+        {s && <p className="cv-entry-sub">{s}</p>}
       </div>
-      {date && <p className="cv-entry-date">{date}</p>}
+      {d && <p className="cv-entry-date">{d}</p>}
     </div>
   );
+}
+
+/** First non-blank value, trimmed. */
+function firstOf(...values: string[]): string {
+  for (const v of values) if (v.trim()) return v.trim();
+  return "";
 }
 
 export function SummarySection({ cv }: TemplateProps) {
   if (!cv.summary.trim()) return null;
   return (
-    <Section id="summary" title={labelsFor(cv).summary}>
+    <Section id="summary" sectionKey="summary" title={labelsFor(cv).summary}>
       {[<RichText key="s" text={cv.summary} />]}
     </Section>
   );
@@ -114,15 +204,15 @@ export function ExperienceSection({ cv }: TemplateProps) {
   const items = filledItems(cv, "experience").map((e) => (
     <article key={e.id} className="cv-entry">
       <EntryHead
-        title={e.jobTitle || e.company}
-        sub={joinNonEmpty([e.jobTitle ? e.company : "", e.location], " · ")}
+        title={firstOf(e.jobTitle, e.company)}
+        sub={joinNonEmpty([e.jobTitle.trim() ? e.company : "", e.location], " · ")}
         date={formatRange(e.startDate, e.endDate, lang, e.current)}
       />
       <RichText text={e.description} />
     </article>
   ));
   return (
-    <Section id="experience" title={l.experience}>
+    <Section id="experience" sectionKey="experience" title={l.experience}>
       {items}
     </Section>
   );
@@ -145,7 +235,7 @@ export function EducationSection({ cv }: TemplateProps) {
     );
   });
   return (
-    <Section id="education" title={l.education}>
+    <Section id="education" sectionKey="education" title={l.education}>
       {items}
     </Section>
   );
@@ -155,7 +245,7 @@ export function ProjectsSection({ cv }: TemplateProps) {
   const l = labelsFor(cv);
   const items = filledItems(cv, "projects").map((p) => (
     <article key={p.id} className="cv-entry">
-      <EntryHead title={p.name} sub={p.role ? `${l.role}: ${p.role}` : ""} />
+      <EntryHead title={p.name} sub={p.role.trim() ? `${l.role}: ${p.role.trim()}` : ""} />
       <RichText text={p.description} />
       {(p.technologies.trim() || p.url.trim()) && (
         <p className="cv-meta-line">
@@ -171,7 +261,7 @@ export function ProjectsSection({ cv }: TemplateProps) {
     </article>
   ));
   return (
-    <Section id="projects" title={l.projects}>
+    <Section id="projects" sectionKey="projects" title={l.projects}>
       {items}
     </Section>
   );
@@ -206,7 +296,7 @@ export function SkillsSection({ cv, variant = "list" }: TemplateProps & { varian
     ),
   );
   return (
-    <Section id="skills" title={l.skills}>
+    <Section id="skills" sectionKey="skills" title={l.skills}>
       {rows}
     </Section>
   );
@@ -238,23 +328,184 @@ export function CertificationsSection({ cv, compact = false }: TemplateProps & {
       </article>
     ) : (
       <article key={c.id} className="cv-entry">
-        <EntryHead title={c.name || c.issuer} sub={c.name ? c.issuer : ""} date={formatMonth(c.issueDate, lang)} />
+        <EntryHead
+          title={firstOf(c.name, c.issuer)}
+          sub={c.name.trim() ? c.issuer : ""}
+          date={formatMonth(c.issueDate, lang)}
+        />
         {credentialNode && <p className="cv-meta-line">{credentialNode}</p>}
       </article>
     );
   });
   return (
-    <Section id="certifications" title={l.certifications}>
+    <Section id="certifications" sectionKey="certifications" title={l.certifications}>
       {items}
     </Section>
   );
 }
 
-export const SECTION_RENDERERS: Record<SectionKey, (props: TemplateProps) => ReactNode> = {
-  summary: SummarySection,
-  experience: ExperienceSection,
-  education: EducationSection,
-  projects: ProjectsSection,
-  skills: SkillsSection,
-  certifications: CertificationsSection,
+/** Organisations, student bodies and volunteering: laid out like work experience. */
+export function OrganizationsSection({ cv }: TemplateProps) {
+  const l = labelsFor(cv);
+  const lang = cv.meta.cvLanguage;
+  const items = filledItems(cv, "organizations").map((o) => (
+    <article key={o.id} className="cv-entry">
+      <EntryHead
+        title={firstOf(o.role, o.organization)}
+        sub={joinNonEmpty([o.role.trim() ? o.organization : "", o.location], " · ")}
+        date={formatRange(o.startDate, o.endDate, lang, o.current)}
+      />
+      <RichText text={o.description} />
+    </article>
+  ));
+  return (
+    <Section id="organizations" sectionKey="organizations" title={l.organizations}>
+      {items}
+    </Section>
+  );
+}
+
+export function AwardsSection({ cv }: TemplateProps) {
+  const l = labelsFor(cv);
+  const lang = cv.meta.cvLanguage;
+  const items = filledItems(cv, "awards").map((a) => (
+    <article key={a.id} className="cv-entry">
+      <EntryHead
+        title={firstOf(a.title, a.issuer)}
+        sub={a.title.trim() ? a.issuer : ""}
+        date={formatMonth(a.date, lang)}
+      />
+      <RichText text={a.description} />
+    </article>
+  ));
+  return (
+    <Section id="awards" sectionKey="awards" title={l.awards}>
+      {items}
+    </Section>
+  );
+}
+
+export function ReferencesSection({ cv }: TemplateProps) {
+  const l = labelsFor(cv);
+  const items = filledItems(cv, "references").map((r) => {
+    const position = joinNonEmpty([r.position, r.organization]);
+    const details: ReactNode[] = [];
+    if (r.relationship.trim()) details.push(<span key="rel">{r.relationship.trim()}</span>);
+    if (r.email.trim()) details.push(<MailLink key="email" email={r.email} />);
+    if (r.phone.trim()) details.push(<span key="phone">{r.phone.trim()}</span>);
+    return (
+      <article key={r.id} className="cv-entry cv-entry-reference">
+        <EntryHead title={firstOf(r.name, position)} sub={r.name.trim() ? position : ""} />
+        {details.length > 0 && (
+          <p className="cv-meta-line">
+            {details.map((d, i) => (
+              <Fragment key={i}>
+                {i > 0 && <span className="cv-sep"> · </span>}
+                {d}
+              </Fragment>
+            ))}
+          </p>
+        )}
+      </article>
+    );
+  });
+  return (
+    <Section id="references" sectionKey="references" title={l.references}>
+      {items}
+    </Section>
+  );
+}
+
+function languageText(item: LanguageItem, l: CVLabels): string {
+  return item.level ? `${item.name.trim()} (${l.languageLevels[item.level]})` : item.name.trim();
+}
+
+/** Short items as one comma-separated line ("list") or as tags ("chips"). */
+function TagList({ items, variant }: { items: { id: string; text: string }[]; variant: "list" | "chips" }) {
+  return variant === "chips" ? (
+    <ul className="cv-chips">
+      {items.map((item) => (
+        <li key={item.id}>{item.text}</li>
+      ))}
+    </ul>
+  ) : (
+    <p className="cv-skill-line cv-tag-line">{items.map((item) => item.text).join(", ")}</p>
+  );
+}
+
+export function LanguagesSection({ cv, variant = "list" }: TemplateProps & { variant?: "list" | "chips" }) {
+  const l = labelsFor(cv);
+  const items = filledItems(cv, "languages")
+    .filter((x) => x.name.trim())
+    .map((x) => ({ id: x.id, text: languageText(x, l) }));
+  return (
+    <Section id="languages" sectionKey="languages" title={l.languages}>
+      {items.length > 0 ? [<TagList key="list" items={items} variant={variant} />] : []}
+    </Section>
+  );
+}
+
+export function InterestsSection({ cv, variant = "list" }: TemplateProps & { variant?: "list" | "chips" }) {
+  const l = labelsFor(cv);
+  const items = filledItems(cv, "interests")
+    .filter((x) => x.name.trim())
+    .map((x) => ({ id: x.id, text: x.name.trim() }));
+  return (
+    <Section id="interests" sectionKey="interests" title={l.interests}>
+      {items.length > 0 ? [<TagList key="list" items={items} variant={variant} />] : []}
+    </Section>
+  );
+}
+
+/** A user-defined section: entries with a title, subtitle, dates and a description. */
+export function CustomSectionBlock({ cv, section }: TemplateProps & { section: CustomSection }) {
+  const lang = cv.meta.cvLanguage;
+  const items = filledCustomItems(section).map((item) => (
+    <article key={item.id} className="cv-entry">
+      <EntryHead
+        title={firstOf(item.title, item.subtitle)}
+        sub={item.title.trim() ? item.subtitle : ""}
+        date={formatRange(item.startDate, item.endDate, lang)}
+      />
+      <RichText text={item.description} />
+    </article>
+  ));
+  const title = section.title.trim() || (UNTITLED_SECTION_LABEL[lang] ?? UNTITLED_SECTION_LABEL.en);
+  return (
+    <Section id="custom" sectionKey={customSectionKey(section.id)} title={title}>
+      {items}
+    </Section>
+  );
+}
+
+type SectionRenderer = (cv: CVData, options: TemplateOptions) => ReactNode;
+
+export const SECTION_RENDERERS: Record<BuiltinSectionKey, SectionRenderer> = {
+  summary: (cv) => <SummarySection cv={cv} />,
+  experience: (cv) => <ExperienceSection cv={cv} />,
+  education: (cv) => <EducationSection cv={cv} />,
+  projects: (cv) => <ProjectsSection cv={cv} />,
+  skills: (cv, o) => <SkillsSection cv={cv} variant={o.tags} />,
+  certifications: (cv, o) => <CertificationsSection cv={cv} compact={o.compactCertifications} />,
+  organizations: (cv) => <OrganizationsSection cv={cv} />,
+  awards: (cv) => <AwardsSection cv={cv} />,
+  languages: (cv, o) => <LanguagesSection cv={cv} variant={o.tags} />,
+  references: (cv) => <ReferencesSection cv={cv} />,
+  interests: (cv, o) => <InterestsSection cv={cv} variant={o.tags} />,
 };
+
+/**
+ * Every visible section in the user's order (lib/cv-sections.ts): built-in sections
+ * and custom sections alike. Empty sections render nothing.
+ */
+export function CVSections({ cv, options }: TemplateProps & { options: TemplateOptions }) {
+  return (
+    <>
+      {visibleSectionsInOrder(cv).map((key) => {
+        if (isBuiltinSection(key)) return <Fragment key={key}>{SECTION_RENDERERS[key](cv, options)}</Fragment>;
+        const section = findCustomSection(cv, key);
+        return section ? <CustomSectionBlock key={key} cv={cv} section={section} /> : null;
+      })}
+    </>
+  );
+}

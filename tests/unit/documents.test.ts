@@ -4,6 +4,7 @@ import {
   ACTIVE_DOC_KEY,
   CORRUPT_BACKUP_KEY,
   CORRUPT_DOC_KEY,
+  CORRUPT_DRAFT_KEY,
   DOCS_INDEX_KEY,
   DOC_KEY,
   MAX_DOC_NAME,
@@ -50,6 +51,16 @@ function denyStorage() {
   });
 }
 
+/** A completely full storage: every write that would use more space fails with a quota error. */
+function storageFull() {
+  const original = Storage.prototype.setItem;
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+    const current = this.getItem(key);
+    if (current === null || value.length > current.length) throw new DOMException("full", "QuotaExceededError");
+    return original.call(this, key, value);
+  });
+}
+
 function quotaFor(match: (key: string) => boolean) {
   const original = Storage.prototype.setItem;
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
@@ -88,6 +99,8 @@ describe("creating and listing documents", () => {
       schemaVersion: CV_SCHEMA_VERSION,
       savedAt: "2026-10-13T10:00:00.000Z",
       kind: "cv",
+      name: "My CV",
+      createdAt: "2026-10-13T10:00:00.000Z",
       data: cvDoc().data,
     });
     expect(JSON.parse(localStorage.getItem(DOCS_INDEX_KEY)!)).toEqual([meta]);
@@ -155,10 +168,49 @@ describe("loading and saving", () => {
   });
 
   it("adds a saved document back to the index instead of losing it", () => {
+    at("2026-01-01T00:00:00.000Z");
     const meta = created(createDoc(cvDoc(), "Mine"));
     localStorage.setItem(DOCS_INDEX_KEY, "[]");
+    at("2026-02-01T00:00:00.000Z");
     expect(saveDoc(meta.id, cvDoc("Back Again")).ok).toBe(true);
-    expect(listDocs()).toEqual([expect.objectContaining({ id: meta.id, name: "Back Again", kind: "cv" })]);
+    // The name and creation time the document was stored with are kept.
+    expect(listDocs()).toEqual([{ ...meta, updatedAt: "2026-02-01T00:00:00.000Z" }]);
+  });
+
+  it("names a saved document that was never indexed after its content", () => {
+    expect(saveDoc("fresh1", cvDoc("Brand New")).ok).toBe(true);
+    expect(listDocs()).toEqual([expect.objectContaining({ id: "fresh1", name: "Brand New", kind: "cv" })]);
+  });
+
+  it("stores the name and creation time with the document on every save", () => {
+    at("2026-01-01T00:00:00.000Z");
+    const meta = created(createDoc(cvDoc(), "Keep me"));
+    at("2026-03-01T00:00:00.000Z");
+    expect(saveDoc(meta.id, cvDoc("Changed")).ok).toBe(true);
+    expect(JSON.parse(localStorage.getItem(DOC_KEY(meta.id))!)).toMatchObject({
+      savedAt: "2026-03-01T00:00:00.000Z",
+      name: "Keep me",
+      createdAt: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("keeps working when storage is completely full: reads and deletes succeed, saves report quota", () => {
+    const a = created(createDoc(cvDoc("A"), "A"));
+    const b = created(createDoc(cvDoc("B"), "B"));
+    setActiveDocId(a.id);
+    storageFull();
+    expect(listDocs().map((m) => m.id).sort()).toEqual([a.id, b.id].sort());
+    const loaded = loadDoc(a.id);
+    expect(loaded.status === "ok" && loaded.doc.kind === "cv" && loaded.doc.data.personal.fullName).toBe("A");
+    expect(getActiveDocId()).toBe(a.id);
+    expect(saveDoc(a.id, cvDoc("A2"))).toEqual({ ok: false, reason: "quota" });
+    expect(createDoc(cvDoc(), "New")).toEqual({ ok: false, reason: "quota" });
+    expect(duplicateDoc(a.id, "Copy")).toEqual({ ok: false, reason: "quota" });
+    // Deleting frees space even though nothing can be written.
+    expect(deleteDoc(b.id)).toBe(true);
+    expect(localStorage.getItem(DOC_KEY(b.id))).toBeNull();
+    vi.restoreAllMocks();
+    expect(listDocs().map((m) => m.id)).toEqual([a.id]);
   });
 
   it("reports missing documents and drops their stale index entries", () => {
@@ -238,15 +290,67 @@ describe("loading and saving", () => {
 });
 
 describe("index recovery", () => {
-  it("rebuilds a corrupted index from the stored documents", () => {
+  it("rebuilds a corrupted index from the stored documents, keeping names and creation times", () => {
+    at("2026-01-01T00:00:00.000Z");
     const a = created(createDoc(cvDoc("Ana Example"), "Custom name"));
     const b = created(createDoc(letterDoc(), "Letter"));
+    at("2026-02-01T00:00:00.000Z");
+    expect(saveDoc(a.id, cvDoc("Ana Example")).ok).toBe(true);
+    expect(renameDoc(b.id, "Renamed letter")).toBe(true);
     localStorage.setItem(DOCS_INDEX_KEY, "{not json");
     const list = listDocs();
     expect(list.map((m) => m.id).sort()).toEqual([a.id, b.id].sort());
-    expect(list.find((m) => m.id === a.id)).toMatchObject({ kind: "cv", name: "Ana Example" });
-    expect(list.find((m) => m.id === b.id)).toMatchObject({ kind: "letter", name: "Cover letter – Example Analytics Ltd." });
+    expect(list.find((m) => m.id === a.id)).toEqual({
+      id: a.id,
+      kind: "cv",
+      name: "Custom name",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-02-01T00:00:00.000Z",
+    });
+    expect(list.find((m) => m.id === b.id)).toEqual({
+      id: b.id,
+      kind: "letter",
+      name: "Renamed letter",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
     expect(Array.isArray(JSON.parse(localStorage.getItem(DOCS_INDEX_KEY)!))).toBe(true);
+  });
+
+  it("falls back to default names for documents stored without a valid name", () => {
+    localStorage.setItem(
+      DOC_KEY("old1"),
+      JSON.stringify({ schemaVersion: 2, savedAt: "2026-01-01T00:00:00.000Z", kind: "cv", name: 42, createdAt: "never", data: sampleCV() }),
+    );
+    expect(listDocs()).toEqual([
+      { id: "old1", kind: "cv", name: "Alex Example", createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z" },
+    ]);
+  });
+
+  it("never lists blank names from a hostile index", () => {
+    const a = created(createDoc(cvDoc("A"), "Chosen"));
+    localStorage.setItem(
+      DOCS_INDEX_KEY,
+      JSON.stringify([
+        { id: a.id, kind: "cv", name: { evil: true }, createdAt: "x", updatedAt: "x" },
+        { id: "ghost", kind: "cv", name: "   ", createdAt: "x", updatedAt: "x" },
+        { id: "ghost2", kind: "letter", name: null },
+      ]),
+    );
+    const list = listDocs();
+    expect(list.map((m) => m.id)).toEqual([a.id]);
+    expect(list[0].name).toBe("Chosen");
+    expect(list.every((m) => m.name.trim().length > 0)).toBe(true);
+  });
+
+  it("rejects ids that name Object.prototype members", () => {
+    localStorage.setItem(DOC_KEY("__proto__"), JSON.stringify({ schemaVersion: 2, savedAt: "x", kind: "cv", data: sampleCV() }));
+    localStorage.setItem(DOCS_INDEX_KEY, JSON.stringify([{ id: "constructor", kind: "cv", name: "C" }]));
+    expect(listDocs()).toEqual([]);
+    expect(loadDoc("__proto__")).toEqual({ status: "missing" });
+    expect(saveDoc("prototype", cvDoc())).toEqual({ ok: false, reason: "unavailable" });
+    localStorage.setItem(ACTIVE_DOC_KEY, "constructor");
+    expect(getActiveDocId()).toBeNull();
   });
 
   it("drops malformed and duplicate index entries", () => {
@@ -296,6 +400,26 @@ describe("rename, duplicate, delete and active document", () => {
     expect(listDocs()[0].name).toBe("New name");
     expect(renameDoc(meta.id, "y".repeat(300))).toBe(true);
     expect(listDocs()[0].name).toHaveLength(MAX_DOC_NAME);
+  });
+
+  it("keeps the new name in the stored copy so it survives an index rebuild", () => {
+    const meta = created(createDoc(cvDoc(), "Old"));
+    const before = loadDoc(meta.id);
+    expect(renameDoc(meta.id, "New name")).toBe(true);
+    expect(JSON.parse(localStorage.getItem(DOC_KEY(meta.id))!)).toMatchObject({ name: "New name", createdAt: meta.createdAt });
+    // The content is untouched.
+    const after = loadDoc(meta.id);
+    expect(after.status === "ok" && after.doc).toEqual(before.status === "ok" && before.doc);
+    localStorage.removeItem(DOCS_INDEX_KEY);
+    expect(listDocs()).toEqual([{ ...meta, name: "New name" }]);
+  });
+
+  it("still renames in the index when the stored copy cannot be rewritten", () => {
+    const meta = created(createDoc(cvDoc(), "Old"));
+    quotaFor((key) => key === DOC_KEY(meta.id));
+    expect(renameDoc(meta.id, "New")).toBe(true);
+    vi.restoreAllMocks();
+    expect(listDocs()[0].name).toBe("New");
   });
 
   it("duplicates a document under a new id and name", () => {
@@ -436,12 +560,83 @@ describe("migrating the legacy single draft", () => {
     expect(listDocs()).toEqual(after);
   });
 
-  it("leaves legacy keys alone once documents exist", () => {
-    created(createDoc(cvDoc(), "Existing"));
-    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV()));
+  it("migrates legacy keys left behind after documents exist", () => {
+    const existing = created(createDoc(cvDoc(), "Existing"));
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    const result = migrateLegacyStorage();
+    expect(result.migrated).toHaveLength(1);
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(listDocs().map((m) => m.id).sort()).toEqual([existing.id, result.migrated[0].id].sort());
+    expect(getActiveDocId()).toBe(result.migrated[0].id);
+    // The existing document is untouched and a second run is a no-op.
+    const snapshot = { ...localStorage };
     expect(migrateLegacyStorage()).toEqual({ migrated: [], corrupted: false });
-    expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
-    expect(listDocs()).toHaveLength(1);
+    expect({ ...localStorage }).toEqual(snapshot);
+  });
+
+  it("recovers a draft that did not fit, even after the app created a fresh document", () => {
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    quotaFor((key) => key.startsWith("free-cv-maker:doc:"));
+    expect(migrateLegacyStorage()).toEqual({ migrated: [], corrupted: false });
+    vi.restoreAllMocks();
+    // Start-up flow: no document to open, so an empty one is created and opened.
+    const fresh = created(createDoc({ kind: "cv", data: createEmptyCV() }, ""));
+    setActiveDocId(fresh.id);
+    expect(localStorage.getItem(DOCS_INDEX_KEY)).not.toBeNull();
+
+    const result = migrateLegacyStorage();
+    expect(result.migrated).toHaveLength(1);
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(getActiveDocId()).toBe(result.migrated[0].id);
+    const loaded = loadDoc(result.migrated[0].id);
+    expect(loaded.status === "ok" && loaded.doc).toEqual({ kind: "cv", data: sampleCV("graduate") });
+    expect(listDocs()).toHaveLength(2);
+  });
+
+  it("recovers a backup that did not fit without taking over the migrated draft", () => {
+    const backup = sampleCV();
+    backup.personal.fullName = "Backup Person";
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    localStorage.setItem(BACKUP_KEY, legacyPayload(backup));
+    let docWrites = 0;
+    const original = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key.startsWith("free-cv-maker:doc:") && ++docWrites > 1) throw new DOMException("full", "QuotaExceededError");
+      return original.call(this, key, value);
+    });
+    const first = migrateLegacyStorage();
+    vi.restoreAllMocks();
+    expect(first.migrated).toHaveLength(1);
+    const draftId = first.migrated[0].id;
+    expect(getActiveDocId()).toBe(draftId);
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(BACKUP_KEY)).not.toBeNull();
+
+    const second = migrateLegacyStorage();
+    expect(second.migrated).toEqual([expect.objectContaining({ name: "Backup Person" })]);
+    expect(localStorage.getItem(BACKUP_KEY)).toBeNull();
+    expect(getActiveDocId()).toBe(draftId);
+    expect(listDocs()).toHaveLength(2);
+  });
+
+  it("does not overwrite older corrupted data with a newly corrupted draft", () => {
+    localStorage.setItem(CORRUPT_KEY, "OLDER-CORRUPT");
+    localStorage.setItem(DRAFT_KEY, "{newer bad");
+    expect(migrateLegacyStorage()).toEqual({ migrated: [], corrupted: true });
+    expect(localStorage.getItem(CORRUPT_KEY)).toBe("OLDER-CORRUPT");
+    expect(localStorage.getItem(CORRUPT_DRAFT_KEY)).toBe("{newer bad");
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+
+    // Later corruptions get numbered keys instead of replacing either copy.
+    localStorage.setItem(DRAFT_KEY, "{third");
+    localStorage.setItem(BACKUP_KEY, "{fourth");
+    localStorage.setItem(CORRUPT_BACKUP_KEY, "OLDER-BACKUP");
+    expect(migrateLegacyStorage()).toEqual({ migrated: [], corrupted: true });
+    expect(localStorage.getItem(CORRUPT_KEY)).toBe("OLDER-CORRUPT");
+    expect(localStorage.getItem(CORRUPT_DRAFT_KEY)).toBe("{newer bad");
+    expect(localStorage.getItem(`${CORRUPT_DRAFT_KEY}:2`)).toBe("{third");
+    expect(localStorage.getItem(CORRUPT_BACKUP_KEY)).toBe("OLDER-BACKUP");
+    expect(localStorage.getItem(`${CORRUPT_BACKUP_KEY}:2`)).toBe("{fourth");
   });
 
   it("migrates v1 data, unversioned drafts included", () => {

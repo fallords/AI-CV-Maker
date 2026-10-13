@@ -1,11 +1,13 @@
 /** Pure state transitions for the CV editor (unit-tested in tests/unit/cv-reducer.test.ts). */
 
 import {
+  LIST_SECTIONS,
   MAX_CUSTOM_ITEMS,
   MAX_CUSTOM_SECTIONS,
   createId,
   emptyCustomItem,
   emptyItem,
+  isValidId,
   type CVData,
   type CVMeta,
   type CustomItem,
@@ -66,7 +68,18 @@ function mapCustom(cv: CVData, sectionId: string, fn: (s: CustomSection) => Cust
   return { ...cv, customSections };
 }
 
-const ID_RE = /^[\w-]{1,64}$/;
+/** True when any entry of any list or custom section already uses this id. */
+function entryIdTaken(cv: CVData, id: string): boolean {
+  return (
+    LIST_SECTIONS.some((l) => (cv[l] as { id: string }[]).some((i) => i.id === id)) ||
+    cv.customSections.some((cs) => cs.items.some((i) => i.id === id))
+  );
+}
+
+/** The requested entry id when it is valid and unused, otherwise undefined (a fresh id is made). */
+function freeEntryId(cv: CVData, id: string | undefined): string | undefined {
+  return id && isValidId(id) && !entryIdTaken(cv, id) ? id : undefined;
+}
 
 export function cvReducer(cv: CVData, action: CVAction): CVData {
   switch (action.type) {
@@ -80,7 +93,8 @@ export function cvReducer(cv: CVData, action: CVAction): CVData {
       return { ...cv, meta: { ...cv.meta, ...action.patch } };
     case "addItem": {
       const item = emptyItem(action.section);
-      if (action.id) item.id = action.id;
+      const id = freeEntryId(cv, action.id);
+      if (id) item.id = id;
       return mapSection(cv, action.section, (items) => [...items, item]);
     }
     case "updateItem":
@@ -130,7 +144,7 @@ export function cvReducer(cv: CVData, action: CVAction): CVData {
     case "addCustomSection": {
       if (cv.customSections.length >= MAX_CUSTOM_SECTIONS) return cv;
       const taken = (id: string) => cv.customSections.some((s) => s.id === id);
-      const id = action.id && ID_RE.test(action.id) && !taken(action.id) ? action.id : createId();
+      const id = action.id && isValidId(action.id) && !taken(action.id) ? action.id : createId();
       const section: CustomSection = { id, title: action.title, items: [] };
       const sectionOrder = cv.meta.sectionOrder.length
         ? [...cv.meta.sectionOrder, customSectionKey(id)]
@@ -155,7 +169,7 @@ export function cvReducer(cv: CVData, action: CVAction): CVData {
     case "addCustomItem":
       return mapCustom(cv, action.sectionId, (s) => {
         if (s.items.length >= MAX_CUSTOM_ITEMS) return s;
-        const item = emptyCustomItem(action.id || undefined);
+        const item = emptyCustomItem(freeEntryId(cv, action.id));
         return { ...s, items: [...s.items, item] };
       });
     case "updateCustomItem":

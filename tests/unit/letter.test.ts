@@ -11,7 +11,9 @@ import {
   letterParagraphs,
   sanitizeLetter,
   todayIso,
+  type LetterAction as SchemaLetterAction,
   type LetterData,
+  type LetterField as SchemaLetterField,
 } from "@/lib/letter-schema";
 import { richSampleCV, sampleLetter } from "@/lib/sample-cv";
 
@@ -263,5 +265,16 @@ describe("sampleLetter", () => {
     expect(l.recipient.company).toContain("Example");
     expect(letterParagraphs(l.body).length).toBeGreaterThanOrEqual(3);
     expect(formatLetterDate(l.date, "en")).toBe("2 March 2026");
+  });
+});
+
+describe("letter-schema type re-exports", () => {
+  it("exposes LetterAction and LetterField from lib/letter-schema", () => {
+    // Compile-time check (npm run typecheck): the re-exported types are the reducer's types.
+    const field: SchemaLetterField = "subject";
+    const action: SchemaLetterAction = { type: "setField", field, value: "Application" };
+    const sameAction: LetterAction = action;
+    const back: SchemaLetterAction = sameAction;
+    expect(letterReducer(sampleLetter(), back).subject).toBe("Application");
   });
 });

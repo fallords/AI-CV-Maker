@@ -4,7 +4,9 @@
  *
  * Keys:
  *   DOCS_INDEX_KEY        – DocMeta[] (names and timestamps, used for listing)
- *   DOC_KEY(id)           – { schemaVersion, savedAt, kind, data } for one document
+ *   DOC_KEY(id)           – { schemaVersion, savedAt, kind, name, createdAt, data } for one
+ *                           document (name and createdAt mirror the index so a rebuilt
+ *                           index keeps them)
  *   ACTIVE_DOC_KEY        – id of the document the builder opens
  *   CORRUPT_DOC_KEY(id)   – raw contents of a document that could not be read, kept so
  *                           it is not silently destroyed
@@ -14,7 +16,7 @@
  * documents missing from the index (e.g. after a race between two tabs) are added back.
  */
 
-import { CV_SCHEMA_VERSION, createId, isCVEmpty, type CVData, type Language } from "./cv-schema";
+import { CV_SCHEMA_VERSION, createId, isCVEmpty, isValidId, type CVData, type Language } from "./cv-schema";
 import { parseDocumentValue } from "./cv-validation";
 import { LETTER_SCHEMA_VERSION, letterIsEmpty, type LetterData } from "./letter-schema";
 import { fileSafeName, pdfFileName } from "./pdf";
@@ -47,6 +49,12 @@ export interface StoredDoc {
   schemaVersion: number;
   savedAt: string;
   kind: DocKind;
+  /**
+   * Copies of the index entry's name and creation time, so a rebuilt index keeps them.
+   * Optional: documents written before they were added lack them.
+   */
+  name?: string;
+  createdAt?: string;
   data: CVData | LetterData;
 }
 
@@ -63,11 +71,12 @@ const DOC_KEY_PREFIX = `${STORAGE_PREFIX}doc:`;
 export const DOC_KEY = (id: string) => `${DOC_KEY_PREFIX}${id}`;
 export const ACTIVE_DOC_KEY = `${STORAGE_PREFIX}active`;
 export const CORRUPT_DOC_KEY = (id: string) => `${CORRUPT_KEY}:${id}`;
+/** Where a corrupted legacy draft goes when CORRUPT_KEY already holds older corrupted data. */
+export const CORRUPT_DRAFT_KEY = `${CORRUPT_KEY}:draft`;
 /** Where a corrupted legacy backup goes when CORRUPT_KEY is already taken. */
 export const CORRUPT_BACKUP_KEY = `${CORRUPT_KEY}:backup`;
 export const MAX_DOC_NAME = 120;
 
-const DOC_ID_RE = /^[\w-]{1,64}$/;
 const DOC_KINDS: readonly DocKind[] = ["cv", "letter"];
 
 /* ---------------- naming ---------------- */
@@ -111,35 +120,63 @@ function clean(name: string): string {
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null && !Array.isArray(v);
 
+const isTimestamp = (v: unknown): v is string => typeof v === "string" && !Number.isNaN(Date.parse(v));
+
+/**
+ * A valid index entry, or null. Entries without a usable name are dropped too; when their
+ * document is still stored, readIndex lists it again from the stored copy.
+ */
 function sanitizeMeta(v: unknown): DocMeta | null {
   if (!isObject(v)) return null;
-  if (typeof v.id !== "string" || !DOC_ID_RE.test(v.id)) return null;
+  if (!isValidId(v.id)) return null;
   if (typeof v.kind !== "string" || !(DOC_KINDS as readonly string[]).includes(v.kind)) return null;
+  const name = typeof v.name === "string" ? clean(v.name) : "";
+  if (!name) return null;
   return {
     id: v.id,
     kind: v.kind as DocKind,
-    name: typeof v.name === "string" ? clean(v.name) : "",
+    name,
     createdAt: typeof v.createdAt === "string" ? v.createdAt : "",
     updatedAt: typeof v.updatedAt === "string" ? v.updatedAt : "",
   };
 }
 
+interface ParsedStored {
+  doc: AnyDoc;
+  savedAt: string | null;
+  /** Name and creation time stored with the document ("" / null when absent or invalid). */
+  name?: string;
+  createdAt?: string | null;
+}
+
 /** Parses a stored document payload; null when it cannot be read. */
-function parseStored(raw: string): { doc: AnyDoc; savedAt: string | null } | null {
+function parseStored(raw: string): ParsedStored | null {
   try {
     const value: unknown = JSON.parse(raw);
     const result = parseDocumentValue(value);
-    if (!result.ok) return null;
-    const savedAt = isObject(value) && typeof value.savedAt === "string" ? value.savedAt : null;
-    return { doc: result.doc, savedAt };
+    if (!result.ok || !isObject(value)) return null;
+    return {
+      doc: result.doc,
+      savedAt: typeof value.savedAt === "string" ? value.savedAt : null,
+      name: typeof value.name === "string" ? clean(value.name) : "",
+      createdAt: isTimestamp(value.createdAt) ? value.createdAt : null,
+    };
   } catch {
     return null;
   }
 }
 
-function metaFromStored(id: string, doc: AnyDoc, savedAt: string | null): DocMeta {
-  const at = savedAt ?? new Date().toISOString();
-  return { id, kind: doc.kind, name: defaultDocName(doc, docLanguage(doc)), createdAt: at, updatedAt: at };
+/** Index entry for a stored document: its stored name and creation time when valid, else defaults. */
+function metaFromStored(id: string, stored: ParsedStored): DocMeta {
+  const { doc } = stored;
+  const at = stored.savedAt ?? new Date().toISOString();
+  return {
+    id,
+    kind: doc.kind,
+    name: stored.name || defaultDocName(doc, docLanguage(doc)),
+    createdAt: stored.createdAt ?? at,
+    updatedAt: at,
+  };
 }
 
 function writeIndex(storage: Storage, metas: DocMeta[]): void {
@@ -179,7 +216,7 @@ function readIndex(storage: Storage, ignoreId?: string): DocMeta[] {
     const key = storage.key(i);
     if (!key || !key.startsWith(DOC_KEY_PREFIX)) continue;
     const id = key.slice(DOC_KEY_PREFIX.length);
-    if (DOC_ID_RE.test(id) && id !== ignoreId && !known.has(id)) orphans.push(id);
+    if (isValidId(id) && id !== ignoreId && !known.has(id)) orphans.push(id);
   }
   for (const id of orphans) {
     const stored = storage.getItem(DOC_KEY(id));
@@ -195,7 +232,7 @@ function readIndex(storage: Storage, ignoreId?: string): DocMeta[] {
       }
       continue;
     }
-    metas.push(metaFromStored(id, parsed.doc, parsed.savedAt));
+    metas.push(metaFromStored(id, parsed));
     dirty = true;
   }
 
@@ -228,11 +265,14 @@ export function listDocs(): DocMeta[] {
 
 /* ---------------- documents ---------------- */
 
-function payload(doc: AnyDoc, savedAt: string): string {
+/** What DOC_KEY(id) stores; `meta` (when known) supplies the name and creation time kept with it. */
+function payload(doc: AnyDoc, savedAt: string, meta?: Pick<DocMeta, "name" | "createdAt">): string {
   const stored: StoredDoc = {
     schemaVersion: doc.kind === "cv" ? CV_SCHEMA_VERSION : LETTER_SCHEMA_VERSION,
     savedAt,
     kind: doc.kind,
+    ...(meta?.name ? { name: meta.name } : {}),
+    ...(meta && isTimestamp(meta.createdAt) ? { createdAt: meta.createdAt } : {}),
     data: doc.data,
   };
   return JSON.stringify(stored);
@@ -245,7 +285,7 @@ function failure(e: unknown): { ok: false; reason: "unavailable" | "quota" } {
 export function loadDoc(id: string): LoadDocResult {
   const storage = getStorage();
   if (!storage) return { status: "unavailable" };
-  if (!DOC_ID_RE.test(id)) return { status: "missing" };
+  if (!isValidId(id)) return { status: "missing" };
   let raw: string | null;
   let index: DocMeta[];
   try {
@@ -283,7 +323,7 @@ export function loadDoc(id: string): LoadDocResult {
 
   let meta = index.find((m) => m.id === id);
   if (!meta || meta.kind !== parsed.doc.kind) {
-    meta = meta ? { ...meta, kind: parsed.doc.kind } : metaFromStored(id, parsed.doc, parsed.savedAt);
+    meta = meta ? { ...meta, kind: parsed.doc.kind } : metaFromStored(id, parsed);
     const next = [...index.filter((m) => m.id !== id), meta];
     try {
       writeIndex(storage, next);
@@ -302,21 +342,31 @@ export function loadDoc(id: string): LoadDocResult {
 export function saveDoc(id: string, doc: AnyDoc): SaveResult {
   const storage = getStorage();
   if (!storage) return { ok: false, reason: "unavailable" };
-  if (!DOC_ID_RE.test(id)) return { ok: false, reason: "unavailable" };
+  if (!isValidId(id)) return { ok: false, reason: "unavailable" };
   const savedAt = new Date().toISOString();
+  // Read the index first so the stored copy keeps the document's name and creation time.
+  let index: DocMeta[] | null;
   try {
-    storage.setItem(DOC_KEY(id), payload(doc, savedAt));
+    index = readIndex(storage);
+  } catch {
+    index = null;
+  }
+  const i = index ? index.findIndex((m) => m.id === id) : -1;
+  const meta: DocMeta =
+    index && i >= 0 ? { ...index[i], kind: doc.kind, updatedAt: savedAt } : metaFromStored(id, { doc, savedAt });
+  try {
+    storage.setItem(DOC_KEY(id), payload(doc, savedAt, index ? meta : undefined));
   } catch (e) {
     return failure(e);
   }
-  try {
-    const index = readIndex(storage);
-    const i = index.findIndex((m) => m.id === id);
-    if (i >= 0) index[i] = { ...index[i], kind: doc.kind, updatedAt: savedAt };
-    else index.push({ ...metaFromStored(id, doc, savedAt) });
-    writeIndex(storage, index);
-  } catch {
-    /* the document itself is saved; a missing index entry is restored on the next read */
+  if (index) {
+    try {
+      if (i >= 0) index[i] = meta;
+      else index.push(meta);
+      writeIndex(storage, index);
+    } catch {
+      /* the document itself is saved; a missing index entry is restored on the next read */
+    }
   }
   return { ok: true, savedAt };
 }
@@ -344,7 +394,7 @@ function insertDoc(
     updatedAt,
   };
   try {
-    storage.setItem(DOC_KEY(id), payload(doc, updatedAt));
+    storage.setItem(DOC_KEY(id), payload(doc, updatedAt, meta));
   } catch (e) {
     return failure(e);
   }
@@ -378,22 +428,37 @@ export function duplicateDoc(id: string, name: string): CreateDocResult {
   return insertDoc(storage, source.doc, name);
 }
 
-/** Renames a document in the index. Returns false for blank names, unknown ids or unavailable storage. */
+/**
+ * Renames a document in the index (and, best effort, in its stored copy, so a rebuilt
+ * index keeps the name). Returns false for blank names, unknown ids or unavailable storage.
+ */
 export function renameDoc(id: string, name: string): boolean {
   const next = clean(name);
   if (!next) return false;
   const storage = getStorage();
   if (!storage) return false;
+  let meta: DocMeta;
   try {
     const index = readIndex(storage);
     const i = index.findIndex((m) => m.id === id);
     if (i < 0) return false;
-    index[i] = { ...index[i], name: next };
+    meta = { ...index[i], name: next };
+    index[i] = meta;
     writeIndex(storage, index);
-    return true;
   } catch {
     return false;
   }
+  try {
+    const raw = storage.getItem(DOC_KEY(id));
+    const value: unknown = raw === null ? null : JSON.parse(raw);
+    if (isObject(value)) {
+      const stored = { ...value, name: next, ...(isTimestamp(meta.createdAt) ? { createdAt: meta.createdAt } : {}) };
+      storage.setItem(DOC_KEY(id), JSON.stringify(stored));
+    }
+  } catch {
+    /* the index holds the new name; the stored copy catches up on the next save */
+  }
+  return true;
 }
 
 /** Removes the document and its index entry; clears the active id if it pointed there. */
@@ -414,7 +479,7 @@ export function deleteDoc(id: string): boolean {
 export function getActiveDocId(): string | null {
   try {
     const id = getStorage()?.getItem(ACTIVE_DOC_KEY) ?? null;
-    return id !== null && DOC_ID_RE.test(id) ? id : null;
+    return id !== null && isValidId(id) ? id : null;
   } catch {
     return null;
   }
@@ -430,19 +495,54 @@ export function setActiveDocId(id: string): void {
 
 /* ---------------- legacy single-draft storage ---------------- */
 
+/**
+ * The first of `keys` that holds nothing (else a numbered variant of the last one), so
+ * raw data kept from an earlier corruption is never overwritten.
+ */
+function freeCorruptKey(storage: Storage, keys: string[]): string {
+  const last = keys[keys.length - 1];
+  try {
+    for (const key of keys) if (storage.getItem(key) === null) return key;
+    for (let n = 2; n < 100; n++) if (storage.getItem(`${last}:${n}`) === null) return `${last}:${n}`;
+  } catch {
+    /* fall through */
+  }
+  return last;
+}
+
+/** True when the active id points at a stored document. */
+function hasStoredActiveDoc(storage: Storage): boolean {
+  try {
+    const id = storage.getItem(ACTIVE_DOC_KEY);
+    return id !== null && isValidId(id) && storage.getItem(DOC_KEY(id)) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export interface LegacyMigrationResult {
   /** Documents created from the legacy draft (first) and backup. */
   migrated: DocMeta[];
-  /** True when legacy data could not be read; its raw contents were kept under CORRUPT_KEY. */
+  /**
+   * True when legacy data could not be read; its raw contents were kept under CORRUPT_KEY,
+   * or CORRUPT_DRAFT_KEY / CORRUPT_BACKUP_KEY when that already held older data (then
+   * `<that key>:2`, `:3`, … so nothing kept earlier is overwritten).
+   */
   corrupted: boolean;
 }
 
 /**
  * Moves the v1 app's single draft (`free-cv-maker:draft`) and backup (`:backup`) into
- * documents, once: only when one of them exists and the documents index does not.
- * The draft becomes the active document; the backup is named after its content or
- * "Previous draft". Migrated legacy keys are removed. Unreadable legacy data is kept
- * under `free-cv-maker:corrupted` (as before) and the migration continues.
+ * documents whenever one of them exists, even when documents already exist: a legacy key
+ * left behind (e.g. because storage was full) is migrated on a later attempt instead of
+ * being hidden for good. Each legacy key is removed as soon as its document is stored, so
+ * running this again is a no-op.
+ *
+ * The draft becomes the active document. The backup is named after its content or
+ * "Previous draft", and becomes active only when no draft was migrated and no stored
+ * document is active. Unreadable legacy data is kept under `free-cv-maker:corrupted`
+ * (as before; `:draft` / `:backup` when that key already holds older data) and the
+ * migration continues.
  *
  * `lang` picks the language of fallback names; it defaults to the stored interface
  * language, then the CV's language.
@@ -454,7 +554,6 @@ export function migrateLegacyStorage(lang?: Language): LegacyMigrationResult {
 
   let uiLang: Language | undefined = lang;
   try {
-    if (storage.getItem(DOCS_INDEX_KEY) !== null) return result;
     if (storage.getItem(DRAFT_KEY) === null && storage.getItem(BACKUP_KEY) === null) return result;
     if (!uiLang) {
       const pref = storage.getItem(UI_LANG_KEY);
@@ -469,7 +568,7 @@ export function migrateLegacyStorage(lang?: Language): LegacyMigrationResult {
     return { createdAt: at, updatedAt: at };
   };
 
-  const draft = readStoredCV(DRAFT_KEY, CORRUPT_KEY);
+  const draft = readStoredCV(DRAFT_KEY, freeCorruptKey(storage, [CORRUPT_KEY, CORRUPT_DRAFT_KEY]));
   if (draft.status === "unavailable") return result;
   if (draft.status === "corrupted") result.corrupted = true;
   if (draft.status === "ok") {
@@ -486,13 +585,7 @@ export function migrateLegacyStorage(lang?: Language): LegacyMigrationResult {
     }
   }
 
-  let backupCorruptKey = CORRUPT_KEY;
-  try {
-    if (storage.getItem(CORRUPT_KEY) !== null) backupCorruptKey = CORRUPT_BACKUP_KEY;
-  } catch {
-    /* ignore */
-  }
-  const backup = readStoredCV(BACKUP_KEY, backupCorruptKey);
+  const backup = readStoredCV(BACKUP_KEY, freeCorruptKey(storage, [CORRUPT_KEY, CORRUPT_BACKUP_KEY]));
   if (backup.status === "corrupted") result.corrupted = true;
   if (backup.status === "ok") {
     const doc: AnyDoc = { kind: "cv", data: backup.data };
@@ -502,7 +595,7 @@ export function migrateLegacyStorage(lang?: Language): LegacyMigrationResult {
     const created = insertDoc(storage, doc, name, stamps(backup.savedAt));
     if (created.ok) {
       result.migrated.push(created.meta);
-      if (result.migrated.length === 1) setActiveDocId(created.meta.id);
+      if (result.migrated.length === 1 && !hasStoredActiveDoc(storage)) setActiveDocId(created.meta.id);
       try {
         storage.removeItem(BACKUP_KEY);
       } catch {

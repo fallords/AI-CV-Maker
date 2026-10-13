@@ -107,6 +107,19 @@ describe("shared storage helpers", () => {
     expect(getStorage()).toBeNull();
   });
 
+  it("still exposes a completely full storage so data can be read and deleted", () => {
+    saveDraft(sampleCV());
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+    expect(getStorage()).toBe(window.localStorage);
+    const loaded = loadDraft();
+    expect(loaded.status === "ok" && loaded.data.personal.fullName).toBe("Alex Example");
+    expect(saveDraft(sampleCV())).toEqual({ ok: false, reason: "quota" });
+    expect(deleteDraft()).toBe(true);
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
   it("recognises quota errors", () => {
     expect(isQuotaError(new DOMException("full", "QuotaExceededError"))).toBe(true);
     expect(isQuotaError(new DOMException("denied", "SecurityError"))).toBe(false);

@@ -20,6 +20,7 @@ import {
   TEMPLATE_IDS,
   createEmptyCV,
   createId,
+  isValidId,
   type AwardItem,
   type CVData,
   type CertificationItem,
@@ -78,7 +79,7 @@ export function normalizeMonth(v: unknown): string {
 }
 
 function id(v: unknown): string {
-  return typeof v === "string" && /^[\w-]{1,64}$/.test(v) ? v : createId();
+  return isValidId(v) ? v : createId();
 }
 
 function list<T>(v: unknown, map: (r: Raw) => T, max = MAX_ITEMS): T[] {
@@ -273,18 +274,27 @@ export function sanitizeCV(raw: Raw): CVData {
  */
 export const migrations: Record<number, (raw: Raw) => Raw> = {
   // v2: new sections, custom sections, section order/visibility and appearance settings.
+  // Real v1 data has none of these fields, so they start empty. Unversioned input that
+  // already carries them (e.g. hand-edited or third-party JSON) keeps them; sanitizeCV
+  // validates whatever is kept.
   1: (raw) => {
     const meta = isObject(raw.meta) ? raw.meta : {};
+    const arr = (v: unknown) => (Array.isArray(v) ? v : []);
     return {
       ...raw,
       schemaVersion: 2,
-      languages: [],
-      organizations: [],
-      awards: [],
-      references: [],
-      interests: [],
-      customSections: [],
-      meta: { ...meta, sectionOrder: [], hiddenSections: [], style: { ...DEFAULT_STYLE } },
+      languages: arr(raw.languages),
+      organizations: arr(raw.organizations),
+      awards: arr(raw.awards),
+      references: arr(raw.references),
+      interests: arr(raw.interests),
+      customSections: arr(raw.customSections),
+      meta: {
+        ...meta,
+        sectionOrder: meta.sectionOrder ?? [],
+        hiddenSections: meta.hiddenSections ?? [],
+        style: meta.style ?? { ...DEFAULT_STYLE },
+      },
     };
   },
 };

@@ -7,6 +7,7 @@
 import {
   filledItems,
   isCustomSectionFilled,
+  isValidId,
   type CVData,
   type CustomSection,
   type ListSection,
@@ -88,7 +89,6 @@ export const SECTION_LISTS: Record<BuiltinSectionKey, readonly ListSection[]> = 
 };
 
 const CUSTOM_PREFIX = "custom:";
-const CUSTOM_ID_RE = /^[\w-]{1,64}$/;
 
 export function isBuiltinSection(v: unknown): v is BuiltinSectionKey {
   return typeof v === "string" && (BUILTIN_SECTIONS as readonly string[]).includes(v);
@@ -102,7 +102,7 @@ export function customSectionKey(id: string): SectionKey {
 export function parseCustomKey(key: string): string | null {
   if (!key.startsWith(CUSTOM_PREFIX)) return null;
   const id = key.slice(CUSTOM_PREFIX.length);
-  return CUSTOM_ID_RE.test(id) ? id : null;
+  return isValidId(id) ? id : null;
 }
 
 /** Syntactically valid section key (built-in or `custom:<id>`); does not check the section exists. */

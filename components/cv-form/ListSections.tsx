@@ -156,7 +156,7 @@ function SkillList(props: SectionProps & { section: Extract<ListSection, "techni
       itemLabel={f.item}
       getTitle={(s) => s.name}
       renderFields={(s, update) => (
-        <div className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_11rem]">
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem]">
           <TextField label={f.name} value={s.name} onChange={(v) => update({ name: v })} />
           <SelectField<SkillLevel>
             label={f.level}

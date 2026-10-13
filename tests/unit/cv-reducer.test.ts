@@ -372,6 +372,50 @@ describe("custom sections", () => {
     expect(cvReducer(cv, { type: "removeCustomItem", sectionId: "nope", id: "a" })).toBe(cv);
   });
 
+  it("only uses a requested entry id when it is valid and not used by any entry", () => {
+    const base = richSampleCV();
+    const ids = (cv: CVData) => [
+      ...LIST_SECTIONS.flatMap((l) => (cv[l] as { id: string }[]).map((i) => i.id)),
+      ...cv.customSections.flatMap((s) => s.items.map((i) => i.id)),
+    ];
+    for (const requested of ["exp1", "course1", "lang1", "not valid!", "__proto__", "constructor", "prototype", ""]) {
+      const cv = cvReducer(base, { type: "addCustomItem", sectionId: "courses", id: requested });
+      const added = cv.customSections[0].items.at(-1)!;
+      expect(added.id).not.toBe(requested);
+      expect(added.id).toMatch(/^[\w-]{1,64}$/);
+      expect(new Set(ids(cv)).size).toBe(ids(cv).length);
+    }
+    const ok = cvReducer(base, { type: "addCustomItem", sectionId: "courses", id: "course9" });
+    expect(ok.customSections[0].items.at(-1)!.id).toBe("course9");
+
+    // Two adds with the same id in a row: the second gets a fresh id, so actions hit one entry.
+    let cv = run(
+      base,
+      { type: "addCustomItem", sectionId: "courses", id: "dup" },
+      { type: "addCustomItem", sectionId: "courses", id: "dup" },
+    );
+    expect(cv.customSections[0].items.filter((i) => i.id === "dup")).toHaveLength(1);
+    cv = cvReducer(cv, { type: "updateCustomItem", sectionId: "courses", id: "dup", patch: { title: "Only me" } });
+    expect(cv.customSections[0].items.filter((i) => i.title === "Only me")).toHaveLength(1);
+  });
+
+  it("applies the same id rule to built-in list entries", () => {
+    const base = richSampleCV();
+    for (const requested of ["exp1", "course1", "bad id", "__proto__", "constructor"]) {
+      const cv = cvReducer(base, { type: "addItem", section: "awards", id: requested });
+      expect(cv.awards.at(-1)!.id).not.toBe(requested);
+      expect(cv.awards).toHaveLength(base.awards.length + 1);
+    }
+    expect(cvReducer(base, { type: "addItem", section: "awards", id: "award9" }).awards.at(-1)!.id).toBe("award9");
+    const twice = run(
+      createEmptyCV(),
+      { type: "addItem", section: "experience", id: "x" },
+      { type: "addItem", section: "education", id: "x" },
+    );
+    expect(twice.experience[0].id).toBe("x");
+    expect(twice.education[0].id).not.toBe("x");
+  });
+
   it("stops at 100 entries per section", () => {
     let cv = cvReducer(createEmptyCV(), { type: "addCustomSection", id: "c", title: "C" });
     for (let i = 0; i < MAX_CUSTOM_ITEMS + 5; i++) cv = cvReducer(cv, { type: "addCustomItem", sectionId: "c" });

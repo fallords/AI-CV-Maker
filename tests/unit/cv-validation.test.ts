@@ -239,6 +239,38 @@ describe("schema v1 to v2 migration", () => {
     });
   });
 
+  it("keeps v2 fields that unversioned data already has instead of wiping them", () => {
+    const cv = richSampleCV("graduate");
+    cv.meta.sectionOrder = ["experience", "custom:courses", "summary"];
+    cv.meta.hiddenSections = ["interests"];
+    cv.meta.style = { ...DEFAULT_STYLE, accent: "#7a1f2b", spacing: "compact" };
+    const { schemaVersion: _v, ...unversioned } = structuredClone(cv);
+    void _v;
+    expect(parseCVValue(unversioned)).toEqual({ ok: true, data: cv, migratedFrom: 1 });
+    // A string version is not an integer, so it also goes through the v1 step without losses.
+    expect(parseCVJson(JSON.stringify({ ...cv, schemaVersion: "2" }))).toEqual({ ok: true, data: cv, migratedFrom: 1 });
+    const imported = parseCVValue(unversioned);
+    expect(imported.ok && imported.data.languages.length).toBeGreaterThan(0);
+    expect(imported.ok && imported.data.customSections.length).toBeGreaterThan(0);
+  });
+
+  it("keeps present v2 values in the migration step and leaves validation to the sanitiser", () => {
+    const out = migrations[1]({
+      languages: [{ id: "l1", name: "English" }],
+      awards: "not a list",
+      customSections: [{ id: "c", title: "C", items: [] }],
+      meta: { template: "graduate", sectionOrder: ["custom:c", "bogus"], hiddenSections: null, style: { accent: "red" } },
+    });
+    expect(out.languages).toEqual([{ id: "l1", name: "English" }]);
+    expect(out.awards).toEqual([]);
+    expect(out.customSections).toEqual([{ id: "c", title: "C", items: [] }]);
+    expect(out.meta).toEqual({ template: "graduate", sectionOrder: ["custom:c", "bogus"], hiddenSections: [], style: { accent: "red" } });
+    const data = sanitizeCV(out);
+    expect(data.meta.sectionOrder).toEqual(["custom:c"]);
+    expect(data.meta.hiddenSections).toEqual([]);
+    expect(data.meta.style).toEqual(DEFAULT_STYLE);
+  });
+
   it("copes with a v1 CV whose meta is missing or invalid", () => {
     const result = parseCVValue({ schemaVersion: 1, meta: "nope", personal: { fullName: "Old" } });
     expect(result.ok).toBe(true);
@@ -275,6 +307,41 @@ describe("schema v1 to v2 migration", () => {
 });
 
 describe("sanitising v2 fields", () => {
+  it("replaces ids that name Object.prototype members", () => {
+    const data = sanitizeCV(
+      JSON.parse(
+        JSON.stringify({
+          experience: [{ id: "__proto__", jobTitle: "A" }, { id: "exp2", jobTitle: "B" }],
+          languages: [{ id: "prototype", name: "English" }],
+          customSections: [
+            { id: "__proto__", title: "Proto", items: [{ id: "constructor", title: "Item" }] },
+            { id: "constructor", title: "Ctor", items: [] },
+            { id: "talks", title: "Talks", items: [{ id: "talk1", title: "Kept" }] },
+          ],
+          meta: { sectionOrder: ["custom:__proto__", "custom:constructor", "custom:talks"], hiddenSections: ["custom:__proto__"] },
+        }),
+      ),
+    );
+    const reserved = ["__proto__", "constructor", "prototype"];
+    const allIds = [
+      ...data.experience.map((e) => e.id),
+      ...data.languages.map((l) => l.id),
+      ...data.customSections.flatMap((s) => [s.id, ...s.items.map((i) => i.id)]),
+    ];
+    for (const id of allIds) {
+      expect(reserved).not.toContain(id);
+      expect(id).toMatch(/^[\w-]{1,64}$/);
+    }
+    expect(data.experience.map((e) => e.jobTitle)).toEqual(["A", "B"]);
+    expect(data.experience[1].id).toBe("exp2");
+    expect(data.customSections.map((s) => s.title)).toEqual(["Proto", "Ctor", "Talks"]);
+    expect(data.customSections[2]).toMatchObject({ id: "talks", items: [{ id: "talk1" }] });
+    // Order and visibility keys for the renamed sections no longer resolve and are dropped.
+    expect(data.meta.sectionOrder).toEqual(["custom:talks"]);
+    expect(data.meta.hiddenSections).toEqual([]);
+    expect(Object.getPrototypeOf(data)).toBe(Object.prototype);
+  });
+
   it("keeps the rich sample CV unchanged", () => {
     const cv = richSampleCV("modern-professional");
     cv.meta.sectionOrder = ["experience", "custom:courses", "summary"];

@@ -227,3 +227,5 @@ export function letterParagraphs(body: string): string[] {
     .map((p) => p.replace(/\r\n/g, "\n").trim())
     .filter(Boolean);
 }
+
+export type { LetterAction, LetterField } from "./letter-reducer";

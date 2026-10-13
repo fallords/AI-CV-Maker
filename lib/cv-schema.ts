@@ -207,6 +207,20 @@ export const LIST_SECTIONS: readonly ListSection[] = [
 
 export type ListItem<S extends ListSection> = CVData[S][number];
 
+/**
+ * Ids that would collide with Object.prototype members if a caller ever looked an
+ * entry up in a plain object keyed by id (e.g. `byId[item.id]`).
+ */
+export const RESERVED_IDS: ReadonlySet<string> = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * True for ids this app accepts for entries, custom sections and documents:
+ * 1–64 word characters or hyphens, and not one of RESERVED_IDS.
+ */
+export function isValidId(v: unknown): v is string {
+  return typeof v === "string" && /^[\w-]{1,64}$/.test(v) && !RESERVED_IDS.has(v);
+}
+
 let idCounter = 0;
 export function createId(): string {
   idCounter += 1;

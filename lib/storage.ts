@@ -39,7 +39,11 @@ export type LoadResult =
 
 export type SaveResult = { ok: true; savedAt: string } | { ok: false; reason: "unavailable" | "quota" };
 
-/** localStorage when it is usable (probed with a write), otherwise null. */
+/**
+ * localStorage when it is usable (probed with a write), otherwise null. A full storage
+ * still counts as usable: reads and deletes work (so the user can open documents and
+ * free space), and writes report "quota".
+ */
 export function getStorage(): Storage | null {
   try {
     if (typeof window === "undefined" || !window.localStorage) return null;
@@ -47,8 +51,8 @@ export function getStorage(): Storage | null {
     window.localStorage.setItem(probe, "1");
     window.localStorage.removeItem(probe);
     return window.localStorage;
-  } catch {
-    return null;
+  } catch (e) {
+    return isQuotaError(e) && typeof window !== "undefined" ? window.localStorage : null;
   }
 }
 

@@ -89,20 +89,37 @@ dialog::backdrop {
 /* CV document — shared by preview and print. Sized in physical units.   */
 /* ===================================================================== */
 
+/*
+ * Appearance settings (lib/doc-style.ts, applied by components/templates/style.ts) are
+ * CSS custom properties on .cv-doc. Their defaults below reproduce the original look;
+ * a document only sets the ones the user changed, inline:
+ *   --cv-accent      accent colour (also adds .cv-accented)
+ *   --cv-font        body font stack; --cv-font-name the name's font stack
+ *   --cv-fs          text size scale (every font size below is multiplied by it)
+ *   --cv-gap         vertical spacing scale; --cv-lh body line height
+ *   --cv-pad-x       left/right page margin; --cv-pad-y top/bottom page margin (screen;
+ *                    print uses the @page rule written by PrintRoot)
+ */
 .cv-doc {
   --cv-accent: #1b4332;
   --cv-text: #1c1917;
   --cv-muted: #57534e;
   --cv-rule: #d6d3d1;
   --cv-pad-x: 16mm;
+  --cv-pad-y: 14mm;
+  --cv-fs: 1;
+  --cv-gap: 1;
+  --cv-lh: 1.4;
+  --cv-font: var(--font-sans);
+  --cv-font-name: var(--cv-font);
   width: 210mm;
   box-sizing: border-box;
   padding: 0 var(--cv-pad-x);
   background: #fff;
   color: var(--cv-text);
-  font-family: var(--font-sans);
-  font-size: 10pt;
-  line-height: 1.4;
+  font-family: var(--cv-font);
+  font-size: calc(10pt * var(--cv-fs));
+  line-height: var(--cv-lh);
   overflow-wrap: anywhere;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -125,13 +142,14 @@ dialog::backdrop {
   text-decoration: none;
 }
 .cv-name {
-  font-size: 21pt;
+  font-family: var(--cv-font-name);
+  font-size: calc(21pt * var(--cv-fs));
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 .cv-title {
-  font-size: 11.5pt;
+  font-size: calc(11.5pt * var(--cv-fs));
   color: var(--cv-muted);
   margin-top: 1mm !important;
 }
@@ -143,8 +161,8 @@ dialog::backdrop {
   row-gap: 0.5mm;
   /* Clip only horizontally, so focus rings on contact links are not cut off. */
   overflow-x: clip;
-  margin: 2.5mm 0 0 -2mm !important;
-  font-size: 9pt;
+  margin: calc(2.5mm * var(--cv-gap)) 0 0 -2mm !important;
+  font-size: calc(9pt * var(--cv-fs));
   color: var(--cv-muted);
 }
 .cv-contact li {
@@ -153,26 +171,26 @@ dialog::backdrop {
   border-left: 0.3mm solid var(--cv-rule);
 }
 .cv-section {
-  margin-top: 5mm;
+  margin-top: calc(5mm * var(--cv-gap));
 }
 .cv-heading {
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--cv-fs));
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin-bottom: 2mm !important;
+  margin-bottom: calc(2mm * var(--cv-gap)) !important;
 }
 /* The first item of a section lives inside .cv-keep, so spacing targets both cases. */
 .cv-entry + .cv-entry,
 .cv-skill-group + .cv-skill-group,
 .cv-section > .cv-keep + * {
-  margin-top: 3mm;
+  margin-top: calc(3mm * var(--cv-gap));
 }
 .cv-skill-line + .cv-skill-line,
 .cv-section > .cv-keep + .cv-skill-line,
 .cv-entry-compact + .cv-entry-compact,
 .cv-section > .cv-keep + .cv-entry-compact {
-  margin-top: 1.5mm;
+  margin-top: calc(1.5mm * var(--cv-gap));
 }
 .cv-entry-head {
   display: flex;
@@ -184,7 +202,7 @@ dialog::backdrop {
   min-width: 0;
 }
 .cv-entry-title {
-  font-size: 10.5pt;
+  font-size: calc(10.5pt * var(--cv-fs));
   font-weight: 650;
 }
 .cv-entry-sub {
@@ -193,30 +211,30 @@ dialog::backdrop {
 .cv-entry-date {
   flex-shrink: 0;
   white-space: nowrap;
-  font-size: 9pt;
+  font-size: calc(9pt * var(--cv-fs));
   color: var(--cv-muted);
 }
 .cv-rich {
-  margin-top: 1mm;
+  margin-top: calc(1mm * var(--cv-gap));
 }
 .cv-rich p + p,
 .cv-rich p + ul,
 .cv-rich ul + p {
-  margin-top: 1mm !important;
+  margin-top: calc(1mm * var(--cv-gap)) !important;
 }
 .cv-rich ul {
   padding-left: 4.5mm !important;
   list-style: disc;
 }
 .cv-rich li + li {
-  margin-top: 0.6mm;
+  margin-top: calc(0.6mm * var(--cv-gap));
 }
 .cv-section-summary .cv-rich {
   margin-top: 0;
 }
 .cv-meta-line {
-  margin-top: 1mm !important;
-  font-size: 9pt;
+  margin-top: calc(1mm * var(--cv-gap)) !important;
+  font-size: calc(9pt * var(--cv-fs));
   color: var(--cv-muted);
 }
 .cv-meta-label {
@@ -232,44 +250,52 @@ dialog::backdrop {
 
 /* Template A — ATS Minimal */
 .tpl-ats .cv-header {
-  padding-bottom: 3mm;
+  padding-bottom: calc(3mm * var(--cv-gap));
   border-bottom: 0.4mm solid var(--cv-text);
 }
 .tpl-ats .cv-heading {
   border-bottom: 0.25mm solid var(--cv-rule);
   padding-bottom: 1mm;
 }
+/* ATS Minimal is black by default; a chosen accent colours the name, headings and header rule. */
+.tpl-ats.cv-accented .cv-name,
+.tpl-ats.cv-accented .cv-heading {
+  color: var(--cv-accent);
+}
+.tpl-ats.cv-accented .cv-header {
+  border-bottom-color: var(--cv-accent);
+}
 
 /* Template B — Modern Professional */
 .tpl-modern {
   --cv-accent: #245740;
+  --cv-font-name: var(--font-serif);
 }
 .tpl-modern .cv-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 6mm;
-  padding-bottom: 4mm;
+  padding-bottom: calc(4mm * var(--cv-gap));
   border-bottom: 0.8mm solid var(--cv-accent);
 }
 .tpl-modern .cv-header-text {
   min-width: 0;
 }
 .tpl-modern .cv-name {
-  font-family: var(--font-serif);
-  font-size: 24pt;
+  font-size: calc(24pt * var(--cv-fs));
   font-weight: 700;
   color: var(--cv-accent);
 }
 .tpl-modern .cv-title {
-  font-size: 12pt;
+  font-size: calc(12pt * var(--cv-fs));
   color: var(--cv-text);
 }
 .tpl-modern .cv-photo {
   border-radius: 50%;
 }
 .tpl-modern .cv-section {
-  margin-top: 6mm;
+  margin-top: calc(6mm * var(--cv-gap));
 }
 .tpl-modern .cv-heading {
   display: flex;
@@ -277,7 +303,7 @@ dialog::backdrop {
   gap: 3mm;
   color: var(--cv-accent);
   letter-spacing: 0.1em;
-  font-size: 10pt;
+  font-size: calc(10pt * var(--cv-fs));
 }
 .tpl-modern .cv-heading::after {
   content: "";
@@ -306,6 +332,10 @@ dialog::backdrop {
   background: #eff6f1;
   border-left: 1.5mm solid var(--cv-accent);
 }
+/* With a chosen accent the header tint follows it (the default tint suits the template green). */
+.tpl-graduate.cv-accented .cv-header {
+  background: color-mix(in srgb, var(--cv-accent) 8%, #fff);
+}
 .tpl-graduate .cv-header-text {
   min-width: 0;
 }
@@ -315,7 +345,7 @@ dialog::backdrop {
   border-radius: 2mm;
 }
 .tpl-graduate .cv-name {
-  font-size: 20pt;
+  font-size: calc(20pt * var(--cv-fs));
 }
 .tpl-graduate .cv-title {
   color: var(--cv-accent);
@@ -323,13 +353,13 @@ dialog::backdrop {
 }
 .tpl-graduate .cv-heading {
   color: var(--cv-accent);
-  font-size: 11pt;
+  font-size: calc(11pt * var(--cv-fs));
   letter-spacing: 0.04em;
   padding-bottom: 1mm;
   border-bottom: 0.5mm solid var(--cv-accent);
 }
 .tpl-graduate .cv-skill-label {
-  font-size: 9.5pt;
+  font-size: calc(9.5pt * var(--cv-fs));
   font-weight: 650;
   margin-bottom: 1.5mm;
 }
@@ -340,11 +370,39 @@ dialog::backdrop {
   gap: 1.5mm;
 }
 .tpl-graduate .cv-chips li {
-  font-size: 9pt;
+  font-size: calc(9pt * var(--cv-fs));
   padding: 0.6mm 2.4mm;
   border: 0.25mm solid var(--cv-accent);
   border-radius: 3mm;
   color: var(--cv-text);
+}
+
+/* ===================================================================== */
+/* Cover letter — the template's header, then a business letter.        */
+/* ===================================================================== */
+.cv-letter .cv-letter-body {
+  margin-top: calc(9mm * var(--cv-gap));
+  font-size: calc(10.5pt * var(--cv-fs));
+  line-height: calc(var(--cv-lh) + 0.1);
+}
+.cv-letter .cv-letter-body > * + * {
+  margin-top: calc(6mm * var(--cv-gap));
+}
+/* Recipient address and paragraphs keep the line breaks the user typed. */
+.cv-letter .cv-letter-recipient,
+.cv-letter .cv-letter-text p {
+  white-space: pre-line;
+}
+.cv-letter .cv-letter-subject {
+  font-weight: 600;
+}
+.cv-letter .cv-letter-body > .cv-letter-greeting + .cv-letter-text,
+.cv-letter .cv-letter-text p + p {
+  margin-top: calc(3.5mm * var(--cv-gap));
+}
+/* Room for a handwritten signature above the typed name. */
+.cv-letter .cv-letter-closing + .cv-letter-signature {
+  margin-top: calc(14mm * var(--cv-gap));
 }
 
 /* ===================================================================== */
@@ -356,28 +414,34 @@ dialog::backdrop {
 .cv-skill-group,
 .cv-skill-line,
 .cv-rich li,
-.cv-header {
+.cv-header,
+.cv-letter-recipient,
+.cv-letter-signoff {
   break-inside: avoid;
 }
 .cv-entry {
   break-inside: avoid-page;
 }
-.cv-heading {
+.cv-heading,
+.cv-letter-subject,
+.cv-letter-greeting {
   break-after: avoid;
 }
 
 /* Screen-only: the preview sheet has the same top/bottom margin as the printed page. */
 @media screen {
   .cv-sheet .cv-doc {
-    padding-top: 14mm;
-    padding-bottom: 14mm;
+    padding-top: var(--cv-pad-y);
+    padding-bottom: var(--cv-pad-y);
     min-height: 297mm;
   }
 }
 
 /* ===================================================================== */
-/* Print: only the CV, on A4.                                            */
+/* Print: only the document, on A4.                                      */
 /* ===================================================================== */
+/* Default page; PrintRoot (components/templates/PrintRoot.tsx) adds a rule after this one
+   with the margin of the document's style. */
 @page {
   size: A4;
   margin: 14mm 0;

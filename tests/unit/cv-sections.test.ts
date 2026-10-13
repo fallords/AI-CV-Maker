@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TEMPLATE_IDS, createEmptyCV, type CVData } from "@/lib/cv-schema";
+import { RESERVED_IDS, TEMPLATE_IDS, createEmptyCV, isValidId, type CVData } from "@/lib/cv-schema";
 import {
   BUILTIN_SECTIONS,
   SECTION_LISTS,
@@ -240,5 +240,21 @@ describe("filled sections", () => {
     expect(isSectionFilled(cv, "custom:e")).toBe(false);
     expect(isSectionFilled(cv, "custom:f")).toBe(true);
     expect(isSectionFilled(cv, "custom:missing")).toBe(false);
+  });
+});
+
+describe("reserved ids", () => {
+  it("rejects ids that name Object.prototype members", () => {
+    for (const id of RESERVED_IDS) {
+      expect(isValidId(id)).toBe(false);
+      expect(parseCustomKey(`custom:${id}`)).toBeNull();
+      expect(isSectionKey(`custom:${id}`)).toBe(false);
+    }
+    expect(isValidId("__proto__x")).toBe(true);
+    expect(isValidId("Constructor")).toBe(true);
+    expect(isValidId("a".repeat(64))).toBe(true);
+    expect(isValidId("a".repeat(65))).toBe(false);
+    expect(isValidId("")).toBe(false);
+    expect(isValidId(42)).toBe(false);
   });
 });
