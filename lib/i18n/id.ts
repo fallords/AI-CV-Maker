@@ -1,4 +1,10 @@
 import type { Dictionary } from "./en";
+import checks from "./features/checks.id";
+import design from "./features/design.id";
+import docs from "./features/docs.id";
+import exporting from "./features/exporting.id";
+import letter from "./features/letter.id";
+import sections from "./features/sections.id";
 
 /** Indonesian interface strings. */
 const id: Dictionary = {
@@ -390,6 +396,13 @@ const id: Dictionary = {
     erased: "Semua data lokal telah dihapus.",
     eraseFailed: "Penyimpanan browser tidak tersedia, jadi tidak ada data yang bisa dihapus.",
   },
+  // Feature dictionaries live in ./features so each feature owns its own file.
+  sections,
+  design,
+  checks,
+  docs,
+  exporting,
+  letter,
 };
 
 export default id;

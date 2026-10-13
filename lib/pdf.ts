@@ -12,14 +12,19 @@ import type { CVData } from "./cv-schema";
 
 export const PRINT_HINT_KEY = "free-cv-maker:hide-print-hint";
 
-/** File name suggested to the browser's "Save as PDF" (taken from document.title). */
-export function pdfFileName(cv: CVData): string {
-  const name = cv.personal.fullName
+/** "Dévi Lestari!" -> "Devi_Lestari": ASCII letters, digits, "_" and "-" only. */
+export function fileSafeName(value: string): string {
+  return value
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^\w\s-]/g, "")
     .trim()
     .replace(/\s+/g, "_");
+}
+
+/** File name suggested to the browser's "Save as PDF" (taken from document.title). */
+export function pdfFileName(cv: CVData): string {
+  const name = fileSafeName(cv.personal.fullName);
   return name ? `${name}_CV` : "CV";
 }
 

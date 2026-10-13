@@ -1,13 +1,21 @@
 /** Pure state transitions for the CV editor (unit-tested in tests/unit/cv-reducer.test.ts). */
 
 import {
+  MAX_CUSTOM_ITEMS,
+  MAX_CUSTOM_SECTIONS,
+  createId,
+  emptyCustomItem,
   emptyItem,
   type CVData,
   type CVMeta,
+  type CustomItem,
+  type CustomSection,
   type ListItem,
   type ListSection,
   type PersonalInfo,
 } from "./cv-schema";
+import { allSectionsInOrder, customSectionKey, sectionExists, type SectionKey } from "./cv-sections";
+import { sanitizeStyle, type DocStyle } from "./doc-style";
 
 export type CVAction =
   | { type: "replace"; data: CVData }
@@ -17,7 +25,18 @@ export type CVAction =
   | { type: "addItem"; section: ListSection; id?: string }
   | { type: "updateItem"; section: ListSection; id: string; patch: Record<string, unknown> }
   | { type: "removeItem"; section: ListSection; id: string }
-  | { type: "moveItem"; section: ListSection; id: string; direction: -1 | 1 };
+  | { type: "moveItem"; section: ListSection; id: string; direction: -1 | 1 }
+  | { type: "setStyle"; patch: Partial<DocStyle> }
+  | { type: "moveSection"; key: SectionKey; direction: -1 | 1 }
+  | { type: "setSectionHidden"; key: SectionKey; hidden: boolean }
+  | { type: "resetSectionOrder" }
+  | { type: "addCustomSection"; id?: string; title: string }
+  | { type: "renameCustomSection"; id: string; title: string }
+  | { type: "removeCustomSection"; id: string }
+  | { type: "addCustomItem"; sectionId: string; id?: string }
+  | { type: "updateCustomItem"; sectionId: string; id: string; patch: Partial<CustomItem> }
+  | { type: "removeCustomItem"; sectionId: string; id: string }
+  | { type: "moveCustomItem"; sectionId: string; id: string; direction: -1 | 1 };
 
 function mapSection<S extends ListSection>(
   cv: CVData,
@@ -26,6 +45,28 @@ function mapSection<S extends ListSection>(
 ): CVData {
   return { ...cv, [section]: fn(cv[section] as ListItem<S>[]) };
 }
+
+function swap<T extends { id: string }>(items: T[], id: string, direction: -1 | 1): T[] {
+  const from = items.findIndex((i) => i.id === id);
+  const to = from + direction;
+  if (from < 0 || to < 0 || to >= items.length) return items;
+  const next = [...items];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
+}
+
+function mapCustom(cv: CVData, sectionId: string, fn: (s: CustomSection) => CustomSection): CVData {
+  const index = cv.customSections.findIndex((s) => s.id === sectionId);
+  if (index < 0) return cv;
+  const current = cv.customSections[index];
+  const updated = fn(current);
+  if (updated === current) return cv;
+  const customSections = [...cv.customSections];
+  customSections[index] = updated;
+  return { ...cv, customSections };
+}
+
+const ID_RE = /^[\w-]{1,64}$/;
 
 export function cvReducer(cv: CVData, action: CVAction): CVData {
   switch (action.type) {
@@ -60,13 +101,80 @@ export function cvReducer(cv: CVData, action: CVAction): CVData {
     case "removeItem":
       return mapSection(cv, action.section, (items) => items.filter((i) => i.id !== action.id));
     case "moveItem":
-      return mapSection(cv, action.section, (items) => {
-        const from = items.findIndex((i) => i.id === action.id);
-        const to = from + action.direction;
-        if (from < 0 || to < 0 || to >= items.length) return items;
-        const next = [...items];
-        [next[from], next[to]] = [next[to], next[from]];
-        return next;
+      return mapSection(cv, action.section, (items) => swap(items, action.id, action.direction));
+
+    /* ---------- appearance ---------- */
+    case "setStyle":
+      // Invalid values (e.g. a malformed colour) fall back to the defaults.
+      return { ...cv, meta: { ...cv.meta, style: sanitizeStyle({ ...cv.meta.style, ...action.patch }) } };
+
+    /* ---------- section order and visibility ---------- */
+    case "moveSection": {
+      const order = allSectionsInOrder(cv);
+      const from = order.indexOf(action.key);
+      const to = from + action.direction;
+      if (from < 0 || to < 0 || to >= order.length) return cv;
+      [order[from], order[to]] = [order[to], order[from]];
+      return { ...cv, meta: { ...cv.meta, sectionOrder: order } };
+    }
+    case "setSectionHidden": {
+      if (!sectionExists(cv, action.key)) return cv;
+      const without = cv.meta.hiddenSections.filter((k) => k !== action.key);
+      const hiddenSections = action.hidden ? [...without, action.key] : without;
+      return { ...cv, meta: { ...cv.meta, hiddenSections } };
+    }
+    case "resetSectionOrder":
+      return { ...cv, meta: { ...cv.meta, sectionOrder: [] } };
+
+    /* ---------- custom sections ---------- */
+    case "addCustomSection": {
+      if (cv.customSections.length >= MAX_CUSTOM_SECTIONS) return cv;
+      const taken = (id: string) => cv.customSections.some((s) => s.id === id);
+      const id = action.id && ID_RE.test(action.id) && !taken(action.id) ? action.id : createId();
+      const section: CustomSection = { id, title: action.title, items: [] };
+      const sectionOrder = cv.meta.sectionOrder.length
+        ? [...cv.meta.sectionOrder, customSectionKey(id)]
+        : cv.meta.sectionOrder;
+      return { ...cv, customSections: [...cv.customSections, section], meta: { ...cv.meta, sectionOrder } };
+    }
+    case "renameCustomSection":
+      return mapCustom(cv, action.id, (s) => ({ ...s, title: action.title }));
+    case "removeCustomSection": {
+      if (!cv.customSections.some((s) => s.id === action.id)) return cv;
+      const key = customSectionKey(action.id);
+      return {
+        ...cv,
+        customSections: cv.customSections.filter((s) => s.id !== action.id),
+        meta: {
+          ...cv.meta,
+          sectionOrder: cv.meta.sectionOrder.filter((k) => k !== key),
+          hiddenSections: cv.meta.hiddenSections.filter((k) => k !== key),
+        },
+      };
+    }
+    case "addCustomItem":
+      return mapCustom(cv, action.sectionId, (s) => {
+        if (s.items.length >= MAX_CUSTOM_ITEMS) return s;
+        const item = emptyCustomItem(action.id || undefined);
+        return { ...s, items: [...s.items, item] };
+      });
+    case "updateCustomItem":
+      return mapCustom(cv, action.sectionId, (s) => ({
+        ...s,
+        items: s.items.map((item) => {
+          if (item.id !== action.id) return item;
+          // The id is immutable; ignore attempts to patch it.
+          const { id: _ignored, ...patch } = action.patch;
+          void _ignored;
+          return { ...item, ...patch };
+        }),
+      }));
+    case "removeCustomItem":
+      return mapCustom(cv, action.sectionId, (s) => ({ ...s, items: s.items.filter((i) => i.id !== action.id) }));
+    case "moveCustomItem":
+      return mapCustom(cv, action.sectionId, (s) => {
+        const items = swap(s.items, action.id, action.direction);
+        return items === s.items ? s : { ...s, items };
       });
     default:
       return cv;

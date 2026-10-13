@@ -1,3 +1,10 @@
+import checks from "./features/checks.en";
+import design from "./features/design.en";
+import docs from "./features/docs.en";
+import exporting from "./features/exporting.en";
+import letter from "./features/letter.en";
+import sections from "./features/sections.en";
+
 /** English interface strings. `id.ts` must provide the same shape (enforced by the type). */
 const en = {
   appName: "Free AI CV Maker",
@@ -388,6 +395,13 @@ const en = {
     erased: "All locally stored data was erased.",
     eraseFailed: "Browser storage isn’t available, so there’s nothing to erase.",
   },
+  // Feature dictionaries live in ./features so each feature owns its own file.
+  sections,
+  design,
+  checks,
+  docs,
+  exporting,
+  letter,
 };
 
 export default en;

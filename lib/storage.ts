@@ -1,11 +1,15 @@
 /**
  * Browser-local persistence. Nothing here leaves the device.
  *
+ * Documents (CVs and cover letters) live in lib/documents.ts. This module holds the
+ * shared storage helpers, preferences and the legacy single-draft format (v1 app),
+ * which lib/documents.ts `migrateLegacyStorage` moves into documents.
+ *
  * Keys:
- *   DRAFT_KEY      – the current draft (autosaved)
- *   BACKUP_KEY     – the previous draft, kept when the user starts a new CV
- *   CORRUPT_KEY    – raw contents of a draft that could not be read, kept so it is
- *                    not silently destroyed
+ *   DRAFT_KEY      – legacy: the single autosaved draft
+ *   BACKUP_KEY     – legacy: the previous draft, kept when the user started a new CV
+ *   CORRUPT_KEY    – raw contents of a legacy draft that could not be read, kept so it
+ *                    is not silently destroyed
  *   UI_LANG_KEY    – interface language preference
  *
  * Every access is wrapped: storage can be disabled (private mode, blocked
@@ -35,7 +39,8 @@ export type LoadResult =
 
 export type SaveResult = { ok: true; savedAt: string } | { ok: false; reason: "unavailable" | "quota" };
 
-function getStorage(): Storage | null {
+/** localStorage when it is usable (probed with a write), otherwise null. */
+export function getStorage(): Storage | null {
   try {
     if (typeof window === "undefined" || !window.localStorage) return null;
     const probe = `${STORAGE_PREFIX}probe`;
@@ -51,7 +56,7 @@ export function isStorageAvailable(): boolean {
   return getStorage() !== null;
 }
 
-function isQuotaError(e: unknown): boolean {
+export function isQuotaError(e: unknown): boolean {
   return (
     e instanceof DOMException &&
     (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED" || e.code === 22)
@@ -71,7 +76,11 @@ function write(key: string, cv: CVData): SaveResult {
   }
 }
 
-function read(key: string): LoadResult {
+/**
+ * Reads a legacy CV payload. Unreadable data is moved to `corruptKey` (so it is not
+ * overwritten by the next autosave) and the original key is removed.
+ */
+export function readStoredCV(key: string, corruptKey: string = CORRUPT_KEY): LoadResult {
   const storage = getStorage();
   if (!storage) return { status: "unavailable" };
   let raw: string | null;
@@ -93,7 +102,7 @@ function read(key: string): LoadResult {
   } catch {
     // Keep the unreadable data aside instead of overwriting it on the next autosave.
     try {
-      storage.setItem(CORRUPT_KEY, raw);
+      storage.setItem(corruptKey, raw);
       storage.removeItem(key);
     } catch {
       /* ignore */
@@ -103,9 +112,9 @@ function read(key: string): LoadResult {
 }
 
 export const saveDraft = (cv: CVData) => write(DRAFT_KEY, cv);
-export const loadDraft = () => read(DRAFT_KEY);
+export const loadDraft = () => readStoredCV(DRAFT_KEY);
 export const saveBackup = (cv: CVData) => write(BACKUP_KEY, cv);
-export const loadBackup = () => read(BACKUP_KEY);
+export const loadBackup = () => readStoredCV(BACKUP_KEY);
 
 export function hasBackup(): boolean {
   try {

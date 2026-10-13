@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { formatMonth, formatRange, toBlocks } from "@/lib/cv-format";
+import { CV_LABELS, formatMonth, formatRange, toBlocks } from "@/lib/cv-format";
+import { LANGUAGE_LEVELS } from "@/lib/cv-schema";
 
 describe("date formatting", () => {
   it("formats months consistently in English and Indonesian", () => {
@@ -30,5 +31,48 @@ describe("description blocks", () => {
 
   it("ignores blank input", () => {
     expect(toBlocks("  \n \n")).toEqual([]);
+  });
+});
+
+describe("CV labels", () => {
+  it("has the same keys in English and Indonesian", () => {
+    expect(Object.keys(CV_LABELS.id).sort()).toEqual(Object.keys(CV_LABELS.en).sort());
+    expect(Object.keys(CV_LABELS.id.languageLevels).sort()).toEqual(Object.keys(CV_LABELS.en.languageLevels).sort());
+  });
+
+  it("names the new sections", () => {
+    const pick = (lang: "en" | "id") => {
+      const l = CV_LABELS[lang];
+      return [l.languages, l.organizations, l.awards, l.references, l.interests];
+    };
+    expect(pick("en")).toEqual(["Languages", "Organizations & Volunteering", "Awards", "References", "Interests"]);
+    expect(pick("id")).toEqual(["Bahasa", "Pengalaman Organisasi", "Penghargaan", "Referensi", "Minat"]);
+  });
+
+  it("labels every language level", () => {
+    const levels = LANGUAGE_LEVELS.filter((l) => l !== "");
+    expect(levels.map((l) => CV_LABELS.en.languageLevels[l])).toEqual([
+      "Basic",
+      "Conversational",
+      "Professional",
+      "Fluent",
+      "Native",
+    ]);
+    expect(levels.map((l) => CV_LABELS.id.languageLevels[l])).toEqual([
+      "Dasar",
+      "Percakapan",
+      "Profesional",
+      "Fasih",
+      "Penutur asli",
+    ]);
+  });
+
+  it("has letter labels and full month names", () => {
+    expect(CV_LABELS.en.subjectPrefix).toBe("Subject:");
+    expect(CV_LABELS.id.subjectPrefix).toBe("Perihal:");
+    expect(CV_LABELS.en.monthsLong).toHaveLength(12);
+    expect(CV_LABELS.id.monthsLong).toHaveLength(12);
+    expect(CV_LABELS.id.monthsLong[9]).toBe("Oktober");
+    expect(CV_LABELS.en.monthsLong[0]).toBe("January");
   });
 });

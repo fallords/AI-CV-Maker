@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEmptyCV } from "@/lib/cv-schema";
+import { CV_SCHEMA_VERSION, createEmptyCV } from "@/lib/cv-schema";
 import { sampleCV } from "@/lib/sample-cv";
 import {
   BACKUP_KEY,
@@ -8,9 +8,12 @@ import {
   UI_LANG_KEY,
   deleteDraft,
   eraseAllLocalData,
+  getStorage,
   hasBackup,
+  isQuotaError,
   loadBackup,
   loadDraft,
+  readStoredCV,
   saveBackup,
   saveDraft,
   writePreference,
@@ -30,7 +33,7 @@ describe("local storage persistence", () => {
     const saved = saveDraft(cv);
     expect(saved.ok).toBe(true);
     const stored = JSON.parse(localStorage.getItem(DRAFT_KEY)!);
-    expect(stored).toMatchObject({ schemaVersion: 1, data: { meta: { template: "graduate" } } });
+    expect(stored).toMatchObject({ schemaVersion: CV_SCHEMA_VERSION, data: { meta: { template: "graduate" } } });
     const loaded = loadDraft();
     expect(loaded.status).toBe("ok");
     if (loaded.status === "ok") {
@@ -92,5 +95,42 @@ describe("local storage persistence", () => {
     localStorage.setItem("other-app", "keep me");
     expect(eraseAllLocalData()).toBe(true);
     expect(Object.keys(localStorage)).toEqual(["other-app"]);
+  });
+});
+
+describe("shared storage helpers", () => {
+  it("exposes localStorage only when it can be written", () => {
+    expect(getStorage()).toBe(window.localStorage);
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("denied", "SecurityError");
+    });
+    expect(getStorage()).toBeNull();
+  });
+
+  it("recognises quota errors", () => {
+    expect(isQuotaError(new DOMException("full", "QuotaExceededError"))).toBe(true);
+    expect(isQuotaError(new DOMException("denied", "SecurityError"))).toBe(false);
+    expect(isQuotaError(new Error("QuotaExceededError"))).toBe(false);
+  });
+
+  it("can set a corrupted legacy payload aside under another key", () => {
+    localStorage.setItem(BACKUP_KEY, "{bad");
+    expect(readStoredCV(BACKUP_KEY, "free-cv-maker:corrupted:test")).toEqual({ status: "corrupted" });
+    expect(localStorage.getItem("free-cv-maker:corrupted:test")).toBe("{bad");
+    expect(localStorage.getItem(CORRUPT_KEY)).toBeNull();
+    expect(localStorage.getItem(BACKUP_KEY)).toBeNull();
+  });
+
+  it("migrates a legacy v1 draft when reading it", () => {
+    localStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({ schemaVersion: 1, savedAt: "2025-01-01T00:00:00.000Z", data: { personal: { fullName: "Old" } } }),
+    );
+    const loaded = loadDraft();
+    expect(loaded.status).toBe("ok");
+    if (loaded.status !== "ok") return;
+    expect(loaded.data.schemaVersion).toBe(CV_SCHEMA_VERSION);
+    expect(loaded.data.personal.fullName).toBe("Old");
+    expect(loaded.savedAt).toBe("2025-01-01T00:00:00.000Z");
   });
 });
