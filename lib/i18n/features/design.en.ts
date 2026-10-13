@@ -9,13 +9,13 @@ const design = {
   title: "Design",
   appearance: {
     title: "Appearance",
-    intro: "Changes show in the preview straight away.",
+    intro: "These settings apply to this document only. Changes show in the preview straight away.",
     reset: "Reset appearance",
     resetDone: "Appearance is back to the template’s defaults.",
   },
   accent: {
     legend: "Accent colour",
-    hint: "Used for headings and lines. Where it appears depends on the template.",
+    hint: "Used for the name, headings and lines. Where it appears depends on the template.",
     /** Names of the colour presets in lib/doc-style.ts (ACCENT_PRESETS ids). */
     names: {
       default: "Template colour",
@@ -27,18 +27,18 @@ const design = {
       plum: "Plum",
       graphite: "Graphite",
     },
-    custom: "Custom",
-    pickerLabel: "Choose a colour",
+    custom: "Custom colour",
+    pickerLabel: "Colour",
     hexLabel: "Colour code",
-    hexHint: "A hex code such as #21507a.",
-    hexError: "Enter a six-digit colour code such as #21507a.",
-    contrast: "Contrast on white paper: {ratio}:1.",
+    hexHint: "Six digits, for example #21507a.",
+    hexError: "Enter a six-digit colour code, for example #21507a.",
+    contrast: "Contrast on white paper: {ratio}:1",
     lowContrast:
-      "This colour is too light for text on white paper (contrast {ratio}:1). Headings may be hard to read, especially in print. Choose a darker colour with a contrast of at least 4.5:1.",
+      "This colour is too light for text on white paper. Headings may be hard to read, especially when printed. Choose a darker colour with a contrast of at least 4.5:1.",
   },
   font: {
     legend: "Font",
-    hint: "IBM Plex comes with this site, so it looks the same on every device. System fonts depend on the device that makes the PDF.",
+    hint: "IBM Plex is included with this site, so it looks the same on every device. System fonts depend on the device that makes the PDF.",
     options: {
       default: "Template font",
       sans: "System sans-serif",
@@ -54,7 +54,7 @@ const design = {
   },
   spacing: {
     legend: "Spacing",
-    hint: "Space between lines and sections. Compact can help a CV fit on fewer pages.",
+    hint: "Space between lines and sections. Compact can help a long CV fit on fewer pages.",
     options: { compact: "Compact", normal: "Normal", relaxed: "Relaxed" },
   },
   margin: {
@@ -66,8 +66,8 @@ const design = {
   sections: {
     title: "Sections",
     intro:
-      "Sections follow the template’s order until you move one. Hiding a section keeps what you wrote; it just won’t appear on the CV.",
-    personalNote: "Personal information always comes first.",
+      "Sections follow the template’s order until you move one. A hidden section keeps what you wrote, it just doesn’t appear on the CV.",
+    personalNote: "Your name and contact details always come first.",
     listLabel: "CV sections in order",
     moveUp: "Move {name} up",
     moveDown: "Move {name} down",
@@ -76,12 +76,10 @@ const design = {
     /** Accessible name of the toggle; starts with the visible text. */
     showLabel: "Show {name}",
     hiddenNote: "Hidden from the CV",
-    emptyNote: "No content yet",
+    emptyNote: "Nothing filled in yet, so it doesn’t appear on the CV",
     untitled: "Untitled section",
     reset: "Reset to template order",
     moved: "{name} moved to position {position} of {total}.",
-    shown: "{name} is shown on the CV.",
-    hidden: "{name} is hidden from the CV.",
     resetDone: "Sections are back in the template’s order.",
   },
 };
