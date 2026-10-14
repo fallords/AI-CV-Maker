@@ -1,4 +1,5 @@
 import { docFileBase, type AnyDoc } from "@/lib/documents";
+import { printWithTitle } from "@/lib/pdf";
 
 /**
  * Opens the browser's print dialog for the document rendered in #cv-print-root (see
@@ -7,19 +8,5 @@ import { docFileBase, type AnyDoc } from "@/lib/documents";
  * Returns false when printing is not available (e.g. some in-app browsers).
  */
 export function printDocument(doc: AnyDoc, win: Window = window): boolean {
-  if (typeof win.print !== "function") return false;
-  const previousTitle = win.document.title;
-  win.document.title = docFileBase(doc);
-  const restore = () => {
-    win.document.title = previousTitle;
-    win.removeEventListener("afterprint", restore);
-  };
-  win.addEventListener("afterprint", restore);
-  try {
-    win.print();
-  } catch {
-    restore();
-    return false;
-  }
-  return true;
+  return printWithTitle(docFileBase(doc), win);
 }

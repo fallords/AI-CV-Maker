@@ -30,6 +30,7 @@ export function LanguagesSection(props: SectionProps) {
       renderFields={(l, update) => (
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_12rem]">
           <TextField
+            field="name"
             label={f.name}
             placeholder={f.namePlaceholder}
             value={l.name}
@@ -63,20 +64,33 @@ export function OrganizationsSection(props: SectionProps) {
         renderFields={(o, update) => (
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
+              field="role"
               label={f.role}
               placeholder={f.rolePlaceholder}
               value={o.role}
               onChange={(v) => update({ role: v })}
             />
-            <TextField label={f.organization} value={o.organization} onChange={(v) => update({ organization: v })} />
             <TextField
+              field="organization"
+              label={f.organization}
+              value={o.organization}
+              onChange={(v) => update({ organization: v })}
+            />
+            <TextField
+              field="location"
               className="sm:col-span-2"
               label={f.location}
               value={o.location}
               onChange={(v) => update({ location: v })}
             />
-            <MonthField label={f.startDate} value={o.startDate} onChange={(v) => update({ startDate: v })} />
             <MonthField
+              field="startDate"
+              label={f.startDate}
+              value={o.startDate}
+              onChange={(v) => update({ startDate: v })}
+            />
+            <MonthField
+              field="endDate"
               label={f.endDate}
               value={o.current ? "" : o.endDate}
               disabled={o.current}
@@ -90,6 +104,7 @@ export function OrganizationsSection(props: SectionProps) {
               onChange={(v) => update({ current: v })}
             />
             <TextAreaField
+              field="description"
               className="sm:col-span-2"
               label={f.description}
               hint={f.descriptionHint}
@@ -118,15 +133,17 @@ export function AwardsSection(props: SectionProps) {
       renderFields={(a, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
+            field="title"
             className="sm:col-span-2"
             label={f.name}
             placeholder={f.namePlaceholder}
             value={a.title}
             onChange={(v) => update({ title: v })}
           />
-          <TextField label={f.issuer} value={a.issuer} onChange={(v) => update({ issuer: v })} />
-          <MonthField label={f.date} value={a.date} onChange={(v) => update({ date: v })} />
+          <TextField field="issuer" label={f.issuer} value={a.issuer} onChange={(v) => update({ issuer: v })} />
+          <MonthField field="date" label={f.date} value={a.date} onChange={(v) => update({ date: v })} />
           <TextAreaField
+            field="description"
             className="sm:col-span-2"
             label={f.description}
             hint={f.descriptionHint}
@@ -156,20 +173,34 @@ export function ReferencesSection(props: SectionProps) {
         renderFields={(r, update) => (
           // autoComplete="off": these are someone else's details, not the user's own.
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label={f.name} value={r.name} onChange={(v) => update({ name: v })} autoComplete="off" />
             <TextField
+              field="name"
+              label={f.name}
+              value={r.name}
+              onChange={(v) => update({ name: v })}
+              autoComplete="off"
+            />
+            <TextField
+              field="relationship"
               label={f.relationship}
               placeholder={f.relationshipPlaceholder}
               value={r.relationship}
               onChange={(v) => update({ relationship: v })}
             />
-            <TextField label={f.position} value={r.position} onChange={(v) => update({ position: v })} />
             <TextField
+              field="position"
+              label={f.position}
+              value={r.position}
+              onChange={(v) => update({ position: v })}
+            />
+            <TextField
+              field="organization"
               label={f.organization}
               value={r.organization}
               onChange={(v) => update({ organization: v })}
             />
             <TextField
+              field="email"
               label={f.email}
               type="email"
               inputMode="email"
@@ -179,6 +210,7 @@ export function ReferencesSection(props: SectionProps) {
               error={r.email.trim() && !isValidEmail(r.email) ? t.form.errors.email : null}
             />
             <TextField
+              field="phone"
               label={f.phone}
               type="tel"
               inputMode="tel"
@@ -209,6 +241,7 @@ export function InterestsSection(props: SectionProps) {
         getTitle={(i) => i.name}
         renderFields={(i, update) => (
           <TextField
+            field="name"
             label={f.name}
             placeholder={f.namePlaceholder}
             value={i.name}

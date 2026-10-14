@@ -119,7 +119,9 @@ export function BuilderApp() {
   // Remounts the editor when another document opens, so per-form state never leaks across documents.
   const [editorKey, setEditorKey] = useState(0);
   // Where the last check finding asked to go: a section (and entry) of the form, or a panel to focus as a whole.
-  const [jump, setJump] = useState<{ target: string; itemId?: string; wholePanel?: boolean } | null>(null);
+  const [jump, setJump] = useState<{ target: string; itemId?: string; field?: string; wholePanel?: boolean } | null>(
+    null,
+  );
 
   // Mirrors for timers and page lifecycle handlers.
   const docRef = useRef(doc);
@@ -326,10 +328,17 @@ export function BuilderApp() {
     }
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? true;
     scope.scrollIntoView({ block: scope === section ? "start" : "center", behavior: reduceMotion ? "auto" : "smooth" });
-    // A field of the entry or section; an empty section offers its "Add" button instead.
+    // The field the finding is about, else the first field of the entry or section; an
+    // empty section offers its "Add" button instead.
+    const named = jump.field
+      ? Array.from(scope.querySelectorAll<HTMLElement>("[data-field]")).find(
+          (el) => el.dataset.field === jump.field && el.matches(JUMP_FIELDS) && !el.closest("fieldset:disabled"),
+        )
+      : undefined;
     const target = jump.wholePanel
       ? scope
-      : (scope.querySelector<HTMLElement>(JUMP_FIELDS) ??
+      : (named ??
+        scope.querySelector<HTMLElement>(JUMP_FIELDS) ??
         scope.querySelector<HTMLElement>("button:not([disabled])") ??
         scope);
     if (target === scope && !scope.hasAttribute("tabindex")) scope.setAttribute("tabindex", "-1");
@@ -535,7 +544,7 @@ export function BuilderApp() {
 
   /* ---------------- check jumps ---------------- */
 
-  const onJump = (target: string, itemId?: string) => {
+  const onJump = (target: string, itemId?: string, field?: string) => {
     setMobileTab("edit");
     if (target === DESIGN_TARGET) {
       setEditorTab("design");
@@ -543,7 +552,7 @@ export function BuilderApp() {
       return;
     }
     setEditorTab("content");
-    setJump({ target, itemId });
+    setJump({ target, itemId, field });
   };
 
   /* ---------------- render ---------------- */

@@ -22,7 +22,9 @@ import {
   MARGINS,
   MARGIN_MM,
   SPACINGS,
+  TEMPLATE_COLORS,
   contrastOnWhite,
+  templateColor,
   isDefaultStyle,
   type AccentPresetId,
   type DocStyle,
@@ -36,15 +38,11 @@ import { btn, inputClass } from "../ui/styles";
 export const MIN_ACCENT_CONTRAST = 4.5;
 
 /**
- * Each template's own accent colour (app/globals.css: `.tpl-*` `--cv-accent`, and the
- * near-black text colour that ATS Minimal uses when no accent is set). Shown on the
- * "Template colour" swatch and used as the starting point for a custom colour.
+ * Each template's own accent colour (lib/doc-style.ts TEMPLATE_COLORS, which mirrors
+ * app/globals.css). Shown on the "Template colour" swatch and used as the starting point
+ * for a custom colour.
  */
-export const TEMPLATE_ACCENTS: Record<TemplateId, string> = {
-  "ats-minimal": "#1c1917",
-  "modern-professional": "#245740",
-  graduate: "#2d6a4f",
-};
+export const TEMPLATE_ACCENTS: Readonly<Record<TemplateId, string>> = TEMPLATE_COLORS;
 
 type DesignStrings = Dictionary["design"];
 type AccentChoice = AccentPresetId | "custom";
@@ -545,7 +543,7 @@ export function DesignPanel({
   const [lastCustom, setLastCustom] = useState<string | null>(accent && !presetMatch ? accent : null);
   const accentChoice: AccentChoice =
     accent !== "" && (customFor === accent || !presetMatch) ? "custom" : (presetMatch?.id ?? "default");
-  const templateAccent = TEMPLATE_ACCENTS[template] ?? TEMPLATE_ACCENTS["ats-minimal"];
+  const templateAccent = templateColor(template);
 
   const setCustom = (hex: string) => {
     setCustomFor(hex);

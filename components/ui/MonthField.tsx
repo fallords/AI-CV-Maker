@@ -19,6 +19,7 @@ export function MonthField({
   disabled = false,
   error,
   className,
+  field,
 }: {
   label: string;
   value: string;
@@ -26,6 +27,8 @@ export function MonthField({
   disabled?: boolean;
   error?: string | null;
   className?: string;
+  /** Data field name, written to `data-field` on the month select (the checker jumps there). */
+  field?: string;
 }) {
   const { t, lang } = useI18n();
   const id = useId();
@@ -50,6 +53,7 @@ export function MonthField({
       <div className="grid grid-cols-2 gap-2">
         <select
           aria-label={`${label}: ${t.form.month}`}
+          data-field={field}
           value={month}
           onChange={(e) => emit(year, e.target.value)}
           className={inputClass}

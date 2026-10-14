@@ -1,5 +1,5 @@
 import { CV_LABELS } from "@/lib/cv-format";
-import { formatLetterDate, letterParagraphs, type LetterData } from "@/lib/letter-schema";
+import { letterDateLine, letterParagraphs, type LetterData } from "@/lib/letter-schema";
 import { templateFor } from "./index";
 import { DocRoot } from "./parts";
 
@@ -9,17 +9,6 @@ function lines(value: string): string[] {
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
-}
-
-/**
- * The date line. Indonesian letters conventionally open with the place and date
- * ("Bandung, 13 Oktober 2026"), so the sender's city is added for letters in Indonesian.
- */
-export function letterDateLine(letter: LetterData): string {
-  const date = formatLetterDate(letter.date, letter.meta.language);
-  if (!date) return "";
-  const city = letter.meta.language === "id" ? letter.sender.city.trim() : "";
-  return city ? `${city}, ${date}` : date;
 }
 
 /**

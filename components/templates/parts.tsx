@@ -11,7 +11,6 @@ import {
   filledItems,
   type CVData,
   type CustomSection,
-  type Language,
   type LanguageItem,
   type PersonalInfo,
   type SkillItem,
@@ -53,15 +52,6 @@ export interface HeaderProps {
   /** data: URL; only templates that show photos use it. */
   photo?: string;
 }
-
-/**
- * Heading for a custom section whose title was left blank (the checker asks the user to
- * name it). Lives here, next to the other in-document labels, in the document's language.
- */
-export const UNTITLED_SECTION_LABEL: Record<Language, string> = {
-  en: "Additional Information",
-  id: "Informasi Tambahan",
-};
 
 export function labelsFor(cv: CVData): CVLabels {
   return CV_LABELS[cv.meta.cvLanguage] ?? CV_LABELS.en;
@@ -470,7 +460,7 @@ export function CustomSectionBlock({ cv, section }: TemplateProps & { section: C
       <RichText text={item.description} />
     </article>
   ));
-  const title = section.title.trim() || (UNTITLED_SECTION_LABEL[lang] ?? UNTITLED_SECTION_LABEL.en);
+  const title = section.title.trim() || labelsFor(cv).untitledSection;
   return (
     <Section id="custom" sectionKey={customSectionKey(section.id)} title={title}>
       {items}

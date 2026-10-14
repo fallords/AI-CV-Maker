@@ -15,7 +15,17 @@ import { I18nProvider } from "@/lib/i18n";
 import letterEn from "@/lib/i18n/features/letter.en";
 import letterId from "@/lib/i18n/features/letter.id";
 import { letterReducer, type LetterAction } from "@/lib/letter-reducer";
-import { LETTER_DEFAULTS, createEmptyLetter, senderFromCV, todayIso, type LetterData } from "@/lib/letter-schema";
+import {
+  LETTER_DEFAULTS,
+  MAX_ADDRESS,
+  MAX_BODY,
+  MAX_LETTER_FIELD,
+  createEmptyLetter,
+  sanitizeLetter,
+  senderFromCV,
+  todayIso,
+  type LetterData,
+} from "@/lib/letter-schema";
 import { richSampleCV, sampleLetter } from "@/lib/sample-cv";
 
 // Typing into many fields with userEvent is slow in jsdom.
@@ -217,8 +227,20 @@ describe("LetterForm editing", SLOW, () => {
   it("shows the address hint and keeps the field within the stored limits", () => {
     renderForm();
     expect(screen.getByLabelText("Address")).toHaveAccessibleDescription(letterEn.recipient.addressHint);
-    expect(screen.getByLabelText("Address")).toHaveAttribute("maxlength", "1000");
+    expect(screen.getByLabelText("Address")).toHaveAttribute("maxlength", String(MAX_ADDRESS));
     expect(screen.getByLabelText("Main text")).toHaveAttribute("maxlength", String(LETTER_BODY_MAX));
+    expect(screen.getByLabelText("Subject")).toHaveAttribute("maxlength", String(MAX_LETTER_FIELD));
+    // The form's limits are the ones sanitizeLetter applies when the letter is stored.
+    expect(LETTER_BODY_MAX).toBe(MAX_BODY);
+    const long = sanitizeLetter({
+      ...createEmptyLetter("en"),
+      body: "a".repeat(MAX_BODY + 10),
+      subject: "b".repeat(MAX_LETTER_FIELD + 10),
+      recipient: { name: "", title: "", company: "", address: "c".repeat(MAX_ADDRESS + 10) },
+    } as unknown as Record<string, unknown>);
+    expect(long.body).toHaveLength(MAX_BODY);
+    expect(long.subject).toHaveLength(MAX_LETTER_FIELD);
+    expect(long.recipient.address).toHaveLength(MAX_ADDRESS);
   });
 });
 

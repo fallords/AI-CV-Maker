@@ -13,7 +13,15 @@
  */
 
 import type * as Docx from "docx";
-import { FONT_SIZE_PT, MARGIN_MM, SPACING_SCALE, type DocStyle, type FontOption } from "../doc-style";
+import {
+  DOC_COLORS,
+  FONT_SIZE_PT,
+  MARGIN_MM,
+  SPACING_SCALE,
+  TEMPLATE_COLORS,
+  type DocStyle,
+  type FontOption,
+} from "../doc-style";
 import type { AnyDoc } from "../documents";
 import type { TemplateId } from "../cv-schema";
 import { EXPORT_MIME } from "./download";
@@ -49,14 +57,21 @@ const A4 = { width: twips(210), height: twips(297) };
 
 /* ---------------- theme ---------------- */
 
-/** The templates' neutral colours (app/globals.css .cv-doc). */
-export const WORD_COLORS = { text: "1C1917", muted: "57534E", rule: "D6D3D1" } as const;
+/** "#rrggbb" → "RRGGBB" (Word colour values). */
+const wordColor = (hex: string): string => hex.replace("#", "").toUpperCase();
+
+/** The templates' neutral colours (lib/doc-style.ts DOC_COLORS, as in app/globals.css .cv-doc). */
+export const WORD_COLORS = {
+  text: wordColor(DOC_COLORS.text),
+  muted: wordColor(DOC_COLORS.muted),
+  rule: wordColor(DOC_COLORS.rule),
+} as const;
 
 /** Template accent colours used when the style keeps the template default (accent ""). */
 export const TEMPLATE_ACCENTS: Record<TemplateId, string | null> = {
   "ats-minimal": null, // black text; a chosen accent colours the name, headings and header rule
-  "modern-professional": "245740",
-  graduate: "2D6A4F",
+  "modern-professional": wordColor(TEMPLATE_COLORS["modern-professional"]),
+  graduate: wordColor(TEMPLATE_COLORS.graduate),
 };
 
 /**
@@ -117,7 +132,8 @@ export function mixWithWhite(hex: string, amount: number): string {
 /** The Word look of a template with the given appearance settings. */
 export function wordTheme(template: TemplateId, style: DocStyle): WordTheme {
   const custom = style.accent ? style.accent.replace("#", "").toUpperCase() : null;
-  const accent = custom ?? TEMPLATE_ACCENTS[template] ?? null;
+  const accent =
+    custom ?? (Object.prototype.hasOwnProperty.call(TEMPLATE_ACCENTS, template) ? TEMPLATE_ACCENTS[template] : null);
   const chosenFont = style.font === "default" ? null : WORD_FONTS[style.font];
   const base = {
     bodyFont: chosenFont ?? WORD_FONTS.sans,

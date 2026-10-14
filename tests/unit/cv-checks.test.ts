@@ -684,7 +684,12 @@ describe("checks dictionaries", () => {
 
 describe("ChecksPanel", () => {
   // Plain createElement keeps this test in a .ts file.
-  const panel = (cv: CVData, pages: number, lang: Language, onJump: (target: string, itemId?: string) => void) =>
+  const panel = (
+    cv: CVData,
+    pages: number,
+    lang: Language,
+    onJump: (target: string, itemId?: string, field?: string) => void,
+  ) =>
     h(I18nProvider, { initialLang: lang, children: h(ChecksPanel, { cv, pages, onJump }) });
 
   function renderPanel(cv: CVData, { pages = 1, lang = "en" as Language } = {}) {
@@ -731,15 +736,18 @@ describe("ChecksPanel", () => {
     );
   });
 
-  it("calls onJump with the target and entry id", () => {
+  it("calls onJump with the target, entry id and field", () => {
     const cv = cleanCV();
     cv.experience[2].endDate = "2018-01";
     cv.meta.style.accent = "#aaaaaa";
+    cv.personal.phone = "";
     const { onJump } = renderPanel(cv);
     fireEvent.click(screen.getByRole("button", { name: /The end date is before the start date/ }));
-    expect(onJump).toHaveBeenLastCalledWith("experience", "exp3");
+    expect(onJump).toHaveBeenLastCalledWith("experience", "exp3", "endDate");
+    fireEvent.click(screen.getByRole("button", { name: /Add a phone number/ }));
+    expect(onJump).toHaveBeenLastCalledWith("personal", undefined, "phone");
     fireEvent.click(screen.getByRole("button", { name: /accent colour/ }));
-    expect(onJump).toHaveBeenLastCalledWith(DESIGN_TARGET, undefined);
+    expect(onJump).toHaveBeenLastCalledWith(DESIGN_TARGET, undefined, undefined);
   });
 
   it("shows a positive message when there's nothing to fix", () => {

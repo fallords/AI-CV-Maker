@@ -73,6 +73,16 @@ export const TEMPLATE_SECTION_ORDER: Record<TemplateId, BuiltinSectionKey[]> = {
   ],
 };
 
+/**
+ * The template's default section order. Unknown template ids (including inherited
+ * Object.prototype keys such as "constructor") fall back to ATS Minimal.
+ */
+export function templateSectionOrder(template: string): readonly BuiltinSectionKey[] {
+  return Object.prototype.hasOwnProperty.call(TEMPLATE_SECTION_ORDER, template)
+    ? TEMPLATE_SECTION_ORDER[template as TemplateId]
+    : TEMPLATE_SECTION_ORDER["ats-minimal"];
+}
+
 /** The list fields (ListSection) whose entries make up each built-in section. "summary" has none. */
 export const SECTION_LISTS: Record<BuiltinSectionKey, readonly ListSection[]> = {
   summary: [],
@@ -139,7 +149,7 @@ export function sectionDomId(key: SectionKey): string {
  * appended in template order, followed by missing custom sections in creation order.
  */
 export function allSectionsInOrder(cv: CVData): SectionKey[] {
-  const templateOrder = TEMPLATE_SECTION_ORDER[cv.meta.template] ?? TEMPLATE_SECTION_ORDER["ats-minimal"];
+  const templateOrder = templateSectionOrder(cv.meta.template);
   const customKeys = cv.customSections.map((s) => customSectionKey(s.id));
   const stored = Array.isArray(cv.meta.sectionOrder) ? cv.meta.sectionOrder : [];
   if (stored.length === 0) return [...templateOrder, ...customKeys];

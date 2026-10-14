@@ -39,6 +39,7 @@ export function CustomSectionEditor({
   return (
     <div className="space-y-5">
       <TextField
+        field="title"
         label={f.sectionTitle}
         hint={f.sectionTitleHint}
         value={section.title}
@@ -64,21 +65,29 @@ export function CustomSectionEditor({
         onMove={(id, direction) => dispatch({ type: "moveCustomItem", sectionId, id, direction })}
         renderFields={(item, update) => (
           <div className="grid gap-4 sm:grid-cols-2">
-            <TextField label={f.title} value={item.title} onChange={(v) => update({ title: v })} />
+            <TextField field="title" label={f.title} value={item.title} onChange={(v) => update({ title: v })} />
             <TextField
+              field="subtitle"
               label={f.subtitle}
               hint={f.subtitleHint}
               value={item.subtitle}
               onChange={(v) => update({ subtitle: v })}
             />
-            <MonthField label={f.startDate} value={item.startDate} onChange={(v) => update({ startDate: v })} />
             <MonthField
+              field="startDate"
+              label={f.startDate}
+              value={item.startDate}
+              onChange={(v) => update({ startDate: v })}
+            />
+            <MonthField
+              field="endDate"
               label={f.endDate}
               value={item.endDate}
               onChange={(v) => update({ endDate: v })}
               error={!isValidMonthRange(item.startDate, item.endDate) ? t.form.errors.dateOrder : null}
             />
             <TextAreaField
+              field="description"
               className="sm:col-span-2"
               label={f.description}
               hint={f.descriptionHint}

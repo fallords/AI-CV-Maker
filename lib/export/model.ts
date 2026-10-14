@@ -30,18 +30,9 @@ import { findCustomSection, isBuiltinSection, visibleSectionsInOrder, type Built
 import { displayUrl, isValidEmail, safeHref } from "../cv-validation";
 import { sanitizeStyle, type DocStyle } from "../doc-style";
 import type { AnyDoc } from "../documents";
-import { formatLetterDate, letterParagraphs, type LetterData } from "../letter-schema";
+import { letterDateLine, letterParagraphs, type LetterData } from "../letter-schema";
 
 export type { TextBlock } from "../cv-format";
-
-/**
- * Heading for a custom section whose title was left blank. Same wording as the
- * templates (UNTITLED_SECTION_LABEL in components/templates/parts.tsx).
- */
-export const UNTITLED_SECTION: Record<Language, string> = {
-  en: "Additional Information",
-  id: "Informasi Tambahan",
-};
 
 /** Templates that show the CV photo (the others never include it). */
 const PHOTO_TEMPLATES: ReadonlySet<TemplateId> = new Set<TemplateId>(["modern-professional", "graduate"]);
@@ -401,7 +392,7 @@ export function buildCVModel(cv: CVData): CVModel {
     const section = findCustomSection(cv, key);
     if (!section) continue;
     const content = customSection(cv, section);
-    if (content) sections.push({ key, title: tidy(section.title) || UNTITLED_SECTION[language], content });
+    if (content) sections.push({ key, title: tidy(section.title) || l.untitledSection, content });
   }
 
   return {
@@ -421,18 +412,6 @@ export function buildCVModel(cv: CVData): CVModel {
 
 /* ---------------- letter ---------------- */
 
-/**
- * The date line. Indonesian letters conventionally open with the place and date
- * ("Bandung, 13 Oktober 2026"), so the sender's city is added for letters in Indonesian.
- * Same rule as letterDateLine in components/templates/LetterDocument.tsx.
- */
-export function letterDateLine(letter: LetterData): string {
-  const date = formatLetterDate(letter.date, letter.meta.language);
-  if (!date) return "";
-  const city = letter.meta.language === "id" ? tidy(letter.sender.city) : "";
-  return city ? `${city}, ${date}` : date;
-}
-
 export function buildLetterModel(letter: LetterData): LetterModel {
   const language = languageOf(letter.meta.language);
   const labels = CV_LABELS[language];
@@ -445,7 +424,7 @@ export function buildLetterModel(letter: LetterData): LetterModel {
     language,
     style: sanitizeStyle(letter.meta.style),
     header: { name: tidy(s.fullName), title: tidy(s.title), contact: contactParts(s), photo: "" },
-    date: letterDateLine(letter),
+    date: tidy(letterDateLine(letter)),
     recipient: nonEmpty([r.name, r.title, r.company, ...cleanText(r.address).split("\n")]),
     subject: subject ? { label: labels.subjectPrefix, text: subject } : null,
     greeting: tidy(letter.greeting),

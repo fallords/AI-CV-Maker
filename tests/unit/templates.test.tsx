@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CVPreview } from "@/components/cv-preview/CVPreview";
 import { DocumentPreview, pageBreaks } from "@/components/cv-preview/DocumentPreview";
 import { CVDocument, TEMPLATES } from "@/components/templates";
-import { LetterDocument, letterDateLine } from "@/components/templates/LetterDocument";
+import { LetterDocument } from "@/components/templates/LetterDocument";
 import { PrintRoot, pageRule } from "@/components/templates/PrintRoot";
 import { ACCENTED_CLASS, FONT_STACKS, docStyleVars } from "@/components/templates/style";
 import { CV_LABELS } from "@/lib/cv-format";
@@ -22,7 +22,7 @@ import {
 } from "@/lib/doc-style";
 import type { AnyDoc } from "@/lib/documents";
 import { I18nProvider } from "@/lib/i18n";
-import { createEmptyLetter, type LetterData } from "@/lib/letter-schema";
+import { createEmptyLetter, letterDateLine, type LetterData } from "@/lib/letter-schema";
 import { richSampleCV, sampleCV, sampleLetter } from "@/lib/sample-cv";
 
 const PHOTO = "data:image/png;base64,iVBORw0KGgo=";

@@ -188,6 +188,23 @@ describe("field validation helpers", () => {
     expect(isValidMonthRange("2020-01", "2021-01")).toBe(true);
     expect(isValidMonthRange("2021-05", "2021-01")).toBe(false);
     expect(isValidMonthRange("", "2021-01")).toBe(true);
+    expect(isValidMonthRange("2021-01", "")).toBe(true);
+    expect(isValidMonthRange("2021-05", "2021-05")).toBe(true);
+  });
+
+  it("compares by year when either date is year-only", () => {
+    // A year-only end can be any month of that year, so these are not errors.
+    expect(isValidMonthRange("2024-05", "2024")).toBe(true);
+    expect(isValidMonthRange("2024", "2024-01")).toBe(true);
+    expect(isValidMonthRange("2024", "2024")).toBe(true);
+    expect(isValidMonthRange("2024", "2025-01")).toBe(true);
+    expect(isValidMonthRange("2024-12", "2025")).toBe(true);
+    // A different year still decides.
+    expect(isValidMonthRange("2024-05", "2023")).toBe(false);
+    expect(isValidMonthRange("2024", "2023-12")).toBe(false);
+    expect(isValidMonthRange("2024", "2023")).toBe(false);
+    // Unreadable dates are never reported as out of order.
+    expect(isValidMonthRange("May 2024", "2023")).toBe(true);
   });
 });
 

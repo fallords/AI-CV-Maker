@@ -1,14 +1,14 @@
 import { writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { TEMPLATE_IDS } from "@/lib/cv-schema";
-import { longCV, pdfPageCount, pdfText, seedDraft } from "./helpers";
+import { longCV, pdfPageCount, pdfText, seedCV } from "./helpers";
 
 const HEADINGS = ["PROFESSIONAL SUMMARY", "WORK EXPERIENCE", "EDUCATION", "PROJECTS", "SKILLS", "CERTIFICATIONS"];
 
 for (const template of TEMPLATE_IDS) {
   test(`multi-page A4 PDF is complete and well paginated: ${template}`, async ({ page }, testInfo) => {
     const cv = longCV(template);
-    await seedDraft(page, cv);
+    await seedCV(page, cv);
     await page.goto("/builder/");
     await expect(page.getByLabel(/Full name/)).toHaveValue("Alex Example");
 
@@ -43,7 +43,7 @@ for (const template of TEMPLATE_IDS) {
 }
 
 test("PDF export does not depend on remote assets", async ({ page, baseURL }) => {
-  await seedDraft(page, longCV("modern-professional"));
+  await seedCV(page, longCV("modern-professional"));
   const external: string[] = [];
   page.on("request", (r) => {
     if (!r.url().startsWith(baseURL!) && !r.url().startsWith("data:")) external.push(r.url());

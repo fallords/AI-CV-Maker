@@ -587,6 +587,25 @@ describe("builder: editor tabs and checks", () => {
     const entry = document.querySelector(`#experience [data-item-id="${cv.experience[1].id}"]`)!;
     expect(entry).not.toBeNull();
     await waitFor(() => expect(entry.contains(document.activeElement)).toBe(true));
+    // The start date is what's missing, so that's the field that gets focus.
+    expect(document.activeElement).toHaveAttribute("data-field", "startDate");
+    expect(document.activeElement).toHaveAccessibleName("Start date: Month");
+  });
+
+  it("jumps from a personal details finding to the field it is about", async () => {
+    const cv = sampleCV();
+    cv.personal.email = "";
+    seedCV(cv);
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    await user.click(screen.getByRole("tab", { name: /^Check/ }));
+    const finding = document.querySelector<HTMLButtonElement>(`[data-check-id="missingEmail:personal"]`)!;
+    expect(finding).not.toBeNull();
+    await user.click(finding);
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-field", "email"));
+    expect(document.activeElement).toHaveAccessibleName("Email");
+    expect(document.querySelector("#personal")!.contains(document.activeElement)).toBe(true);
   });
 
   it("opens the Design tab for design findings", async () => {

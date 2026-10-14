@@ -14,6 +14,7 @@ export function SummarySection({ cv, dispatch }: SectionProps) {
   return (
     <div>
       <TextAreaField
+        field="summary"
         label={t.form.summary.label}
         value={cv.summary}
         rows={5}

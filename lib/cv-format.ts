@@ -20,6 +20,8 @@ export interface CVLabels {
   awards: string;
   references: string;
   interests: string;
+  /** Heading of a custom section whose title was left blank (the checker asks the user to name it). */
+  untitledSection: string;
   present: string;
   role: string;
   technologies: string;
@@ -49,6 +51,7 @@ export const CV_LABELS: Record<Language, CVLabels> = {
     awards: "Awards",
     references: "References",
     interests: "Interests",
+    untitledSection: "Additional Information",
     present: "Present",
     role: "Role",
     technologies: "Technologies",
@@ -93,6 +96,7 @@ export const CV_LABELS: Record<Language, CVLabels> = {
     awards: "Penghargaan",
     references: "Referensi",
     interests: "Minat",
+    untitledSection: "Informasi Tambahan",
     present: "Sekarang",
     role: "Peran",
     technologies: "Teknologi",

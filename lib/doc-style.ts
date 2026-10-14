@@ -6,6 +6,8 @@
  * created before these settings existed render unchanged.
  */
 
+import type { TemplateId } from "./cv-schema";
+
 export const ACCENT_PRESETS = [
   { id: "default", hex: "" }, // template default colour
   { id: "ink", hex: "#1f3a5f" },
@@ -65,6 +67,31 @@ export const SPACING_SCALE: Record<Spacing, { gap: number; lineHeight: number }>
   normal: { gap: 1, lineHeight: 1.4 },
   relaxed: { gap: 1.3, lineHeight: 1.5 },
 };
+
+/**
+ * The neutral colours every template uses (app/globals.css: `.cv-doc` `--cv-text`,
+ * `--cv-muted`, `--cv-rule`). The Word export reuses them; a unit test keeps the two in step.
+ */
+export const DOC_COLORS = { text: "#1c1917", muted: "#57534e", rule: "#d6d3d1" } as const;
+
+/**
+ * Each template's own colour, used when `accent` is "" (app/globals.css: `.tpl-modern` and
+ * `.tpl-graduate` `--cv-accent`; ATS Minimal has no accent and is set in the near-black
+ * text colour). The design panel shows it on the "Template colour" swatch and the Word
+ * export colours headings with it. A unit test keeps it in step with the stylesheet.
+ */
+export const TEMPLATE_COLORS: Record<TemplateId, string> = {
+  "ats-minimal": DOC_COLORS.text,
+  "modern-professional": "#245740",
+  graduate: "#2d6a4f",
+};
+
+/** A template's own colour; unknown ids (including inherited keys like "constructor") get ATS Minimal's. */
+export function templateColor(template: string): string {
+  return Object.prototype.hasOwnProperty.call(TEMPLATE_COLORS, template)
+    ? TEMPLATE_COLORS[template as TemplateId]
+    : TEMPLATE_COLORS["ats-minimal"];
+}
 
 export const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
 

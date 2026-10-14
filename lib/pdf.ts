@@ -29,13 +29,14 @@ export function pdfFileName(cv: CVData): string {
 }
 
 /**
- * Opens the print dialog with a CV-specific document title, then restores the title.
+ * Opens the browser's print dialog with `title` as the page title (browsers suggest it as
+ * the PDF's file name), then restores the previous title once printing is done.
  * Returns false when printing is not available (e.g. some in-app browsers).
  */
-export function printCV(cv: CVData, win: Window = window): boolean {
+export function printWithTitle(title: string, win: Window = window): boolean {
   if (typeof win.print !== "function") return false;
   const previousTitle = win.document.title;
-  win.document.title = pdfFileName(cv);
+  win.document.title = title;
   const restore = () => {
     win.document.title = previousTitle;
     win.removeEventListener("afterprint", restore);
@@ -48,4 +49,9 @@ export function printCV(cv: CVData, win: Window = window): boolean {
     return false;
   }
   return true;
+}
+
+/** Opens the print dialog with a CV-specific document title, then restores the title. */
+export function printCV(cv: CVData, win: Window = window): boolean {
+  return printWithTitle(pdfFileName(cv), win);
 }

@@ -34,7 +34,7 @@ import {
   type BuiltinSectionKey,
   type SectionKey,
 } from "./cv-sections";
-import { isValidEmail, isValidUrl } from "./cv-validation";
+import { isValidEmail, isValidMonthRange, isValidUrl } from "./cv-validation";
 import { contrastOnWhite } from "./doc-style";
 
 export type CheckLevel = "error" | "warning" | "tip";
@@ -110,6 +110,11 @@ export interface CheckItem {
   itemId?: string;
   area: CheckArea;
   /**
+   * The form field the finding is about, when there is one (matches `data-field` in the
+   * form, inside the entry when `itemId` is set), e.g. "email" or "description".
+   */
+  field?: string;
+  /**
    * Values for the message. Entry findings carry `entry` (the entry's title, may be "")
    * and `index` (1-based position in its list); others carry counts such as `count`,
    * `total`, `pages`, `ratio` or `name`.
@@ -123,6 +128,35 @@ export interface CheckResult {
   /** Sorted by level (errors first), then by position in the form. */
   items: CheckItem[];
 }
+
+/**
+ * The form field each rule points at (`data-field` in the form). Rules about a whole
+ * section or the design have none; the jump then lands on the section's first field.
+ */
+export const CHECK_FIELDS: Partial<Record<CheckRule, string>> = {
+  missingName: "fullName",
+  missingEmail: "email",
+  invalidEmail: "email",
+  missingPhone: "phone",
+  missingCity: "city",
+  missingTitle: "title",
+  invalidLinkedin: "linkedin",
+  invalidWebsite: "website",
+  summaryShort: "summary",
+  summaryLong: "summary",
+  summaryMissing: "summary",
+  noDescription: "description",
+  noBullets: "description",
+  firstPerson: "description",
+  longLines: "description",
+  noDates: "startDate",
+  noStartDate: "startDate",
+  noEndDate: "endDate",
+  dateOrder: "endDate",
+  invalidProjectUrl: "url",
+  invalidReferenceEmail: "email",
+  customNoTitle: "title",
+};
 
 /* ---------- Thresholds and weights ---------- */
 
@@ -390,24 +424,13 @@ export function startsWithActionVerb(line: string): boolean {
   return isActionVerb(firstWord(line));
 }
 
-/** "YYYY" or "YYYY-MM" → comparable parts; null for anything else. */
-function parseMonth(value: string): { year: number; month: number | null } | null {
-  const m = /^(\d{4})(?:-(\d{2}))?$/.exec(value.trim());
-  if (!m) return null;
-  return { year: Number(m[1]), month: m[2] ? Number(m[2]) : null };
-}
-
 /**
  * True when the end date is before the start date. A year-only date is compared by
- * year, so "2024-05" → "2024" is fine (the end can be any month of 2024).
+ * year, so "2024-05" → "2024" is fine (the end can be any month of 2024). Same rule as
+ * the form's date-order error (isValidMonthRange).
  */
 export function isEndBeforeStart(start: string, end: string): boolean {
-  const s = parseMonth(start);
-  const e = parseMonth(end);
-  if (!s || !e) return false;
-  if (s.year !== e.year) return e.year < s.year;
-  if (s.month === null || e.month === null) return false;
-  return e.month < s.month;
+  return !isValidMonthRange(start, end);
 }
 
 const normalizeName = (s: string) => s.trim().replace(/\s+/g, " ").toLowerCase();
@@ -774,6 +797,8 @@ function finish(drafts: Draft[]): CheckResult {
         area: d.area,
       };
       if (d.itemId) item.itemId = d.itemId;
+      const field = CHECK_FIELDS[d.rule];
+      if (field) item.field = field;
       if (d.params) item.params = d.params;
       return item;
     });

@@ -1,7 +1,6 @@
 "use client";
 
 import { useId, useRef, useState, type Dispatch, type ReactNode, type RefObject } from "react";
-import { letterDateLine } from "@/components/templates/LetterDocument";
 import { CV_LABELS } from "@/lib/cv-format";
 import { LANGUAGES, type CVData, type Language } from "@/lib/cv-schema";
 import { isValidEmail, isValidUrl } from "@/lib/cv-validation";
@@ -10,6 +9,9 @@ import type { LetterAction, LetterField } from "@/lib/letter-reducer";
 import {
   LETTER_DEFAULTS,
   LETTER_SENDER_FIELDS,
+  MAX_ADDRESS,
+  MAX_BODY,
+  letterDateLine,
   letterParagraphs,
   senderFromCV,
   todayIso,
@@ -21,10 +23,8 @@ import { ConfirmDialog } from "../ui/Dialog";
 import { TextAreaField, TextField } from "../ui/Field";
 import { btn, inputClass } from "../ui/styles";
 
-/** Longest body the letter keeps (same cap as `sanitizeLetter` in lib/letter-schema.ts). */
-export const LETTER_BODY_MAX = 10_000;
-/** Longest recipient address the letter keeps (same cap as `sanitizeLetter`). */
-const ADDRESS_MAX = 1_000;
+/** Longest body the letter keeps (the cap `sanitizeLetter` applies). */
+export const LETTER_BODY_MAX = MAX_BODY;
 /** Above this many words the editor suggests trimming the letter. */
 export const LONG_LETTER_WORDS = 400;
 /** The remaining-characters note appears when this few characters are left. */
@@ -439,7 +439,7 @@ export function LetterForm(props: LetterFormProps) {
             hint={l.recipient.addressHint}
             value={r.address}
             rows={3}
-            maxLength={ADDRESS_MAX}
+            maxLength={MAX_ADDRESS}
             onChange={(v) => setRecipient({ address: v })}
           />
         </div>

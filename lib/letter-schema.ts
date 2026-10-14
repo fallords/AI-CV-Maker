@@ -69,9 +69,13 @@ export const LETTER_SENDER_FIELDS = [
 
 export const LETTER_RECIPIENT_FIELDS = ["name", "title", "company", "address"] as const satisfies readonly (keyof LetterRecipient)[];
 
-const MAX_SHORT = 300;
-const MAX_ADDRESS = 1000;
-const MAX_BODY = 10_000;
+/** Longest value kept for one-line fields (sender, recipient name, subject, greeting…). */
+export const MAX_LETTER_FIELD = 300;
+const MAX_SHORT = MAX_LETTER_FIELD;
+/** Longest recipient address kept (it may span several lines). */
+export const MAX_ADDRESS = 1000;
+/** Longest letter body kept. */
+export const MAX_BODY = 10_000;
 
 /** Today's date in the browser's time zone as "YYYY-MM-DD". */
 export function todayIso(now: Date = new Date()): string {
@@ -218,6 +222,19 @@ export function formatLetterDate(iso: string, lang: Language): string {
   const m = DATE_RE.exec(iso)!;
   const labels = CV_LABELS[lang] ?? CV_LABELS.en;
   return `${Number(m[3])} ${labels.monthsLong[Number(m[2]) - 1]} ${m[1]}`;
+}
+
+/**
+ * The date line as the letter prints it. Indonesian letters conventionally open with
+ * the place and date ("Bandung, 13 Oktober 2026"), so the sender's city is added for
+ * letters in Indonesian; English letters show the date only. "" when there is no date.
+ * Shared by the letter template, the letter form and the Word/text exports.
+ */
+export function letterDateLine(letter: LetterData): string {
+  const date = formatLetterDate(letter.date, letter.meta.language);
+  if (!date) return "";
+  const city = letter.meta.language === "id" ? letter.sender.city.replace(/\s+/g, " ").trim() : "";
+  return city ? `${city}, ${date}` : date;
 }
 
 /** Splits the body into paragraphs (separated by blank lines); single line breaks are kept inside a paragraph. */

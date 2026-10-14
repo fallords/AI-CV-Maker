@@ -434,6 +434,22 @@ export function displayUrl(v: string): string {
   return v.trim().replace(/^https?:\/\//i, "").replace(/\/$/, "");
 }
 
+/** "YYYY" or "YYYY-MM" → comparable parts; null for anything else (including ""). */
+function monthParts(value: string): { year: number; month: number | null } | null {
+  const m = /^(\d{4})(?:-(0[1-9]|1[0-2]))?$/.exec(value.trim());
+  return m ? { year: Number(m[1]), month: m[2] ? Number(m[2]) : null } : null;
+}
+
+/**
+ * False only when the end date is known to be before the start date. Blank or
+ * unreadable dates never count as an error. When either side is year-only ("2024") the
+ * two are compared by year, so "2024-05" → "2024" and "2024" → "2024-01" are both fine.
+ */
 export function isValidMonthRange(start: string, end: string): boolean {
-  return !start || !end || start <= end;
+  const s = monthParts(start);
+  const e = monthParts(end);
+  if (!s || !e) return true;
+  if (s.year !== e.year) return s.year < e.year;
+  if (s.month === null || e.month === null) return true;
+  return s.month <= e.month;
 }

@@ -27,7 +27,8 @@ export interface ChecksPanelProps {
    * findings that are fixed in the Design tab; `itemId` names the entry
    * (`data-item-id` in the form) when the finding is about one.
    */
-  onJump: (target: string, itemId?: string) => void;
+  /** `field` names the form control (`data-field`) to focus inside the target, when known. */
+  onJump: (target: string, itemId?: string, field?: string) => void;
 }
 
 const BAR: Record<CheckLevel, string> = {
@@ -158,7 +159,7 @@ export function ChecksPanel({ cv, pages, onJump }: ChecksPanelProps) {
                         <button
                           type="button"
                           className="group flex min-h-11 w-full items-start gap-3 py-3 pr-2 pl-1 text-left hover:bg-raised focus-visible:outline-offset-[-2px]"
-                          onClick={() => onJump(item.target, item.itemId)}
+                          onClick={() => onJump(item.target, item.itemId, item.field)}
                           data-check-id={item.id}
                         >
                           <span aria-hidden="true" className={`w-0.5 shrink-0 self-stretch ${BAR[level]}`} />

@@ -14,6 +14,7 @@ import {
   parseCustomKey,
   sectionDomId,
   sectionExists,
+  templateSectionOrder,
   visibleSectionsInOrder,
   type SectionKey,
 } from "@/lib/cv-sections";
@@ -111,6 +112,17 @@ describe("section order", () => {
   it("uses the template default when no order is stored", () => {
     for (const template of TEMPLATE_IDS) {
       expect(allSectionsInOrder(sampleCV(template))).toEqual(TEMPLATE_SECTION_ORDER[template]);
+    }
+  });
+
+  it("falls back to ATS Minimal for unknown or inherited template ids", () => {
+    for (const template of TEMPLATE_IDS) expect(templateSectionOrder(template)).toEqual(TEMPLATE_SECTION_ORDER[template]);
+    for (const bad of ["constructor", "toString", "__proto__", "hasOwnProperty", "nope", ""]) {
+      expect(templateSectionOrder(bad)).toEqual(TEMPLATE_SECTION_ORDER["ats-minimal"]);
+      const cv = createEmptyCV();
+      const broken = { ...cv, meta: { ...cv.meta, template: bad } } as unknown as CVData;
+      expect(allSectionsInOrder(broken)).toEqual(TEMPLATE_SECTION_ORDER["ats-minimal"]);
+      expect(() => visibleSectionsInOrder(broken)).not.toThrow();
     }
   });
 
