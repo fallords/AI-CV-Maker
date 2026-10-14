@@ -41,7 +41,12 @@ export function MenuButton({
   const panelRef = useRef<HTMLDivElement>(null);
   const panelId = useId();
 
-  const items = () => Array.from(panelRef.current?.querySelectorAll<HTMLElement>(ITEMS) ?? []);
+  // Items hidden at some screen widths (e.g. "Save" outside phones) are skipped. Without
+  // checkVisibility (older browsers, jsdom) every item counts.
+  const items = () =>
+    Array.from(panelRef.current?.querySelectorAll<HTMLElement>(ITEMS) ?? []).filter(
+      (el) => typeof el.checkVisibility !== "function" || el.checkVisibility(),
+    );
 
   // The panel lines up with the trigger's end edge and shifts sideways when that would
   // push it past either edge of a narrow screen. It is a fresh element on every open,

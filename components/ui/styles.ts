@@ -12,7 +12,15 @@ export const btn = {
   icon: "inline-flex size-10 items-center justify-center rounded-sm text-fg-muted hover:bg-raised hover:text-fg disabled:opacity-30 disabled:hover:bg-transparent",
 };
 
-export const inputClass =
-  "block w-full rounded-sm border border-control-line bg-raised px-3 py-2 text-base text-fg placeholder:text-fg-subtle focus:border-accent-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-text aria-[invalid=true]:border-danger-text disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-fg-subtle sm:text-sm";
+const fieldBase =
+  "block w-full rounded-sm border border-control-line bg-raised py-2 text-base text-fg placeholder:text-fg-subtle focus:border-accent-text focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-accent-text aria-[invalid=true]:border-danger-text disabled:cursor-not-allowed disabled:border-line disabled:bg-surface disabled:text-fg-subtle sm:text-sm";
+
+export const inputClass = `${fieldBase} px-3`;
+
+/**
+ * For <select>: browsers add about 4px of their own padding before the selected text,
+ * so 8px here lines that text up with the 12px of the inputs above and below it.
+ */
+export const selectClass = `${fieldBase} px-2`;
 
 export const card = "rounded-sm border border-line bg-surface";

@@ -126,7 +126,7 @@ export async function downloadAs(
   page: Page,
   format: "Word (.docx)" | "Plain text (.txt)" | "JSON backup",
 ): Promise<Download> {
-  await page.getByRole("button", { name: "Other download formats" }).click();
+  await page.getByRole("button", { name: "All formats" }).click();
   const menu = page.getByRole("group", { name: "Download formats" });
   const pending = page.waitForEvent("download");
   await menu.getByRole("button", { name: format }).click();

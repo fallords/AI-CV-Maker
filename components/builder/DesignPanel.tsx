@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type Dispatch, type ReactNode } from "react";
+import { builtinSectionTitle } from "@/components/cv-form/section-titles";
 import { FONT_STACKS } from "@/components/templates/style";
-import { CV_LABELS } from "@/lib/cv-format";
 import type { CVAction } from "@/lib/cv-reducer";
 import type { CVData, Language, TemplateId } from "@/lib/cv-schema";
 import {
@@ -80,9 +80,12 @@ export function formatRatio(ratio: number, lang: Language): string {
   return lang === "id" ? s.replace(".", ",") : s;
 }
 
-/** Readable name of a section in the interface language: the CV heading, or a custom section's own title. */
-export function sectionDisplayName(cv: CVData, key: SectionKey, lang: Language, untitled: string): string {
-  if (isBuiltinSection(key)) return CV_LABELS[lang][key];
+/**
+ * Readable name of a section in the interface language: the same title the form uses
+ * ("Work experience"), or a custom section's own title.
+ */
+export function sectionDisplayName(cv: CVData, key: SectionKey, t: Dictionary, untitled: string): string {
+  if (isBuiltinSection(key)) return builtinSectionTitle(key, t);
   return findCustomSection(cv, key)?.title.trim() || untitled;
 }
 
@@ -126,12 +129,15 @@ function RadioList<T extends string>({
   options,
   onChange,
   className,
+  field,
 }: {
   name: string;
   value: T;
   options: Option<T>[];
   onChange: (value: T) => void;
   className: string;
+  /** `data-field` for the checked radio, so a check finding can jump to this choice. */
+  field?: string;
 }) {
   return (
     <div className={className}>
@@ -150,6 +156,7 @@ function RadioList<T extends string>({
               value={o.value}
               checked={value === o.value}
               onChange={() => onChange(o.value)}
+              data-field={value === o.value ? field : undefined}
               className="size-4 shrink-0 accent-accent-control"
             />
             {o.swatch}
@@ -173,11 +180,14 @@ function Segmented<T extends string>({
   value,
   options,
   onChange,
+  field,
 }: {
   name: string;
   value: T;
   options: Option<T>[];
   onChange: (value: T) => void;
+  /** `data-field` for the checked radio, so a check finding can jump to this choice. */
+  field?: string;
 }) {
   return (
     <div className="grid grid-flow-col auto-cols-fr rounded-sm border border-control-line">
@@ -196,6 +206,7 @@ function Segmented<T extends string>({
               value={o.value}
               checked={value === o.value}
               onChange={() => onChange(o.value)}
+              data-field={value === o.value ? field : undefined}
               className="sr-only"
             />
             <span className="inline-flex max-w-full items-center gap-1 font-medium break-words">
@@ -332,6 +343,8 @@ function CustomColour({
             }}
             aria-invalid={invalid ? true : undefined}
             aria-describedby={describedBy(hintId, invalid && errorId, contrastId, low && warningId)}
+            // A custom colour is fixed here, so the check finding about the accent lands here.
+            data-field="accent"
             className={inputClass}
           />
         </div>
@@ -376,7 +389,7 @@ function SectionManager({
   dispatch: Dispatch<CVAction>;
   announce: (message: string) => void;
 }) {
-  const { t, lang } = useI18n();
+  const { t } = useI18n();
   const s = t.design.sections;
   const titleId = useId();
   const order = allSectionsInOrder(cv);
@@ -407,7 +420,7 @@ function SectionManager({
     target?.focus();
   });
 
-  const nameOf = (key: SectionKey) => sectionDisplayName(cv, key, lang, s.untitled);
+  const nameOf = (key: SectionKey) => sectionDisplayName(cv, key, t, s.untitled);
 
   const move = (key: SectionKey, index: number, direction: -1 | 1) => {
     const to = index + direction;
@@ -599,6 +612,7 @@ export function DesignPanel({
               options={accentOptions}
               onChange={chooseAccent}
               className="-mx-2 grid grid-cols-2 gap-x-2"
+              field={accentChoice === "custom" ? undefined : "accent"}
             />
             {accentChoice === "custom" && <CustomColour value={accent} onChange={setCustom} d={d.accent} lang={lang} />}
           </Group>
@@ -628,6 +642,7 @@ export function DesignPanel({
                 detail: fmt(d.fontSize.detail, { size: formatNumber(FONT_SIZE_PT[size], lang) }),
               }))}
               onChange={(fontSize) => onStyleChange({ fontSize })}
+              field="fontSize"
             />
           </Group>
 

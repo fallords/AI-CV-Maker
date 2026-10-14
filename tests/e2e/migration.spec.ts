@@ -40,7 +40,7 @@ test("a draft and previous draft from the single-draft version become documents,
   // The draft opens, as it did before.
   await expect(fullNameField(page)).toHaveValue("Alex Example");
   await expect(page.getByLabel("Template")).toHaveValue("modern-professional");
-  await expect(page.getByText("Your draft was restored from this browser.")).toBeVisible();
+  await expect(page.getByText("Opened “Alex Example” from this browser.")).toBeVisible();
   await expect(page.getByTestId("document-switcher")).toContainText("Alex Example");
   const preview = page.getByRole("document", { name: "CV preview" });
   for (const e of draft.experience) await expect(preview).toContainText(e.company);

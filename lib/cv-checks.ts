@@ -22,6 +22,7 @@ import {
   filledItems,
   type CVData,
   type CustomItem,
+  type Language,
   type ListItem,
   type ListSection,
 } from "./cv-schema";
@@ -111,13 +112,15 @@ export interface CheckItem {
   area: CheckArea;
   /**
    * The form field the finding is about, when there is one (matches `data-field` in the
-   * form, inside the entry when `itemId` is set), e.g. "email" or "description".
+   * form, inside the entry when `itemId` is set), e.g. "email" or "description". Design
+   * findings name the Design tab control instead ("accent", "fontSize").
    */
   field?: string;
   /**
    * Values for the message. Entry findings carry `entry` (the entry's title, may be "")
    * and `index` (1-based position in its list); others carry counts such as `count`,
-   * `total`, `pages`, `ratio` or `name`.
+   * `total`, `pages`, `ratio` or `name`. "firstPerson" also carries `pronouns`, the
+   * language ("en" or "id") of the pronouns found, which picks the message.
    */
   params?: Record<string, string | number>;
 }
@@ -130,8 +133,9 @@ export interface CheckResult {
 }
 
 /**
- * The form field each rule points at (`data-field` in the form). Rules about a whole
- * section or the design have none; the jump then lands on the section's first field.
+ * The control each rule points at (`data-field` in the form, or in the Design tab for
+ * design rules). Rules about a whole section have none; the jump then lands on the
+ * section's first field.
  */
 export const CHECK_FIELDS: Partial<Record<CheckRule, string>> = {
   missingName: "fullName",
@@ -156,6 +160,9 @@ export const CHECK_FIELDS: Partial<Record<CheckRule, string>> = {
   invalidProjectUrl: "url",
   invalidReferenceEmail: "email",
   customNoTitle: "title",
+  // Design tab: the text size choice (the quickest way to fit fewer pages) and the accent colour.
+  tooManyPages: "fontSize",
+  lowContrast: "accent",
 };
 
 /* ---------- Thresholds and weights ---------- */
@@ -259,9 +266,22 @@ const FIRST_PERSON_WORDS: ReadonlySet<string> = new Set([
   "aku",
 ]);
 
+/** The Indonesian ones among FIRST_PERSON_WORDS; the rest are English. */
+const INDONESIAN_FIRST_PERSON: ReadonlySet<string> = new Set(["saya", "aku"]);
+
 /** True when the line starts with "I", "my", "saya", "aku" and similar. */
 export function startsWithFirstPerson(line: string): boolean {
   return FIRST_PERSON_WORDS.has(firstWord(line));
+}
+
+/**
+ * The language of the pronouns that start these first-person lines, so the message can
+ * name the words the person actually wrote ("I", "my" or "saya", "aku"). When both kinds
+ * occur, the CV's language decides.
+ */
+export function firstPersonLanguage(lines: readonly string[], cvLanguage: Language): Language {
+  const kinds = new Set(lines.map((line) => (INDONESIAN_FIRST_PERSON.has(firstWord(line)) ? "id" : "en")));
+  return kinds.size === 1 ? (kinds.has("id") ? "id" : "en") : cvLanguage;
 }
 
 /**
@@ -661,9 +681,12 @@ export function runChecks(cv: CVData, opts: { pages?: number } = {}): CheckResul
   /* Writing: first person and very long lines, per entry. */
   const writing = (area: SectionKey, entry: Entry, text: string) => {
     const { lines } = descriptionLines(text);
-    const firstPerson = lines.filter(startsWithFirstPerson).length;
-    if (firstPerson > 0) {
-      add("firstPerson", "tip", area, quality("firstPerson"), { entry, params: { count: firstPerson } });
+    const firstPerson = lines.filter(startsWithFirstPerson);
+    if (firstPerson.length > 0) {
+      add("firstPerson", "tip", area, quality("firstPerson"), {
+        entry,
+        params: { count: firstPerson.length, pronouns: firstPersonLanguage(firstPerson, cv.meta.cvLanguage) },
+      });
     }
     const long = lines.filter((l) => l.length > MAX_LINE_CHARS).length;
     if (long > 0) {

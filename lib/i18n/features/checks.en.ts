@@ -58,7 +58,7 @@ const checks = {
     projects: "Projects",
     skills: "Skills",
     certifications: "Certifications",
-    organizations: "Organizations & volunteering",
+    organizations: "Organisations & volunteering",
     awards: "Awards",
     languages: "Languages",
     references: "References",
@@ -90,10 +90,18 @@ const checks = {
     noStartDate: "Add a start date.",
     noEndDate: "Add an end date, or mark the entry as current if it’s still ongoing.",
     dateOrder: "The end date is before the start date.",
+    /** By the language of the pronouns found (usually the CV's), so the tip names the words used. */
     firstPerson: {
-      one: "One line starts with “I”, “my” or “saya”. CV points usually leave out the pronoun: “Managed…” rather than “I managed…”.",
-      other:
-        "{count} lines start with “I”, “my” or “saya”. CV points usually leave out the pronoun: “Managed…” rather than “I managed…”.",
+      en: {
+        one: "One line starts with “I” or “my”. CV points usually leave out the pronoun: “Managed…” rather than “I managed…”.",
+        other:
+          "{count} lines start with “I” or “my”. CV points usually leave out the pronoun: “Managed…” rather than “I managed…”.",
+      },
+      id: {
+        one: "One line starts with “saya” or “aku”. CV points usually leave out the pronoun: “Mengelola…” rather than “Saya mengelola…”.",
+        other:
+          "{count} lines start with “saya” or “aku”. CV points usually leave out the pronoun: “Mengelola…” rather than “Saya mengelola…”.",
+      },
     },
     longLines: {
       one: "One line is longer than {max} characters. Shorter points are easier to read at a glance.",
@@ -108,7 +116,7 @@ const checks = {
     invalidProjectUrl: "Check the project URL. It isn’t a valid web address.",
     invalidReferenceEmail: "Check this reference’s email address. It doesn’t look complete.",
     noExtras:
-      "If you have them, add projects, certifications, organizations, awards or languages. Only include what’s real.",
+      "If you have them, add projects, certifications, organisations, awards or languages. Only include what’s real.",
     customNoTitle: "This section has no title. Add one so readers know what it lists.",
     hiddenSection: "This section has content but is hidden from the CV. You can show it again in the Design tab.",
     tooManyPages:

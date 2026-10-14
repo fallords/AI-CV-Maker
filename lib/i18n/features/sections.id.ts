@@ -98,15 +98,15 @@ const sections: typeof en = {
   addCustom: {
     title: "Buat bagian sendiri",
     body: "Untuk hal yang belum tercakup di bagian lain, misalnya kursus, publikasi, atau pelatihan.",
-    button: "Tambah bagian khusus",
-    dialogTitle: "Tambah bagian khusus",
+    button: "Tambah bagian sendiri",
+    dialogTitle: "Tambah bagian sendiri",
     label: "Judul bagian",
     placeholder: "Contoh: Kursus",
     required: "Isi judul bagian terlebih dahulu.",
     existing: "Anda sudah punya bagian berjudul “{title}”.",
     confirm: "Tambah bagian",
     cancel: "Batal",
-    limit: "Anda sudah menambahkan {max} bagian khusus, jumlah maksimal yang tersedia.",
+    limit: "Anda sudah menambahkan {max} bagian sendiri, jumlah maksimal yang tersedia.",
   },
 };
 

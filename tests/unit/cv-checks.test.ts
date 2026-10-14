@@ -6,6 +6,7 @@ import {
   CHECK_RULES,
   DESIGN_TARGET,
   descriptionLines,
+  firstPersonLanguage,
   firstWord,
   isActionVerb,
   isEndBeforeStart,
@@ -415,11 +416,18 @@ describe("runChecks: writing", () => {
     cv.experience[1].description = "- Saya mengelola laporan bulanan\n- aku membuat 3 dasbor\n- Menyusun SOP";
     cv.projects[0].description = "Improved a dashboard for 3 teams";
     const items = find(runChecks(cv).items, "firstPerson");
-    expect(items.map((i) => [i.itemId, i.params?.count])).toEqual([
-      ["exp1", 3],
-      ["exp2", 2],
+    expect(items.map((i) => [i.itemId, i.params?.count, i.params?.pronouns])).toEqual([
+      ["exp1", 3, "en"],
+      ["exp2", 2, "id"],
     ]);
     expect(items[0]).toMatchObject({ level: "tip", target: "experience" });
+  });
+
+  it("names the language of the pronouns found, and falls back to the CV's language when both occur", () => {
+    expect(firstPersonLanguage(["I managed", "My team"], "id")).toBe("en");
+    expect(firstPersonLanguage(["Saya mengelola", "aku membuat"], "en")).toBe("id");
+    expect(firstPersonLanguage(["I managed", "Saya mengelola"], "en")).toBe("en");
+    expect(firstPersonLanguage(["I managed", "Saya mengelola"], "id")).toBe("id");
   });
 
   it("detects first-person words only at the start of a line", () => {
@@ -627,6 +635,8 @@ describe("runChecks: layout and design", () => {
       level: "warning",
       target: DESIGN_TARGET,
       area: "design",
+      // The jump lands on the text size choice in the Design tab.
+      field: "fontSize",
       params: { pages: 3 },
     });
     expect(runChecks(cleanCV(), { pages: 2 }).items).toEqual([]);
@@ -637,7 +647,7 @@ describe("runChecks: layout and design", () => {
     const cv = cleanCV();
     cv.meta.style.accent = "#7fa7c9";
     const item = one(runChecks(cv).items, "lowContrast");
-    expect(item).toMatchObject({ level: "warning", target: DESIGN_TARGET });
+    expect(item).toMatchObject({ level: "warning", target: DESIGN_TARGET, field: "accent" });
     const ratio = Number(item.params?.ratio);
     expect(ratio).toBeLessThan(4.5);
     expect(ratio).toBeCloseTo(Math.floor(contrastOnWhite("#7fa7c9") * 10) / 10, 5);
@@ -746,8 +756,9 @@ describe("ChecksPanel", () => {
     expect(onJump).toHaveBeenLastCalledWith("experience", "exp3", "endDate");
     fireEvent.click(screen.getByRole("button", { name: /Add a phone number/ }));
     expect(onJump).toHaveBeenLastCalledWith("personal", undefined, "phone");
+    // Design findings name the Design tab control to focus.
     fireEvent.click(screen.getByRole("button", { name: /accent colour/ }));
-    expect(onJump).toHaveBeenLastCalledWith(DESIGN_TARGET, undefined, undefined);
+    expect(onJump).toHaveBeenLastCalledWith(DESIGN_TARGET, undefined, "accent");
   });
 
   it("shows a positive message when there's nothing to fix", () => {
@@ -787,5 +798,33 @@ describe("ChecksPanel", () => {
       "Pengalaman kerja: Data Analyst, Example Logistics Co.",
     );
     expect(screen.getByRole("button", { name: /belum berjudul/ })).toHaveTextContent("Bagian tanpa judul");
+  });
+
+  it("names only the pronouns the CV uses in the first-person tip, in either interface language", () => {
+    const english = cleanCV();
+    english.experience[0].description = "- I managed 3 reports\n- My team built a dashboard";
+    const { unmount } = renderPanel(english);
+    const tip = screen.getByRole("button", { name: /lines start with/ });
+    expect(tip).toHaveTextContent("2 lines start with “I” or “my”.");
+    expect(tip).toHaveTextContent("“Managed…” rather than “I managed…”");
+    expect(tip).not.toHaveTextContent("saya");
+    unmount();
+
+    // An Indonesian CV, checked with the English interface: the tip quotes the Indonesian words.
+    const indonesian = cleanCV();
+    indonesian.meta.cvLanguage = "id";
+    indonesian.experience[0].description = "- Saya mengelola 3 laporan";
+    const second = renderPanel(indonesian);
+    const idTip = screen.getByRole("button", { name: /line starts with/ });
+    expect(idTip).toHaveTextContent("One line starts with “saya” or “aku”.");
+    expect(idTip).toHaveTextContent("“Mengelola…” rather than “Saya mengelola…”");
+    expect(idTip).not.toHaveTextContent("“I”");
+    second.unmount();
+
+    // An English CV, checked with the Indonesian interface.
+    renderPanel(english, { lang: "id" });
+    const enTip = screen.getByRole("button", { name: /baris diawali/ });
+    expect(enTip).toHaveTextContent("2 baris diawali “I” atau “my”.");
+    expect(enTip).not.toHaveTextContent("saya");
   });
 });

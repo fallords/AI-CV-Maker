@@ -11,6 +11,7 @@ import {
   createDoc,
   defaultDocName,
   deleteDoc,
+  discardLegacyDraft,
   docFileBase,
   docLanguage,
   duplicateDoc,
@@ -22,6 +23,7 @@ import {
   renameDoc,
   saveDoc,
   setActiveDocId,
+  storedSavedAt,
   type AnyDoc,
 } from "@/lib/documents";
 import { LETTER_SCHEMA_VERSION, createEmptyLetter } from "@/lib/letter-schema";
@@ -148,10 +150,36 @@ describe("loading and saving", () => {
   it("loads what was saved", () => {
     const meta = created(createDoc({ kind: "cv", data: richSampleCV("graduate") }, "Rich"));
     const loaded = loadDoc(meta.id);
-    expect(loaded).toEqual({ status: "ok", doc: { kind: "cv", data: richSampleCV("graduate") }, meta });
+    expect(loaded).toEqual({
+      status: "ok",
+      doc: { kind: "cv", data: richSampleCV("graduate") },
+      meta,
+      savedAt: meta.updatedAt,
+    });
 
     const letter = created(createDoc(letterDoc(), "L"));
-    expect(loadDoc(letter.id)).toEqual({ status: "ok", doc: letterDoc(), meta: letter });
+    expect(loadDoc(letter.id)).toEqual({ status: "ok", doc: letterDoc(), meta: letter, savedAt: letter.updatedAt });
+  });
+
+  it("reports when the stored copy was written, so another tab's save can be noticed", () => {
+    at("2026-01-01T00:00:00.000Z");
+    const meta = created(createDoc(cvDoc(), "Shared"));
+    expect(storedSavedAt(meta.id)).toBe("2026-01-01T00:00:00.000Z");
+    at("2026-01-01T00:00:05.000Z");
+    const saved = saveDoc(meta.id, cvDoc("Other Tab"));
+    expect(saved.ok && saved.savedAt).toBe("2026-01-01T00:00:05.000Z");
+    expect(storedSavedAt(meta.id)).toBe("2026-01-01T00:00:05.000Z");
+    const loaded = loadDoc(meta.id);
+    expect(loaded.status === "ok" && loaded.savedAt).toBe("2026-01-01T00:00:05.000Z");
+    // Renaming keeps the content, so it keeps the time too.
+    expect(renameDoc(meta.id, "Renamed")).toBe(true);
+    expect(storedSavedAt(meta.id)).toBe("2026-01-01T00:00:05.000Z");
+
+    expect(storedSavedAt("missing")).toBeUndefined();
+    localStorage.setItem(DOC_KEY("nodate"), JSON.stringify({ schemaVersion: 2, kind: "cv", data: sampleCV() }));
+    expect(storedSavedAt("nodate")).toBeNull();
+    localStorage.setItem(DOC_KEY("broken"), "{oops");
+    expect(storedSavedAt("broken")).toBeNull();
   });
 
   it("updates updatedAt but keeps the name and creation time", () => {
@@ -575,9 +603,15 @@ describe("migrating the legacy single draft", () => {
   });
 
   it("recovers a draft that did not fit, even after the app created a fresh document", () => {
-    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate"), "2025-05-01T10:00:00.000Z"));
     quotaFor((key) => key.startsWith("free-cv-maker:doc:"));
-    expect(migrateLegacyStorage()).toEqual({ migrated: [], corrupted: false });
+    // The draft that didn't fit is reported, so the builder can still open it.
+    expect(migrateLegacyStorage()).toEqual({
+      migrated: [],
+      corrupted: false,
+      blocked: { reason: "quota", data: sampleCV("graduate"), savedAt: "2025-05-01T10:00:00.000Z" },
+    });
+    expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
     vi.restoreAllMocks();
     // Start-up flow: no document to open, so an empty one is created and opened.
     const fresh = created(createDoc({ kind: "cv", data: createEmptyCV() }, ""));
@@ -591,6 +625,30 @@ describe("migrating the legacy single draft", () => {
     const loaded = loadDoc(result.migrated[0].id);
     expect(loaded.status === "ok" && loaded.doc).toEqual({ kind: "cv", data: sampleCV("graduate") });
     expect(listDocs()).toHaveLength(2);
+  });
+
+  it("reports a draft that couldn't be stored for another reason as blocked too", () => {
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    const original = Storage.prototype.setItem;
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+      if (key.startsWith("free-cv-maker:doc:")) throw new Error("write failed");
+      return original.call(this, key, value);
+    });
+    const result = migrateLegacyStorage();
+    expect(result.migrated).toEqual([]);
+    expect(result.blocked?.reason).toBe("unavailable");
+    expect(result.blocked?.data.meta.template).toBe("graduate");
+    vi.restoreAllMocks();
+    expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+  });
+
+  it("removes the legacy draft once the builder has stored it another way", () => {
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV()));
+    localStorage.setItem(BACKUP_KEY, legacyPayload(sampleCV()));
+    discardLegacyDraft();
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    // Only the draft: a previous draft is still migrated later.
+    expect(localStorage.getItem(BACKUP_KEY)).not.toBeNull();
   });
 
   it("recovers a backup that did not fit without taking over the migrated draft", () => {
@@ -704,7 +762,12 @@ describe("migrating the legacy single draft", () => {
   it("keeps the legacy draft when there is no room to migrate it", () => {
     localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV()));
     quotaFor((key) => key.startsWith("free-cv-maker:doc:"));
-    expect(migrateLegacyStorage()).toEqual({ migrated: [], corrupted: false });
+    // Reported as blocked (with the draft, so the builder can still show it).
+    expect(migrateLegacyStorage()).toEqual({
+      migrated: [],
+      corrupted: false,
+      blocked: { reason: "quota", data: sampleCV(), savedAt: "2025-05-01T10:00:00.000Z" },
+    });
     vi.restoreAllMocks();
     expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
     expect(localStorage.getItem(DOCS_INDEX_KEY)).toBeNull();

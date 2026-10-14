@@ -86,7 +86,7 @@ test("complete user journey: create, switch templates, refresh, export PDF, dele
     await expect(page.getByLabel(/Full name/)).toHaveValue("Rina Kusuma");
     await expect(page.getByLabel("Template")).toHaveValue("modern-professional");
     await expect(page.locator("#experience li").first().getByLabel("Company")).toHaveValue("Example Studio");
-    await expect(page.getByText("Your draft was restored from this browser.")).toBeVisible();
+    await expect(page.getByText("Opened “Rina Kusuma” from this browser.")).toBeVisible();
 
     // 9. Download PDF → instructions → print dialog.
     await page.getByRole("button", { name: "Download PDF" }).click();
@@ -110,7 +110,7 @@ test("complete user journey: create, switch templates, refresh, export PDF, dele
     for (const s of ["Rina Kusuma", "Junior Software Engineer", "rina@example.com", "Frontend Developer Intern", "Feb 2024 – Present", "Built reusable form components", "Example State University", "Campus Event Finder", "TypeScript", "Teamwork"]) {
       expect(text).toContain(s);
     }
-    for (const ui of ["Download PDF", "Save draft", "Full name", "Add work experience", "Free AI CV Maker"]) {
+    for (const ui of ["Download PDF", "All formats", "Full name", "Add work experience", "Free AI CV Maker"]) {
       expect(text).not.toContain(ui);
     }
     expect(text.toLowerCase()).not.toContain("watermark");

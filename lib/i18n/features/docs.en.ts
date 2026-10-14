@@ -22,19 +22,30 @@ const docs = {
     content: "Content",
   },
   status: {
-    unavailable: "Browser storage isn’t available, so changes won’t be saved. Download a JSON backup to keep a copy.",
-    quota: "Browser storage is full. Delete documents you no longer need, remove the photo, or download a JSON backup.",
+    unavailable:
+      "Browser storage isn’t available, so nothing is saved in this browser. To keep your work, download a JSON backup before you close the page and import it next time.",
+    quota: "Browser storage is full, so your latest changes aren’t saved. Delete documents you no longer need or remove the photo to make room.",
+    conflict: "Not saved: this document was changed in another tab or window.",
   },
   actions: {
     /** Accessible name of the toolbar's “More” panel. */
     label: "Document actions",
+    newCv: "New CV",
+    /** Opens “Your documents” with the new cover letter setup shown. */
+    newLetter: "New cover letter…",
+    /** Opens “Your documents”. */
+    allDocs: "All documents…",
     rename: "Rename",
     duplicate: "Duplicate",
     delete: "Delete",
   },
   download: {
-    /** Accessible name of the button next to “Download PDF” that lists the other formats. */
-    more: "Other download formats",
+    /**
+     * The button next to “Download PDF” that lists every format: its visible text from small
+     * screens up (phones show only the arrow) and its accessible name at every width. One
+     * string for both, so the name always contains the visible label (WCAG 2.5.3).
+     */
+    more: "All formats",
   },
   dialog: {
     intro: "Each CV and cover letter is saved separately in this browser. Open one to edit it, or start a new one.",
@@ -44,7 +55,9 @@ const docs = {
     importHint: "Import a JSON backup made with this app. It’s added as a new document, so nothing is replaced.",
     listLabel: "Saved documents",
     empty: "Nothing is saved yet. What you type in the editor is saved here automatically.",
-    current: "Open now",
+    emptyUnavailable:
+      "Browser storage isn’t available, so documents can’t be saved or listed here. You can still start a new document or import a file, but it’s lost when you close the page.",
+    current: "Currently open",
     edited: "Edited {date}",
     open: "Open",
     rename: "Rename",
@@ -72,6 +85,26 @@ const docs = {
     body: "This permanently removes it from this browser. If you might need it later, download a JSON backup first.",
     confirm: "Delete",
     cancel: "Cancel",
+  },
+  /** Asked before another document replaces one whose latest changes aren’t saved. */
+  discard: {
+    title: "Discard unsaved changes?",
+    quota:
+      "Browser storage is full, so your latest changes to “{name}” couldn’t be saved. To keep them, choose Cancel, then delete a document you no longer need or remove the photo. If you continue, those changes are lost.",
+    unavailable:
+      "Browser storage isn’t available, so “{name}” isn’t saved anywhere. If you continue, it’s replaced and can’t be brought back. To keep it, choose Cancel and download a JSON backup first.",
+    conflict:
+      "“{name}” was also changed in another tab or window, so your latest changes here weren’t saved. If you continue, they’re lost. To keep them, choose Cancel, then “Keep mine”.",
+    confirm: "Open anyway (discard unsaved changes)",
+    cancel: "Cancel",
+  },
+  /** Shown when another tab or window saved the open document while this one had unsaved changes. */
+  conflict: {
+    text: "“{name}” was changed in another tab or window, so your latest changes here haven’t been saved.",
+    loadNewer: "Load the newer version",
+    keepMine: "Keep mine",
+    loaded: "The newer version of “{name}” is open.",
+    kept: "Your version of “{name}” was saved.",
   },
   rename: {
     title: "Rename document",
@@ -102,8 +135,8 @@ const docs = {
       corrupted: "That document could not be read, so it’s been set aside in this browser.",
       unavailable: "Browser storage isn’t available, so the document couldn’t be opened.",
     },
-    unsavedChanges:
-      "Your latest changes couldn’t be saved, so the other document wasn’t opened. Free up browser storage or download a JSON backup first.",
+    legacyBlocked:
+      "Your draft from the earlier version of this app is open, but browser storage is full, so it couldn’t be moved into “Your documents”. It’s still kept in this browser. To make room, delete documents you no longer need or remove the photo.",
     renameFailed: "The new name couldn’t be saved. Try again.",
     deleteFailed: "The document couldn’t be deleted. Try again.",
     importErrors: {

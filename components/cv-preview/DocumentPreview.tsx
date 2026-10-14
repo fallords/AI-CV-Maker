@@ -30,7 +30,9 @@ export function pageBreaks(height: number, marginYmm: number): number[] {
 /**
  * Live, scaled A4 preview of a CV or cover letter. Dashed guides mark where printed
  * pages will approximately break (the browser may move whole entries to the next page).
- * `onPagesChange` is called with the page count whenever it changes.
+ * `onPagesChange` is called with the page count whenever it changes. To keep the count
+ * right while the preview isn't shown, hide it with `visibility: hidden` rather than
+ * `display: none` (a preview that isn't rendered keeps its last measurement).
  */
 export function DocumentPreview({ doc, onPagesChange }: { doc: AnyDoc; onPagesChange?: (pages: number) => void }) {
   const { t } = useI18n();
@@ -44,7 +46,11 @@ export function DocumentPreview({ doc, onPagesChange }: { doc: AnyDoc; onPagesCh
     const sheet = docRef.current;
     if (!outer || !sheet || typeof ResizeObserver === "undefined") return;
     const update = () => {
-      setScale(Math.min(1, outer.clientWidth / PAGE_W));
+      // A preview that isn't rendered (display: none) measures 0. Keep the last real
+      // measurement then, so the page count (and the checker's page rule) stays right.
+      if (sheet.getClientRects().length === 0) return;
+      const width = outer.clientWidth;
+      if (width > 0) setScale(Math.min(1, width / PAGE_W));
       setHeight(Math.max(PAGE_H, sheet.scrollHeight));
     };
     const ro = new ResizeObserver(update);

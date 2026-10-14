@@ -91,7 +91,7 @@ test("several CVs: create, switch, rename, duplicate, delete, and keep them afte
   // The open document is marked, and listed first because it was edited last.
   await expect(rows.first()).toContainText("Bima – Marketing roles");
   await expect(rows.first()).toHaveAttribute("aria-current", "true");
-  await expect(rows.first()).toContainText("Open now");
+  await expect(rows.first()).toContainText("Currently open");
   await dialog.getByRole("button", { name: "Open: Alex Example" }).click();
   await expect(name).toHaveValue("Alex Example");
   await page.reload();

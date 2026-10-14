@@ -37,6 +37,13 @@ export interface DocumentsDialogProps {
   onNewLetter: (fromCvId: string | null) => void;
   /** A JSON file chosen with "Import file"; imported as a new document. */
   onImport: (file: File) => void;
+  /**
+   * False when browser storage can't be used: nothing can be listed or saved, but new
+   * and imported documents still open (unsaved) in the editor.
+   */
+  storageAvailable?: boolean;
+  /** Opens with the new cover letter setup already shown (the toolbar's "New cover letter…"). */
+  startWithLetter?: boolean;
 }
 
 /** Plain-text row action button (secondary actions inside the list). */
@@ -78,20 +85,25 @@ export function DocumentsDialog({
   onNewCV,
   onNewLetter,
   onImport,
+  storageAvailable = true,
+  startWithLetter = false,
 }: DocumentsDialogProps) {
   const { t, lang } = useI18n();
   const d = t.docs.dialog;
   const ids = useId();
   const [renaming, setRenaming] = useState<{ id: string; value: string; error: boolean } | null>(null);
   const [deleting, setDeleting] = useState<DocMeta | null>(null);
-  const [letterSetup, setLetterSetup] = useState(false);
   const cvs = docs.filter((m) => m.kind === "cv");
+  // Opened from the toolbar's "New cover letter…": start in the letter setup (it needs a CV to offer).
+  const openInLetterSetup = startWithLetter && cvs.length > 0;
+  const [letterSetup, setLetterSetup] = useState(openInLetterSetup);
   const defaultCv = (activeId && cvs.find((m) => m.id === activeId)?.id) || cvs[0]?.id || "";
   const [letterFrom, setLetterFrom] = useState(defaultCv);
   const [status, setStatus] = useState<Status>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const newCvRef = useRef<HTMLButtonElement>(null);
+  const newLetterRef = useRef<HTMLButtonElement>(null);
   // Element to focus once the list has re-rendered after an action.
   const pendingFocus = useRef<(() => HTMLElement | null | undefined) | null>(null);
 
@@ -190,6 +202,12 @@ export function DocumentsDialog({
     setLetterSetup(true);
   };
 
+  // The Cancel button disappears with the setup, so focus goes back to the button that opened it.
+  const cancelLetter = () => {
+    setLetterSetup(false);
+    newLetterRef.current?.focus();
+  };
+
   const listTitleId = `${ids}-list`;
 
   return (
@@ -210,6 +228,7 @@ export function DocumentsDialog({
             <Plus width={16} height={16} /> {d.newCv}
           </button>
           <button
+            ref={newLetterRef}
             type="button"
             className={btn.secondary}
             aria-expanded={cvs.length > 0 ? letterSetup : undefined}
@@ -254,6 +273,7 @@ export function DocumentsDialog({
             </h3>
             <SelectField
               className="mt-3"
+              autoFocusInDialog={openInLetterSetup}
               label={d.letterFrom}
               hint={d.letterFromHint}
               value={letterFrom}
@@ -267,7 +287,7 @@ export function DocumentsDialog({
               <button type="button" className={btn.primary} onClick={() => onNewLetter(letterFrom || null)}>
                 {d.createLetter}
               </button>
-              <button type="button" className={btn.secondary} onClick={() => setLetterSetup(false)}>
+              <button type="button" className={btn.secondary} onClick={cancelLetter}>
                 {d.cancel}
               </button>
             </div>
@@ -281,11 +301,22 @@ export function DocumentsDialog({
           )}
         </div>
 
-        <h3 id={listTitleId} className="mt-5 text-sm font-semibold text-fg">
+        {/*
+          The dialog opens with focus here rather than on "New CV", so an accidental Enter
+          doesn't create a document; Tab then reaches the list.
+        */}
+        <h3
+          id={listTitleId}
+          tabIndex={-1}
+          data-autofocus={openInLetterSetup ? undefined : true}
+          className="mt-5 text-sm font-semibold text-fg"
+        >
           {d.listLabel}
         </h3>
         {docs.length === 0 ? (
-          <p className="mt-2 rounded-sm border border-dashed border-line-strong px-4 py-3 text-fg-muted">{d.empty}</p>
+          <p className="mt-2 rounded-sm border border-dashed border-line-strong px-4 py-3 text-fg-muted">
+            {storageAvailable ? d.empty : d.emptyUnavailable}
+          </p>
         ) : (
           <ul ref={listRef} aria-labelledby={listTitleId} className="mt-2 border-b border-line">
             {docs.map((m) => {
@@ -428,7 +459,10 @@ export function RenameForm({
         value={value}
         maxLength={MAX_DOC_NAME}
         autoComplete="off"
+        // autoFocus covers the inline form (shown inside an open dialog); data-autofocus
+        // covers RenameDialog, where showModal() runs after mount.
         autoFocus
+        data-autofocus
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
         onChange={(e) => onChange(e.target.value)}

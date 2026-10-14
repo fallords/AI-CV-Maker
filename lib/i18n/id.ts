@@ -53,7 +53,7 @@ const id: Dictionary = {
       },
       {
         q: "Apakah dokumen saya bisa hilang?",
-        a: "Bisa, jika Anda menghapus data browser atau menulisnya di mode penyamaran (incognito). Dokumen Anda juga tidak akan ada di perangkat lain. Untuk menyimpan salinan, klik tanda panah di samping “Unduh PDF”, lalu pilih “Cadangan JSON”. Untuk memuatnya lagi, gunakan “Impor file” di “Dokumen Anda”.",
+        a: "Bisa, jika Anda menghapus data browser atau menulisnya di mode penyamaran (incognito). Dokumen Anda juga tidak akan ada di perangkat lain. Untuk menyimpan salinan, klik “Semua format” di samping “Unduh PDF” (di ponsel, tanda panahnya), lalu pilih “Cadangan JSON”. Untuk memuatnya lagi, gunakan “Impor file” di “Dokumen Anda”.",
       },
       {
         q: "Apakah CV bisa dibuat dalam bahasa Indonesia?",
@@ -91,13 +91,13 @@ const id: Dictionary = {
   },
   builder: {
     title: "Pembuat CV",
-    loading: "Memuat draf…",
+    loading: "Memuat dokumen Anda…",
     template: "Template",
     cvLanguage: "Bahasa CV",
     cvLanguageHint: "Mengatur bahasa judul bagian dan tanggal di CV. Teks yang Anda tulis tidak diterjemahkan.",
     languageNames: { en: "Inggris", id: "Indonesia" },
     tabs: { edit: "Ubah", preview: "Pratinjau" },
-    saveNow: "Simpan draf",
+    saveNow: "Simpan",
     downloadPdf: "Unduh PDF",
     more: "Lainnya",
     dismiss: "Tutup",
@@ -106,8 +106,8 @@ const id: Dictionary = {
       unsaved: "Ada perubahan yang belum disimpan…",
     },
     messages: {
-      saved: "Draf tersimpan di perangkat ini.",
-      recovered: "Draf Anda dipulihkan dari browser ini.",
+      saved: "Tersimpan di perangkat ini.",
+      recovered: "“{name}” dibuka dari browser ini.",
     },
     print: {
       title: "Unduh CV Anda sebagai PDF",
@@ -273,7 +273,7 @@ const id: Dictionary = {
         title: "Mengisi CV",
         body: [
           "Buka Pembuat CV, lalu isi bagian yang sesuai dengan Anda. Semua kolom boleh dikosongkan, dan bagian yang kosong tidak akan muncul di CV.",
-          "Selain pengalaman kerja, pendidikan, proyek, keahlian, dan sertifikasi, ada juga bagian untuk pengalaman organisasi, penghargaan, bahasa, referensi, dan minat. Untuk hal lain, misalnya kursus atau publikasi, gunakan “Tambah bagian khusus” lalu beri judul sendiri.",
+          "Selain pengalaman kerja, pendidikan, proyek, keahlian, dan sertifikasi, ada juga bagian untuk pengalaman organisasi, penghargaan, bahasa, referensi, dan minat. Untuk hal lain, misalnya kursus atau publikasi, gunakan “Tambah bagian sendiri”, lalu beri judul yang Anda inginkan.",
           "Gunakan tombol “Tambah …” untuk menambah entri dan tombol panah untuk mengubah urutannya. Biasanya entri terbaru diletakkan paling atas.",
           "Di kolom deskripsi, tulis satu poin per baris. Baris yang diawali “-” akan menjadi butir.",
         ],
@@ -288,8 +288,8 @@ const id: Dictionary = {
       {
         title: "Dokumen Anda",
         body: [
-          "Anda bisa menyimpan beberapa CV dan surat lamaran di browser ini. Di awal toolbar, di bawah tulisan “Dokumen”, ada nama dokumen yang sedang dibuka. Klik nama itu untuk membuka “Dokumen Anda”. Di sana Anda bisa membuka, mengganti nama, membuat salinan, atau menghapus dokumen, membuat CV atau surat lamaran baru, dan mengimpor file. Menu “Lainnya” juga berisi Ganti nama, Buat salinan, dan Hapus untuk dokumen yang sedang dibuka.",
-          "Setiap dokumen tersimpan otomatis di browser ini sesaat setelah setiap perubahan, dan juga saat Anda mengklik “Simpan draf”.",
+          "Anda bisa menyimpan beberapa CV dan surat lamaran di browser ini. Di awal toolbar, di bawah tulisan “Dokumen”, ada nama dokumen yang sedang dibuka. Klik nama itu untuk membuka “Dokumen Anda”. Di sana Anda bisa membuka, mengganti nama, membuat salinan, atau menghapus dokumen, membuat CV atau surat lamaran baru, dan mengimpor file. Menu “Lainnya” juga bisa dipakai untuk membuat CV atau surat lamaran baru, dan berisi Ganti nama, Buat salinan, dan Hapus untuk dokumen yang sedang dibuka.",
+          "Setiap dokumen tersimpan otomatis di browser ini sesaat setelah setiap perubahan, dan juga saat Anda mengklik “Simpan” (di ponsel, tombol ini ada di menu “Lainnya”). Jika dokumen yang sama terbuka di dua tab, perubahan yang disimpan di satu tab akan muncul di tab lainnya. Jika keduanya punya perubahan yang belum disimpan, Anda akan ditanya versi mana yang ingin dipakai.",
           "Membuat salinan CV adalah cara cepat untuk menyiapkan versi lain bagi jenis pekerjaan yang berbeda. “Impor file” menambahkan cadangan JSON sebagai dokumen baru, jadi dokumen yang sudah ada tidak tertimpa. Dokumen yang dihapus akan hilang permanen dari browser ini.",
           "Jika Anda sudah memakai Pembuat CV sebelum fitur beberapa dokumen tersedia, draf dan draf sebelumnya Anda kini ada di “Dokumen Anda”.",
           "Penyimpanan browser bukan cadangan. Dokumen Anda tidak akan ada jika Anda menghapus data browser, memakai mode penyamaran (incognito), atau membuka situs ini di perangkat lain. Unduh cadangan JSON untuk dokumen yang ingin Anda simpan.",
@@ -338,7 +338,7 @@ const id: Dictionary = {
       {
         title: "Word, teks biasa, dan cadangan JSON",
         body: [
-          "Klik tanda panah di samping “Unduh PDF” untuk melihat format lainnya. Sama seperti PDF, semua file ini dibuat di browser Anda.",
+          "Klik “Semua format” di samping “Unduh PDF” (di ponsel, tanda panahnya) untuk memilih format lain. Sama seperti PDF, semua file ini dibuat di browser Anda.",
           "Word (.docx) untuk diedit di Word, Google Docs, atau LibreOffice. Word memakai font yang terpasang di komputer yang membuka file, jadi jika font pilihan Anda tidak terpasang, Word akan menampilkan font yang mirip.",
           "Teks biasa (.txt) berisi konten yang sama tanpa format, untuk ditempel ke formulir lamaran online.",
           "Cadangan JSON adalah salinan data dokumen. Simpan di tempat yang aman, lalu gunakan “Impor file” di “Dokumen Anda” untuk memuatnya lagi, di browser ini atau di browser lain. File yang dibuat lewat “Ekspor JSON” di versi Pembuat CV sebelumnya juga bisa diimpor.",

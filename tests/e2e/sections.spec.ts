@@ -25,11 +25,11 @@ test("new sections and a custom section appear in the preview and the PDF, and h
   await language.getByLabel("Language", { exact: true }).fill("Japanese");
   await language.getByLabel("Proficiency (optional)").selectOption("conversational");
 
-  // An organization.
-  await page.getByRole("button", { name: "Add organization" }).click();
+  // An organisation.
+  await page.getByRole("button", { name: "Add organisation" }).click();
   const org = page.locator("#organizations li").first();
   await org.getByLabel("Role", { exact: true }).fill("Treasurer");
-  await org.getByLabel("Organization", { exact: true }).fill("Example Student Union");
+  await org.getByLabel("Organisation", { exact: true }).fill("Example Student Union");
   await org.getByLabel("Start date: Year").selectOption("2019");
   await org.getByLabel("End date: Year").selectOption("2020");
 
@@ -72,7 +72,7 @@ test("new sections and a custom section appear in the preview and the PDF, and h
   // Hiding sections in the Design tab removes them from the preview and the PDF, but keeps the content.
   await editorTab(page, "Design");
   const manager = page.getByTestId("section-manager");
-  for (const name of ["Organizations & Volunteering", "Publications"]) {
+  for (const name of ["Organisations & volunteering", "Publications"]) {
     const toggle = manager.getByRole("button", { name: `Show ${name}` });
     await expect(toggle).toHaveAttribute("aria-pressed", "true");
     await toggle.click();

@@ -27,7 +27,10 @@ export interface ChecksPanelProps {
    * findings that are fixed in the Design tab; `itemId` names the entry
    * (`data-item-id` in the form) when the finding is about one.
    */
-  /** `field` names the form control (`data-field`) to focus inside the target, when known. */
+  /**
+   * `field` names the control (`data-field`) to focus inside the target, when known: a form
+   * field, or for design findings a Design tab control ("accent", "fontSize").
+   */
   onJump: (target: string, itemId?: string, field?: string) => void;
 }
 
@@ -49,7 +52,10 @@ function formatNumber(value: string | number, lang: Language): string {
 
 /** The finding's message in the interface language. */
 export function checkMessage(item: CheckItem, t: Dictionary, lang: Language): string {
-  const template = t.checks.rules[item.rule];
+  const rules = t.checks.rules;
+  // The first-person tip names the pronouns that were found ("I", "my" or "saya", "aku").
+  const template =
+    item.rule === "firstPerson" ? rules.firstPerson[item.params?.pronouns === "id" ? "id" : "en"] : rules[item.rule];
   const params: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(item.params ?? {})) params[key] = formatNumber(value, lang);
   const text = typeof template === "string" ? template : item.params?.count === 1 ? template.one : template.other;

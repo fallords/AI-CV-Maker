@@ -131,6 +131,10 @@ export function ContactItems({ contact, className }: { contact: ContactInfo; cla
 /**
  * A section whose heading is kept on the same page as its first entry
  * (headings never end up alone at the bottom of a page).
+ *
+ * The <section> has no accessible name, so it isn't a landmark: the builder's form
+ * sections already are, under the same names, and a screen reader's landmark list
+ * would show each one twice. People reach preview sections by their h2 instead.
  */
 export function Section({
   id,
@@ -147,7 +151,7 @@ export function Section({
   if (children.length === 0) return null;
   const [first, ...rest] = children;
   return (
-    <section className={`cv-section cv-section-${id}`} aria-label={title} data-section={sectionKey}>
+    <section className={`cv-section cv-section-${id}`} data-section={sectionKey}>
       <div className="cv-keep">
         <h2 className="cv-heading">{title}</h2>
         {first}
@@ -306,17 +310,30 @@ export function CertificationsSection({ cv, compact = false }: TemplateProps & {
         </span>
       )
     ) : null;
-    return compact ? (
-      <article key={c.id} className="cv-entry cv-entry-compact">
-        <p>
-          <strong className="cv-entry-title-inline">{c.name}</strong>
-          {c.issuer.trim() && <span> · {c.issuer.trim()}</span>}
-          {c.issueDate && <span> · {formatMonth(c.issueDate, lang)}</span>}
-          {credentialNode && <span className="cv-sep"> · </span>}
-          {credentialNode}
-        </p>
-      </article>
-    ) : (
+    if (compact) {
+      // "Name · Issuer · Date · Credential", like the Word and text exports: the issuer
+      // stands in for a missing name, and a separator only ever sits between two parts.
+      const title = firstOf(c.name, c.issuer);
+      const rest: ReactNode[] = [];
+      if (c.name.trim() && c.issuer.trim()) rest.push(<span key="issuer">{c.issuer.trim()}</span>);
+      const date = formatMonth(c.issueDate, lang);
+      if (date) rest.push(<span key="date">{date}</span>);
+      if (credentialNode) rest.push(<Fragment key="credential">{credentialNode}</Fragment>);
+      return (
+        <article key={c.id} className="cv-entry cv-entry-compact">
+          <p>
+            {title && <strong className="cv-entry-title-inline">{title}</strong>}
+            {rest.map((part, i) => (
+              <Fragment key={i}>
+                {(i > 0 || title) && <span className="cv-sep"> · </span>}
+                {part}
+              </Fragment>
+            ))}
+          </p>
+        </article>
+      );
+    }
+    return (
       <article key={c.id} className="cv-entry">
         <EntryHead
           title={firstOf(c.name, c.issuer)}

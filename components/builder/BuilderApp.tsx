@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { CVForm } from "@/components/cv-form/CVForm";
 import { DocumentPreview } from "@/components/cv-preview/DocumentPreview";
 import { LetterForm } from "@/components/letter/LetterForm";
@@ -13,9 +13,12 @@ import { cvReducer, type CVAction } from "@/lib/cv-reducer";
 import { LANGUAGES, TEMPLATE_IDS, createEmptyCV, isCVEmpty, type CVData, type Language, type TemplateId } from "@/lib/cv-schema";
 import { MAX_IMPORT_BYTES, parseDocumentJson } from "@/lib/cv-validation";
 import {
+  DOCS_INDEX_KEY,
+  DOC_KEY,
   createDoc,
   defaultDocName,
   deleteDoc,
+  discardLegacyDraft,
   docLanguage,
   duplicateDoc,
   getActiveDocId,
@@ -26,6 +29,7 @@ import {
   renameDoc,
   saveDoc,
   setActiveDocId,
+  storedSavedAt,
   type AnyDoc,
   type CreateDocResult,
   type DocMeta,
@@ -45,8 +49,9 @@ import { Tabs, type TabSpec } from "./Tabs";
 
 const AUTOSAVE_MS = 600;
 
-type SaveState = "saved" | "dirty" | "unavailable" | "quota";
-type SaveOutcome = "ok" | "unavailable" | "quota";
+type SaveState = "saved" | "dirty" | "unavailable" | "quota" | "conflict";
+/** "conflict": another tab or window saved the document since this tab last loaded or wrote it. */
+type SaveOutcome = "ok" | "unavailable" | "quota" | "conflict";
 type EditorTab = "content" | "design" | "check";
 type MobileTab = "edit" | "preview";
 
@@ -83,6 +88,18 @@ const freshCV = (language: Language = "en"): AnyDoc => ({ kind: "cv", data: crea
 const JUMP_FIELDS =
   "input:not([type=hidden]):not([type=file]):not([disabled]), select:not([disabled]), textarea:not([disabled])";
 
+/** Tailwind's lg breakpoint: from here the editor and preview sit side by side. */
+const WIDE_QUERY = "(min-width: 64rem)";
+function subscribeWide(onChange: () => void): () => void {
+  if (typeof window.matchMedia !== "function") return () => {};
+  const query = window.matchMedia(WIDE_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+// Without matchMedia (tests, very old browsers) the side-by-side layout is assumed.
+const isWide = () => typeof window.matchMedia !== "function" || window.matchMedia(WIDE_QUERY).matches;
+const wideOnServer = () => true;
+
 const BADGE: Record<ScoreBand, string> = {
   high: "border-line-strong text-fg-muted",
   medium: "border-warn-line text-warn-text",
@@ -94,31 +111,47 @@ const BADGE: Record<ScoreBand, string> = {
  * one open at a time. Each document autosaves shortly after every edit; edits that have
  * not been written yet are flushed when the tab is hidden or closed, before another
  * document opens, and before any download.
+ *
+ * Several tabs can have the same document open. A tab never overwrites a copy that
+ * another tab saved after it last loaded or wrote the document: it reloads that copy
+ * when it has no unsaved changes, and otherwise asks which version to keep. Without
+ * browser storage, documents still open, are created and imported in memory (unsaved).
  */
 export function BuilderApp() {
   const { t, lang } = useI18n();
   const b = t.builder;
   const dt = t.docs;
   const ids = useId();
+  const wide = useSyncExternalStore(subscribeWide, isWide, wideOnServer);
 
   const [doc, dispatch] = useReducer(docReducer, undefined, () => freshCV());
-  // Stored id and index entry of the open document; null while a new, untouched CV isn't saved yet.
+  // Stored id and index entry of the open document; null while a new, untouched CV isn't saved yet
+  // (and for documents opened in memory because they can't be stored).
   const [activeId, setActiveIdState] = useState<string | null>(null);
   const [meta, setMetaState] = useState<DocMeta | null>(null);
   const [docs, setDocs] = useState<DocMeta[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
   const [notice, setNotice] = useState<Notice | null>(null);
+  // Another tab saved the open document while this one had unsaved changes.
+  const [conflict, setConflict] = useState(false);
+  // Asked before another document replaces one whose latest changes couldn't be saved.
+  const [discard, setDiscard] = useState<{
+    reason: Exclude<SaveOutcome, "ok">;
+    name: string;
+    run: () => void;
+  } | null>(null);
   const [mobileTab, setMobileTab] = useState<MobileTab>("edit");
   const [editorTab, setEditorTab] = useState<EditorTab>("content");
   const [pages, setPages] = useState(0);
   // Dialogs get a new key each time they open, so their state starts fresh.
-  const [docsDialog, setDocsDialog] = useState({ open: false, key: 0 });
+  const [docsDialog, setDocsDialog] = useState({ open: false, key: 0, letter: false });
   const [renameDialog, setRenameDialog] = useState({ open: false, key: 0 });
   const [confirmDelete, setConfirmDelete] = useState(false);
   // Remounts the editor when another document opens, so per-form state never leaks across documents.
   const [editorKey, setEditorKey] = useState(0);
-  // Where the last check finding asked to go: a section (and entry) of the form, or a panel to focus as a whole.
+  // Where the last check finding asked to go: a section (and entry) of the form, or a panel
+  // (the Design tab), plus the control (`data-field`) to focus there.
   const [jump, setJump] = useState<{ target: string; itemId?: string; field?: string; wholePanel?: boolean } | null>(
     null,
   );
@@ -127,10 +160,15 @@ export function BuilderApp() {
   const docRef = useRef(doc);
   /** The version of the open document that storage holds (or that was read from it). */
   const savedRef = useRef<AnyDoc>(doc);
+  /** `savedAt` of the stored copy this tab last loaded or wrote (see lib/documents storedSavedAt). */
+  const baseRef = useRef<string | null>(null);
+  /** True while the open document is a legacy draft that didn't fit into documents (still under its old key). */
+  const legacyRef = useRef(false);
   const activeIdRef = useRef<string | null>(null);
   const metaRef = useRef<DocMeta | null>(null);
   const langRef = useRef<Language>(lang);
   const pendingSave = useRef<number | null>(null);
+  const switcherRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     docRef.current = doc;
@@ -158,10 +196,12 @@ export function BuilderApp() {
   /**
    * Writes `next` as the open document. A new document is created in storage on its
    * first save. While a document still has its automatic name, the name follows the
-   * content ("Untitled CV" becomes the person's name once it is typed).
+   * content ("Untitled CV" becomes the person's name once it is typed). Unless `force`
+   * is set, a copy saved by another tab since this tab last loaded or wrote the document
+   * is never overwritten ("conflict").
    */
   const persist = useCallback(
-    (next: AnyDoc): SaveOutcome => {
+    (next: AnyDoc, force = false): SaveOutcome => {
       const id = activeIdRef.current;
       if (!id) {
         const created = createDoc(next, defaultDocName(next, langRef.current));
@@ -172,9 +212,23 @@ export function BuilderApp() {
         setActive(created.meta.id, created.meta);
         setActiveDocId(created.meta.id);
         savedRef.current = next;
+        baseRef.current = created.meta.updatedAt;
+        // A legacy draft opened while it didn't fit is a document now; don't migrate it again.
+        if (legacyRef.current) {
+          legacyRef.current = false;
+          discardLegacyDraft();
+        }
         setSaveState("saved");
         refreshDocs();
         return "ok";
+      }
+      if (!force) {
+        const stored = storedSavedAt(id);
+        if (stored !== undefined && stored !== baseRef.current) {
+          setConflict(true);
+          setSaveState("conflict");
+          return "conflict";
+        }
       }
       const result = saveDoc(id, next);
       if (!result.ok) {
@@ -183,6 +237,8 @@ export function BuilderApp() {
       }
       const previous = savedRef.current;
       savedRef.current = next;
+      baseRef.current = result.savedAt;
+      setConflict(false);
       setSaveState("saved");
       const current = metaRef.current;
       if (current) {
@@ -206,15 +262,21 @@ export function BuilderApp() {
 
   const flush = useCallback((): boolean => flushOutcome() === "ok", [flushOutcome]);
 
-  /** Shows `next` in the editor as the open document (already stored under `id`, or new when id is null). */
+  /**
+   * Shows `next` in the editor as the open document: stored under `id` (written at
+   * `savedAt`), or new / in memory when id is null.
+   */
   const activate = useCallback(
-    (id: string | null, next: AnyDoc, m: DocMeta | null) => {
+    (id: string | null, next: AnyDoc, m: DocMeta | null, savedAt: string | null = null) => {
       cancelPendingSave();
       savedRef.current = next;
       docRef.current = next;
+      baseRef.current = savedAt;
+      legacyRef.current = false;
       setActive(id, m);
       if (id) setActiveDocId(id);
       dispatch({ type: "load", doc: next });
+      setConflict(false);
       setSaveState(isStorageAvailable() ? "saved" : "unavailable");
       setEditorKey((k) => k + 1);
       if (next.kind === "letter") setEditorTab((tab) => (tab === "check" ? "content" : tab));
@@ -227,7 +289,7 @@ export function BuilderApp() {
     for (const m of listDocs()) {
       const result = loadDoc(m.id);
       if (result.status === "ok") {
-        activate(m.id, result.doc, result.meta);
+        activate(m.id, result.doc, result.meta, result.savedAt);
         return result.meta.name;
       }
     }
@@ -240,24 +302,32 @@ export function BuilderApp() {
     /* eslint-disable react-hooks/set-state-in-effect -- one-time hydration from localStorage */
     const legacy = migrateLegacyStorage();
     let corrupted = legacy.corrupted;
-    let opened: { id: string; doc: AnyDoc; meta: DocMeta } | null = null;
+    let opened: { id: string; doc: AnyDoc; meta: DocMeta; savedAt: string | null } | null = null;
     const storageOk = isStorageAvailable();
-    if (storageOk) {
+    if (storageOk && !legacy.blocked) {
       const candidates = [getActiveDocId(), ...listDocs().map((m) => m.id)].filter(
         (id, i, all): id is string => id !== null && all.indexOf(id) === i,
       );
       for (const id of candidates) {
         const result = loadDoc(id);
         if (result.status === "ok") {
-          opened = { id, doc: result.doc, meta: result.meta };
+          opened = { id, doc: result.doc, meta: result.meta, savedAt: result.savedAt };
           break;
         }
         if (result.status === "corrupted") corrupted = true;
       }
     }
-    if (opened) {
-      activate(opened.id, opened.doc, opened.meta);
-      if (!isDocEmpty(opened.doc)) setNotice({ kind: "info", text: (d) => d.builder.messages.recovered });
+    if (legacy.blocked) {
+      // The old draft didn't fit into documents. Show it anyway, unsaved: it stays under its
+      // old key and is moved on a later visit, or stored as soon as there's room for it.
+      activate(null, { kind: "cv", data: legacy.blocked.data }, null);
+      legacyRef.current = true;
+      setSaveState(legacy.blocked.reason);
+      if (legacy.blocked.reason === "quota") setNotice({ kind: "error", text: (d) => d.docs.messages.legacyBlocked });
+    } else if (opened) {
+      activate(opened.id, opened.doc, opened.meta, opened.savedAt);
+      const name = opened.meta.name;
+      if (!isDocEmpty(opened.doc)) setNotice({ kind: "info", text: (d) => fmt(d.builder.messages.recovered, { name }) });
     } else {
       activate(null, freshCV(), null);
     }
@@ -273,7 +343,7 @@ export function BuilderApp() {
   // so loading never counts as an edit.
   useEffect(() => {
     if (!loaded || doc === savedRef.current) return;
-    setSaveState((s) => (s === "unavailable" ? s : "dirty"));
+    setSaveState((s) => (s === "unavailable" || s === "conflict" ? s : "dirty"));
     cancelPendingSave();
     pendingSave.current = window.setTimeout(() => {
       pendingSave.current = null;
@@ -282,7 +352,7 @@ export function BuilderApp() {
   }, [doc, loaded, cancelPendingSave, persist]);
 
   // Flush pending edits when the tab is hidden or closed. Only unsaved edits are
-  // written, so an idle second tab never overwrites newer work from another tab.
+  // written, and never over a newer copy from another tab.
   useEffect(() => {
     if (!loaded) return;
     const onVisibility = () => {
@@ -299,6 +369,56 @@ export function BuilderApp() {
     };
   }, [loaded, flush]);
 
+  // Another tab or window changed storage. The documents list follows; a newer copy of the
+  // open document replaces it here when this tab has no unsaved changes, and otherwise
+  // the conflict notice asks which version to keep.
+  useEffect(() => {
+    if (!loaded) return;
+    let local: Storage | null = null;
+    try {
+      local = window.localStorage;
+    } catch {
+      /* blocked: there are no other tabs' saves to follow */
+    }
+    const onStorage = (e: StorageEvent) => {
+      // sessionStorage changes are not other tabs' saves.
+      if (e.storageArea && e.storageArea !== local) return;
+      if (e.key === null || e.key === DOCS_INDEX_KEY) refreshDocs();
+      const id = activeIdRef.current;
+      // A document deleted elsewhere stays open here; its next save stores it again.
+      if (!id || e.key !== DOC_KEY(id) || e.newValue === null) return;
+      const stored = storedSavedAt(id);
+      // Same content (e.g. only renamed elsewhere): keep the name in step.
+      if (stored === undefined || stored === baseRef.current) {
+        const renamed = listDocs().find((m) => m.id === id);
+        if (renamed && metaRef.current && renamed.name !== metaRef.current.name) {
+          setActive(id, { ...metaRef.current, name: renamed.name });
+          refreshDocs();
+        }
+        return;
+      }
+      if (docRef.current !== savedRef.current) {
+        setConflict(true);
+        setSaveState("conflict");
+        return;
+      }
+      const result = loadDoc(id);
+      if (result.status !== "ok") return;
+      // No remount: whatever the person is focused on stays focused.
+      cancelPendingSave();
+      savedRef.current = result.doc;
+      docRef.current = result.doc;
+      baseRef.current = result.savedAt;
+      setActive(id, result.meta);
+      dispatch({ type: "load", doc: result.doc });
+      setConflict(false);
+      setSaveState("saved");
+      refreshDocs();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [loaded, cancelPendingSave, refreshDocs, setActive]);
+
   // Leaving the builder inside the app (e.g. to the help page) keeps pending edits too.
   useEffect(
     () => () => {
@@ -314,7 +434,7 @@ export function BuilderApp() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  // Jump to a section (and entry) after the Content tab has been shown.
+  // Jump to a section (and entry), or a Design tab control, after its tab has been shown.
   useEffect(() => {
     if (!jump) return;
     const section = document.getElementById(jump.target);
@@ -326,22 +446,31 @@ export function BuilderApp() {
       );
       if (item) scope = item;
     }
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? true;
-    scope.scrollIntoView({ block: scope === section ? "start" : "center", behavior: reduceMotion ? "auto" : "smooth" });
     // The field the finding is about, else the first field of the entry or section; an
-    // empty section offers its "Add" button instead.
+    // empty section offers its "Add" button instead. A panel without the named control
+    // gets focus itself.
     const named = jump.field
       ? Array.from(scope.querySelectorAll<HTMLElement>("[data-field]")).find(
           (el) => el.dataset.field === jump.field && el.matches(JUMP_FIELDS) && !el.closest("fieldset:disabled"),
         )
       : undefined;
     const target = jump.wholePanel
-      ? scope
+      ? (named ?? scope)
       : (named ??
         scope.querySelector<HTMLElement>(JUMP_FIELDS) ??
         scope.querySelector<HTMLElement>("button:not([disabled])") ??
         scope);
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? true;
+    // In a panel, bring the control's group into view; in the form, the section or entry.
+    const view = jump.wholePanel && named ? (named.closest("fieldset") ?? named) : scope;
+    view.scrollIntoView({
+      block: view === section ? "start" : "center",
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
     if (target === scope && !scope.hasAttribute("tabindex")) scope.setAttribute("tabindex", "-1");
+    // Ringed even after a mouse click (app/globals.css), so it's clear where focus went.
+    target.setAttribute("data-jumped", "");
+    target.addEventListener("blur", () => target.removeAttribute("data-jumped"), { once: true });
     target.focus({ preventScroll: true });
   }, [jump]);
 
@@ -364,52 +493,92 @@ export function BuilderApp() {
   const error = (text: Notice["text"]) => setNotice({ kind: "error", text });
   const success = (text: Notice["text"]) => setNotice({ kind: "success", text });
 
-  /** Saves the open document before another one replaces it; false (with a notice) when that fails. */
-  const leaveCurrent = (): boolean => {
-    if (flush()) return true;
-    error((d) => d.docs.messages.unsavedChanges);
-    return false;
+  const currentName = () => metaRef.current?.name ?? defaultDocName(docRef.current, langRef.current);
+
+  /**
+   * Makes sure the open document can be replaced without losing work: pending edits are
+   * saved, and a document shown only in memory is stored if possible. Anything but "ok"
+   * means the latest changes would be lost.
+   */
+  const secureCurrent = (): SaveOutcome => {
+    const outcome = flushOutcome();
+    // An empty document has nothing worth keeping.
+    if (isDocEmpty(docRef.current)) return "ok";
+    if (outcome !== "ok") return outcome;
+    // Stored, or a legacy draft that is still kept under its old key.
+    if (activeIdRef.current !== null || legacyRef.current) return "ok";
+    return persist(docRef.current);
   };
 
-  const openDocsDialog = () => {
+  /** Runs `open` once the open document is safe to replace, or after the person agrees to lose its changes. */
+  const leaveThen = (open: () => void) => {
+    const outcome = secureCurrent();
+    if (outcome === "ok") {
+      open();
+      return;
+    }
+    setDiscard({ reason: outcome, name: currentName(), run: open });
+  };
+
+  const confirmDiscard = () => {
+    const pending = discard;
+    setDiscard(null);
+    if (!pending) return;
+    cancelPendingSave();
+    pending.run();
+  };
+
+  const openDocsDialog = (letter = false) => {
     flush();
     refreshDocs();
-    setDocsDialog((s) => ({ open: true, key: s.key + 1 }));
+    setDocsDialog((s) => ({ open: true, key: s.key + 1, letter }));
   };
   const closeDocsDialog = () => setDocsDialog((s) => ({ ...s, open: false }));
 
   const openDoc = (id: string) => {
     closeDocsDialog();
-    if (id === activeIdRef.current || !leaveCurrent()) return;
-    const result = loadDoc(id);
-    refreshDocs();
-    if (result.status !== "ok") {
-      const status = result.status;
-      error((d) => d.docs.messages.openFailed[status]);
-      return;
-    }
-    activate(id, result.doc, result.meta);
-    const name = result.meta.name;
-    success((d) => fmt(d.docs.messages.opened, { name }));
+    if (id === activeIdRef.current) return;
+    leaveThen(() => {
+      const result = loadDoc(id);
+      refreshDocs();
+      if (result.status !== "ok") {
+        const status = result.status;
+        error((d) => d.docs.messages.openFailed[status]);
+        return;
+      }
+      activate(id, result.doc, result.meta, result.savedAt);
+      const name = result.meta.name;
+      success((d) => fmt(d.docs.messages.opened, { name }));
+    });
   };
 
-  /** Stores `next` as a new document and opens it. Returns its index entry, or null (with a notice). */
-  const createAndOpen = (next: AnyDoc): DocMeta | null => {
+  /**
+   * Stores `next` as a new document and opens it, then calls `done` with its name. Without
+   * browser storage it opens in memory (unsaved; the status line says so).
+   */
+  const createAndOpen = (next: AnyDoc, done: (name: string) => void) => {
     closeDocsDialog();
-    if (!leaveCurrent()) return null;
-    const created = createDoc(next, defaultDocName(next, lang));
-    if (!created.ok) {
-      const reason = created.reason;
-      error((d) => d.docs.messages.createFailed[reason]);
-      return null;
-    }
-    activate(created.meta.id, next, created.meta);
-    refreshDocs();
-    return created.meta;
+    leaveThen(() => {
+      const name = defaultDocName(next, langRef.current);
+      if (!isStorageAvailable()) {
+        activate(null, next, null);
+        done(name);
+        return;
+      }
+      const created = createDoc(next, name);
+      if (!created.ok) {
+        const reason = created.reason;
+        error((d) => d.docs.messages.createFailed[reason]);
+        return;
+      }
+      activate(created.meta.id, next, created.meta, created.meta.updatedAt);
+      refreshDocs();
+      done(created.meta.name);
+    });
   };
 
   const onNewCV = () => {
-    if (createAndOpen(freshCV(docLanguage(docRef.current)))) success((d) => d.docs.messages.created.cv);
+    createAndOpen(freshCV(docLanguage(docRef.current)), () => success((d) => d.docs.messages.created.cv));
   };
 
   const onNewLetter = (fromCvId: string | null) => {
@@ -421,8 +590,15 @@ export function BuilderApp() {
     }
     const cvName = cv ? (docs.find((m) => m.id === fromCvId)?.name ?? "") : "";
     const language = cv?.meta.cvLanguage ?? docLanguage(docRef.current);
-    if (!createAndOpen({ kind: "letter", data: createEmptyLetter(language, cv) })) return;
-    success((d) => (cv ? fmt(d.docs.messages.createdFrom, { name: cvName }) : d.docs.messages.created.letter));
+    createAndOpen({ kind: "letter", data: createEmptyLetter(language, cv) }, () =>
+      success((d) => (cv ? fmt(d.docs.messages.createdFrom, { name: cvName }) : d.docs.messages.created.letter)),
+    );
+  };
+
+  /** Toolbar "New cover letter…": the documents dialog with the letter setup, or straight away without CVs to copy from. */
+  const onNewLetterFromMenu = () => {
+    if (cvOptions.length === 0) onNewLetter(null);
+    else openDocsDialog(true);
   };
 
   const onImport = async (file: File) => {
@@ -444,11 +620,10 @@ export function BuilderApp() {
       error((d) => d.docs.messages.importErrors[code]);
       return;
     }
-    const created = createAndOpen(result.doc);
-    if (!created) return;
-    const name = created.name;
     const migrated = result.migratedFrom !== undefined;
-    success((d) => fmt(migrated ? d.docs.messages.importedMigrated : d.docs.messages.imported, { name }));
+    createAndOpen(result.doc, (name) =>
+      success((d) => fmt(migrated ? d.docs.messages.importedMigrated : d.docs.messages.imported, { name })),
+    );
   };
 
   const renameById = (id: string, name: string): boolean => {
@@ -460,12 +635,15 @@ export function BuilderApp() {
   };
 
   const duplicateById = (id: string, name: string): CreateDocResult => {
-    // The copy is made from storage, so the open document's latest edits are written first.
+    let result: CreateDocResult;
     if (id === activeIdRef.current) {
-      const outcome = flushOutcome();
-      if (outcome !== "ok") return { ok: false, reason: outcome };
+      // The open document is copied as shown here, including edits that aren't saved yet
+      // (pending ones are written first; a conflict with another tab doesn't block the copy).
+      flushOutcome();
+      result = createDoc(docRef.current, name);
+    } else {
+      result = duplicateDoc(id, name);
     }
-    const result = duplicateDoc(id, name);
     refreshDocs();
     return result;
   };
@@ -483,6 +661,9 @@ export function BuilderApp() {
     if (isCurrent) {
       opened = openNewest() ?? undefined;
       if (!opened) activate(null, freshCV(docLanguage(docRef.current)), null);
+    } else if (docRef.current !== savedRef.current) {
+      // Deleting may have made the room the open document's latest changes were waiting for.
+      flush();
     }
     refreshDocs();
     return { ok: true, opened };
@@ -504,7 +685,7 @@ export function BuilderApp() {
       error((d) => d.docs.messages.openFailed[status]);
       return;
     }
-    activate(result.meta.id, loadedCopy.doc, loadedCopy.meta);
+    activate(result.meta.id, loadedCopy.doc, loadedCopy.meta, loadedCopy.savedAt);
     const name = loadedCopy.meta.name;
     success((d) => fmt(d.docs.messages.duplicatedOpened, { name }));
   };
@@ -513,8 +694,10 @@ export function BuilderApp() {
     // A new document is stored first, so it has something to rename.
     if (!activeIdRef.current) {
       const outcome = persist(docRef.current);
+      // (A document without an id is created, never compared with another tab's copy.)
       if (outcome !== "ok") {
-        error((d) => d.docs.messages.createFailed[outcome]);
+        const reason = outcome === "conflict" ? "unavailable" : outcome;
+        error((d) => d.docs.messages.createFailed[reason]);
         return;
       }
     }
@@ -542,13 +725,40 @@ export function BuilderApp() {
     if (persist(docRef.current) === "ok") success((d) => d.builder.messages.saved);
   };
 
+  /* ---------------- conflicts between tabs ---------------- */
+
+  /** Replaces this tab's unsaved changes with the copy another tab saved. */
+  const onLoadNewer = () => {
+    const id = activeIdRef.current;
+    if (!id) return;
+    const result = loadDoc(id);
+    refreshDocs();
+    if (result.status !== "ok") {
+      // Nothing newer to load after all (deleted or unreadable): this tab's version is kept.
+      onKeepMine();
+      return;
+    }
+    activate(id, result.doc, result.meta, result.savedAt);
+    const name = result.meta.name;
+    success((d) => fmt(d.docs.conflict.loaded, { name }));
+    switcherRef.current?.focus();
+  };
+
+  /** Saves this tab's version over the copy another tab saved. */
+  const onKeepMine = () => {
+    cancelPendingSave();
+    const name = currentName();
+    if (persist(docRef.current, true) === "ok") success((d) => fmt(d.docs.conflict.kept, { name }));
+    switcherRef.current?.focus();
+  };
+
   /* ---------------- check jumps ---------------- */
 
   const onJump = (target: string, itemId?: string, field?: string) => {
     setMobileTab("edit");
     if (target === DESIGN_TARGET) {
       setEditorTab("design");
-      setJump({ target: `${ids}-panel-design`, wholePanel: true });
+      setJump({ target: `${ids}-panel-design`, field, wholePanel: true });
       return;
     }
     setEditorTab("content");
@@ -574,10 +784,11 @@ export function BuilderApp() {
     dirty: b.status.unsaved,
     unavailable: dt.status.unavailable,
     quota: dt.status.quota,
+    conflict: dt.status.conflict,
   }[saveState];
-  const storageProblem = saveState === "unavailable" || saveState === "quota";
+  const storageProblem = saveState === "unavailable" || saveState === "quota" || saveState === "conflict";
 
-  const selectClass =
+  const toolbarSelectClass =
     "mt-1 min-h-10 rounded-sm border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel";
 
   const editorTabs: TabSpec<EditorTab>[] = [
@@ -611,24 +822,34 @@ export function BuilderApp() {
 
   const switcherLabelId = `${ids}-switcher-label`;
   const switcherId = `${ids}-switcher`;
+  const languageHintId = `${ids}-language-hint`;
+  const languageHint = isCV ? b.cvLanguageHint : dt.letterLanguageHint;
+  // Below lg the preview is a tab. While the Edit tab is shown it stays laid out (invisible,
+  // inert, hidden from assistive technology), so its page count, which the Check tab uses,
+  // stays measured.
+  const previewOffscreen = mobileTab !== "preview" && !wide;
 
   return (
     <>
       <div className="no-print flex min-h-0 flex-1 flex-col">
-        {/* Toolbar */}
-        <div className="z-20 border-b border-line bg-surface lg:sticky lg:top-0">
+        {/*
+          Toolbar. Its z-index must beat the sticky Edit/Preview bar below it, or the menus
+          that open from here (download formats, More) slide under that bar on phones.
+        */}
+        <div className="relative z-30 border-b border-line bg-surface lg:sticky lg:top-0">
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-3 px-4 py-3">
             <div className="flex min-w-0 flex-auto flex-wrap items-end gap-3">
               <div className="flex w-full min-w-0 flex-col text-xs text-fg-muted sm:w-auto sm:max-w-[20rem]">
                 <span id={switcherLabelId}>{dt.switcher.label}</span>
                 <button
+                  ref={switcherRef}
                   id={switcherId}
                   type="button"
                   aria-haspopup="dialog"
                   aria-labelledby={`${switcherLabelId} ${switcherId}`}
                   title={dt.switcher.hint}
                   className="mt-1 flex min-h-10 min-w-0 items-center gap-2 rounded-sm border border-control-line bg-raised px-2 text-left text-sm text-fg transition-colors hover:border-steel"
-                  onClick={openDocsDialog}
+                  onClick={() => openDocsDialog()}
                   data-testid="document-switcher"
                 >
                   <span className="min-w-0 truncate">{docName}</span>
@@ -639,7 +860,7 @@ export function BuilderApp() {
               <label className="flex flex-col text-xs text-fg-muted">
                 {b.template}
                 <select
-                  className={selectClass}
+                  className={toolbarSelectClass}
                   value={template}
                   onChange={(e) => {
                     const patch = { template: e.target.value as TemplateId };
@@ -654,14 +875,13 @@ export function BuilderApp() {
                   ))}
                 </select>
               </label>
-              <label
-                className="flex flex-col text-xs text-fg-muted"
-                title={isCV ? b.cvLanguageHint : dt.letterLanguageHint}
-              >
+              {/* The hint is the select's description, so touch, keyboard and screen reader users get it too. */}
+              <label className="flex flex-col text-xs text-fg-muted" title={languageHint}>
                 {isCV ? b.cvLanguage : dt.letterLanguage}
                 <select
-                  className={selectClass}
+                  className={toolbarSelectClass}
                   value={docLang}
+                  aria-describedby={languageHintId}
                   onChange={(e) => {
                     const value = e.target.value as Language;
                     if (doc.kind === "cv") cvDispatch({ type: "setMeta", patch: { cvLanguage: value } });
@@ -675,11 +895,15 @@ export function BuilderApp() {
                   ))}
                 </select>
               </label>
+              <span id={languageHintId} className="sr-only">
+                {languageHint}
+              </span>
             </div>
-            <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto">
+            <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-2 sm:ml-auto sm:w-auto">
+              {/* The one save status, at every width (its own line on phones). */}
               <p
-                className={`mr-2 hidden items-center gap-1.5 text-xs md:flex ${
-                  storageProblem ? "max-w-[22rem] text-danger-text" : "text-fg-muted"
+                className={`flex items-center gap-1.5 text-xs max-sm:w-full max-sm:empty:hidden sm:mr-2 ${
+                  storageProblem ? "text-danger-text sm:max-w-[22rem]" : "text-fg-muted"
                 }`}
                 role="status"
                 data-testid="save-status"
@@ -688,16 +912,17 @@ export function BuilderApp() {
                   b.loading
                 ) : empty && saveState === "saved" ? null : (
                   <>
-                    {saveState === "saved" && <Check width={14} height={14} />}
+                    {saveState === "saved" && <Check width={14} height={14} className="shrink-0" />}
                     {statusText}
                   </>
                 )}
               </p>
-              <button type="button" className={btn.secondary} onClick={onSaveNow}>
+              {/* Autosave makes this a reassurance; on phones it moves into "More" to save a row. */}
+              <button type="button" className={`${btn.secondary} max-sm:hidden`} onClick={onSaveNow}>
                 {b.saveNow}
               </button>
               <MenuButton
-                triggerClassName={btn.secondary}
+                triggerClassName={`${btn.secondary} shrink-0`}
                 triggerContent={
                   <>
                     {b.more} <Chevron width={16} height={16} />
@@ -707,14 +932,29 @@ export function BuilderApp() {
               >
                 {(run) => (
                   <>
-                    <button type="button" className={menuItem} onClick={run(onRenameCurrent)}>
+                    <button type="button" className={menuItem} onClick={run(onNewCV)}>
+                      {dt.actions.newCv}
+                    </button>
+                    <button type="button" className={menuItem} onClick={run(onNewLetterFromMenu)}>
+                      {dt.actions.newLetter}
+                    </button>
+                    <hr className="my-1 border-line" />
+                    <button type="button" className={`${menuItem} sm:hidden`} onClick={run(onSaveNow)}>
+                      {b.saveNow}
+                    </button>
+                    <button
+                      type="button"
+                      className={menuItem}
+                      disabled={!activeId && saveState === "unavailable"}
+                      onClick={run(onRenameCurrent)}
+                    >
                       {dt.actions.rename}
                     </button>
                     <button type="button" className={menuItem} disabled={!activeId} onClick={run(onDuplicateCurrent)}>
                       {dt.actions.duplicate}
                     </button>
-                    <button type="button" className={menuItem} onClick={run(openDocsDialog)}>
-                      {dt.title}
+                    <button type="button" className={menuItem} onClick={run(() => openDocsDialog())}>
+                      {dt.actions.allDocs}
                     </button>
                     <hr className="my-1 border-line" />
                     <button
@@ -731,11 +971,6 @@ export function BuilderApp() {
               <DownloadMenu doc={doc} onBeforeExport={flush} onNotice={setNotice} />
             </div>
           </div>
-          {storageProblem && (
-            <p className="border-t border-l-2 border-line border-l-danger-text px-4 py-2 text-sm text-fg md:hidden" role="alert">
-              {statusText}
-            </p>
-          )}
         </div>
 
         {/* Mobile: switch between editor and preview instead of a cramped split screen. */}
@@ -751,6 +986,26 @@ export function BuilderApp() {
           onSelect={setMobileTab}
           className="sticky top-0 z-20 border-b border-line bg-surface px-4 lg:hidden"
         />
+
+        {conflict && (
+          <div className="mx-auto w-full max-w-[1600px] px-4 pt-3">
+            <div
+              role="alert"
+              className="rounded-sm border border-l-2 border-line border-l-danger-text bg-surface px-4 py-2.5 text-sm text-fg"
+              data-testid="conflict-notice"
+            >
+              <p className="break-words">{fmt(dt.conflict.text, { name: docName })}</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button type="button" className={btn.secondary} onClick={onLoadNewer}>
+                  {dt.conflict.loadNewer}
+                </button>
+                <button type="button" className={btn.secondary} onClick={onKeepMine}>
+                  {dt.conflict.keepMine}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Errors keep a danger bar; info and success are a plain line, since the toolbar already shows save state. */}
         {notice && (
@@ -775,7 +1030,7 @@ export function BuilderApp() {
           </div>
         )}
 
-        <div className="mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+        <div className="relative mx-auto grid w-full max-w-[1600px] flex-1 gap-6 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
           <div
             id="panel-edit"
             role="tabpanel"
@@ -816,7 +1071,7 @@ export function BuilderApp() {
                   aria-labelledby={`${ids}-tab-design`}
                   hidden={editorTab !== "design"}
                   tabIndex={-1}
-                  className="pt-4 focus:outline-none"
+                  className="pt-4"
                 >
                   {editorTab === "design" &&
                     (doc.kind === "cv" ? (
@@ -859,7 +1114,12 @@ export function BuilderApp() {
             id="panel-preview"
             role="tabpanel"
             aria-labelledby="tab-preview"
-            className={`${mobileTab === "preview" ? "block" : "hidden"} min-w-0 lg:block`}
+            aria-hidden={previewOffscreen || undefined}
+            inert={previewOffscreen || undefined}
+            className={`min-w-0 ${
+              mobileTab === "preview" ? "" : "invisible absolute inset-x-0 top-0 h-0 overflow-hidden"
+            } lg:visible lg:static lg:h-auto lg:overflow-visible`}
+            data-testid="preview-panel"
           >
             <div className="lg:sticky lg:top-24">
               <DocumentPreview doc={doc} onPagesChange={setPages} />
@@ -884,6 +1144,8 @@ export function BuilderApp() {
         onNewCV={onNewCV}
         onNewLetter={onNewLetter}
         onImport={(file) => void onImport(file)}
+        storageAvailable={saveState !== "unavailable"}
+        startWithLetter={docsDialog.letter}
       />
       <RenameDialog
         key={`rename-${renameDialog.key}`}
@@ -906,6 +1168,16 @@ export function BuilderApp() {
         danger
         onCancel={() => setConfirmDelete(false)}
         onConfirm={onDeleteCurrent}
+      />
+      <ConfirmDialog
+        open={discard !== null}
+        title={dt.discard.title}
+        body={discard ? fmt(dt.discard[discard.reason], { name: discard.name }) : ""}
+        confirmLabel={dt.discard.confirm}
+        cancelLabel={dt.discard.cancel}
+        danger
+        onCancel={() => setDiscard(null)}
+        onConfirm={confirmDiscard}
       />
     </>
   );

@@ -15,7 +15,7 @@ const design: typeof en = {
     names: {
       default: "Warna template",
       ink: "Biru tinta",
-      prussian: "Biru prusia",
+      prussian: "Biru Prusia",
       forest: "Hijau hutan",
       teal: "Hijau toska",
       burgundy: "Merah marun",
@@ -61,7 +61,7 @@ const design: typeof en = {
   sections: {
     title: "Bagian CV",
     intro:
-      "Urutan bagian mengikuti template sampai Anda memindahkannya. Bagian yang disembunyikan tetap tersimpan, hanya tidak muncul di CV.",
+      "Urutan bagian mengikuti template sampai Anda memindahkannya. Bagian yang disembunyikan tetap tersimpan, tetapi tidak muncul di CV.",
     personalNote: "Nama dan kontak Anda selalu berada di urutan pertama.",
     listLabel: "Urutan bagian CV",
     moveUp: "Pindahkan {name} ke atas",

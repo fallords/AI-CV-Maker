@@ -31,6 +31,16 @@ function headings(container: HTMLElement) {
   return Array.from(container.querySelectorAll("h2")).map((h) => h.textContent);
 }
 
+/**
+ * The CV section under the h2 with this name. Preview sections are deliberately not
+ * landmarks (see the "landmarks" test), so they're found through their heading.
+ */
+function cvSection(container: HTMLElement, name: string): HTMLElement {
+  const section = within(container).getByRole("heading", { level: 2, name }).closest("section");
+  if (!section) throw new Error(`No section around the heading “${name}”`);
+  return section;
+}
+
 describe("CV templates", () => {
   it.each(TEMPLATE_IDS)("%s renders every filled section of the sample CV", (template) => {
     const { container } = render(<CVDocument cv={sampleCV(template)} />);
@@ -121,7 +131,7 @@ describe("CV templates", () => {
     const link = screen.getByRole("link", { name: "linkedin.com/in/test" });
     expect(link).toHaveAttribute("href", "https://linkedin.com/in/test");
     expect(screen.getByText("javascript:alert(1)").closest("a")).toBeNull();
-    const projects = screen.getByRole("region", { name: "Projects" });
+    const projects = cvSection(document.body, "Projects");
     expect(within(projects).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["one", "two"]);
   });
 });
@@ -185,30 +195,30 @@ describe("CV templates: v2 sections", () => {
     ]) {
       expect(text).toContain(expected);
     }
-    const references = within(container).getByRole("region", { name: "References" });
+    const references = cvSection(container, "References");
     expect(within(references).getByRole("link", { name: "sam.placeholder@example.com" })).toHaveAttribute(
       "href",
       "mailto:sam.placeholder@example.com",
     );
     // Organisation bullets are real list items.
-    const orgs = within(container).getByRole("region", { name: "Organizations & Volunteering" });
+    const orgs = cvSection(container, "Organizations & Volunteering");
     expect(within(orgs).getAllByRole("listitem")).toHaveLength(2);
     // The second course has a year only and no description.
-    const courses = within(container).getByRole("region", { name: "Courses" });
+    const courses = cvSection(container, "Courses");
     expect(within(courses).getByText("2022")).toHaveClass("cv-entry-date");
     expect(courses.querySelectorAll(".cv-entry")).toHaveLength(2);
   });
 
   it("lists languages and interests on one line in ATS Minimal and as tags in Graduate", () => {
     const ats = render(<CVDocument cv={richSampleCV("ats-minimal")} />);
-    const atsLanguages = within(ats.container).getByRole("region", { name: "Languages" });
+    const atsLanguages = cvSection(ats.container, "Languages");
     expect(atsLanguages.querySelector("p.cv-skill-line")).toHaveTextContent("Indonesian (Native), English (Professional)");
-    expect(within(ats.container).getByRole("region", { name: "Interests" })).toHaveTextContent("Open data, Trail running");
+    expect(cvSection(ats.container, "Interests")).toHaveTextContent("Open data, Trail running");
     ats.unmount();
 
     const grad = render(<CVDocument cv={richSampleCV("graduate")} />);
     const tags = (name: string) =>
-      within(within(grad.container).getByRole("region", { name })).getAllByRole("listitem").map((li) => li.textContent);
+      within(cvSection(grad.container, name)).getAllByRole("listitem").map((li) => li.textContent);
     expect(tags("Languages")).toEqual(["Indonesian (Native)", "English (Professional)"]);
     expect(tags("Interests")).toEqual(["Open data", "Trail running"]);
   });
@@ -266,7 +276,7 @@ describe("CV templates: v2 sections", () => {
     const { container, unmount } = render(<CVDocument cv={cv} />);
     expect(headings(container)).toEqual(["Volunteering", "Additional Information"]);
     expect(sectionKeys(container)).toEqual(["custom:vol", "custom:untitled"]);
-    const vol = within(container).getByRole("region", { name: "Volunteering" });
+    const vol = cvSection(container, "Volunteering");
     // The subtitle stands in for a missing title; dates and bullets render as usual.
     expect(within(vol).getByRole("heading", { level: 3 })).toHaveTextContent("Food bank");
     expect(vol).toHaveTextContent("2020 – Jun 2021");
@@ -324,9 +334,51 @@ describe("CV templates: v2 sections", () => {
       relationship: "",
     });
     const { container } = render(<CVDocument cv={cv} />);
-    const refs = within(container).getByRole("region", { name: "References" });
+    const refs = cvSection(container, "References");
     expect(within(refs).getByRole("heading", { level: 3 })).toHaveTextContent("Lecturer, Example University");
     expect(refs).toHaveTextContent("+62 811 0000 0000");
+  });
+
+  it("writes Graduate's one-line certifications without a stray separator when the name or issuer is missing", () => {
+    const cv = createEmptyCV();
+    cv.meta.template = "graduate";
+    cv.certifications = [
+      { id: "full", name: "Data Analytics", issuer: "Example Academy", issueDate: "2023-04", credential: "ABC-123" },
+      { id: "issuer", name: "", issuer: "Only Issuer Org", issueDate: "2023-04", credential: "ABC-123" },
+      { id: "date", name: "", issuer: "", issueDate: "2022-01", credential: "" },
+      { id: "name", name: "Name Only", issuer: "", issueDate: "", credential: "" },
+      { id: "cred", name: "", issuer: "", issueDate: "", credential: "XYZ-9" },
+    ];
+    const { container } = render(<CVDocument cv={cv} />);
+    const lines = Array.from(cvSection(container, "Certifications").querySelectorAll(".cv-entry-compact p"));
+    expect(lines.map((p) => p.textContent)).toEqual([
+      "Data Analytics · Example Academy · Apr 2023 · Credential: ABC-123",
+      // The issuer stands in for the missing name, as in the Word and text exports.
+      "Only Issuer Org · Apr 2023 · Credential: ABC-123",
+      "Jan 2022",
+      "Name Only",
+      "Credential: XYZ-9",
+    ]);
+    expect(lines.map((p) => p.querySelector("strong")?.textContent ?? null)).toEqual([
+      "Data Analytics",
+      "Only Issuer Org",
+      null,
+      "Name Only",
+      null,
+    ]);
+  });
+
+  it("doesn't make CV sections landmarks, so they don't repeat the form's section names", () => {
+    const { container } = render(<CVDocument cv={richSampleCV("graduate")} />);
+    const sections = Array.from(container.querySelectorAll("section"));
+    expect(sections.length).toBeGreaterThan(5);
+    for (const section of sections) {
+      expect(section).not.toHaveAttribute("aria-label");
+      expect(section).not.toHaveAttribute("aria-labelledby");
+    }
+    expect(within(container).queryAllByRole("region")).toEqual([]);
+    // Each section is still reachable by its heading.
+    expect(cvSection(container, "Courses")).toHaveAttribute("data-section", "custom:courses");
   });
 });
 
@@ -598,7 +650,7 @@ describe("DocumentPreview", () => {
     const onPagesChange = vi.fn();
     render(<CVPreview cv={richSampleCV("graduate")} onPagesChange={onPagesChange} />);
     const preview = screen.getByRole("document", { name: "CV preview" });
-    expect(within(preview).getByRole("region", { name: "Courses" })).toBeInTheDocument();
+    expect(cvSection(preview, "Courses")).toBeInTheDocument();
     expect(onPagesChange).toHaveBeenCalledWith(1);
   });
 

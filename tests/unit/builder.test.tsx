@@ -99,6 +99,40 @@ function legacyPayload(cv: CVData) {
   });
 }
 
+/** Makes writes to matching keys fail as if browser storage were full. */
+function quotaFor(match: (key: string) => boolean) {
+  const original = Storage.prototype.setItem;
+  return vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+    if (match(key)) throw new DOMException("full", "QuotaExceededError");
+    return original.call(this, key, value);
+  });
+}
+
+/** Makes browser storage unusable (e.g. blocked site data): every write throws. */
+function denyStorage() {
+  return vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    throw new DOMException("blocked", "SecurityError");
+  });
+}
+
+/**
+ * Stores a newer copy of a document the way a save in another tab would. Returns a
+ * function that delivers the "storage" event that tab's save fires in this one.
+ */
+function saveFromOtherTab(id: string, change: (cv: CVData) => void) {
+  const stored = JSON.parse(localStorage.getItem(DOC_KEY(id))!);
+  change(stored.data);
+  stored.savedAt = new Date(Date.parse(stored.savedAt) + 60_000).toISOString();
+  const value = JSON.stringify(stored);
+  localStorage.setItem(DOC_KEY(id), value);
+  return () =>
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: DOC_KEY(id), newValue: value, storageArea: localStorage }));
+    });
+}
+
+const professionalTitle = () => screen.getByLabelText("Professional title");
+
 // Each test renders the whole builder (form, preview, dialogs), which is slow in jsdom.
 vi.setConfig({ testTimeout: 30_000 });
 
@@ -141,7 +175,7 @@ describe("builder: editing and autosave", () => {
 
     renderBuilder();
     expect(await findFullName()).toHaveValue("Persisted Person");
-    expect(screen.getByText("Your draft was restored from this browser.")).toBeInTheDocument();
+    expect(screen.getByText("Opened “Persisted Person” from this browser.")).toBeInTheDocument();
     expect(listDocs()).toHaveLength(1);
   });
 
@@ -196,15 +230,230 @@ describe("builder: editing and autosave", () => {
     expect(activeCV()?.experience).toHaveLength(3);
   });
 
-  it("saves on demand with the Save draft button", async () => {
+  it("saves on demand with the Save button", async () => {
     seedCV();
     const user = userEvent.setup();
     renderBuilder();
     const name = await screen.findByDisplayValue("Alex Example");
     fireEvent.change(name, { target: { value: "Saved Now" } });
-    await user.click(screen.getByRole("button", { name: "Save draft" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
     expect(activeCV()?.personal.fullName).toBe("Saved Now");
-    expect(screen.getByText("Draft saved on this device.")).toBeInTheDocument();
+    expect(screen.getByText("Saved on this device.")).toBeInTheDocument();
+  });
+});
+
+describe("builder: the same document in two tabs", () => {
+  it("shows what another tab saved when this tab has no unsaved changes", async () => {
+    const meta = seedCV();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Title From Tab 2";
+    })();
+    expect(professionalTitle()).toHaveValue("Title From Tab 2");
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+
+    // Later edits here build on that copy and save as usual.
+    fireEvent.change(fullName(), { target: { value: "Alex Later" } });
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Alex Later"));
+    expect(activeCV()?.personal.title).toBe("Title From Tab 2");
+  });
+
+  it("never overwrites another tab's newer copy, and saves this tab's version on “Keep mine”", async () => {
+    const meta = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Mine" } });
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Theirs";
+    })();
+
+    const conflict = screen.getByTestId("conflict-notice");
+    expect(conflict).toHaveAttribute("role", "alert");
+    expect(conflict).toHaveTextContent("“Alex Example” was changed in another tab or window");
+    // The autosave would have run by now; it leaves the other tab's copy alone.
+    await new Promise((r) => setTimeout(r, 800));
+    expect(activeCV()?.personal.title).toBe("Theirs");
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
+    expect(screen.getByTestId("save-status")).toHaveTextContent("Not saved: this document was changed in another tab or window.");
+    expect(fullName()).toHaveValue("Mine");
+
+    await user.click(within(conflict).getByRole("button", { name: "Keep mine" }));
+    expect(activeCV()?.personal.fullName).toBe("Mine");
+    expect(activeCV()?.personal.title).toBe("Data Analyst");
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+    expect(screen.getByText("Your version of “Alex Example” was saved.")).toBeInTheDocument();
+    expect(switcher()).toHaveFocus();
+
+    // Saving goes on normally afterwards.
+    fireEvent.change(fullName(), { target: { value: "Mine Again" } });
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Mine Again"));
+  });
+
+  it("loads the other tab's newer copy on request", async () => {
+    const meta = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Mine" } });
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Theirs";
+    })();
+    await user.click(
+      within(screen.getByTestId("conflict-notice")).getByRole("button", { name: "Load the newer version" }),
+    );
+    expect(fullName()).toHaveValue("Alex Example");
+    expect(professionalTitle()).toHaveValue("Theirs");
+    expect(screen.getByText("The newer version of “Alex Example” is open.")).toBeInTheDocument();
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+    await new Promise((r) => setTimeout(r, 800));
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
+    expect(activeCV()?.personal.title).toBe("Theirs");
+  });
+
+  it("notices another tab's save before writing, even without a storage event", async () => {
+    const meta = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Theirs";
+    });
+    fireEvent.change(fullName(), { target: { value: "Mine" } });
+    expect(await screen.findByTestId("conflict-notice", undefined, { timeout: 2000 })).toBeInTheDocument();
+    expect(activeCV()?.personal.title).toBe("Theirs");
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
+
+    // Starting another document asks before dropping this tab's changes.
+    const more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "New CV" }));
+    const confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+    expect(confirm).toHaveTextContent("was also changed in another tab or window");
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    expect(fullName()).toHaveValue("Mine");
+    expect(listDocs()).toHaveLength(1);
+  });
+
+  it("keeps the open document's name in step when another tab renames it", async () => {
+    const meta = seedCV();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const index = listDocs().map((m) => (m.id === meta.id ? { ...m, name: "Renamed Elsewhere" } : m));
+    localStorage.setItem("free-cv-maker:docs", JSON.stringify(index));
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "free-cv-maker:docs", storageArea: localStorage }));
+    });
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: DOC_KEY(meta.id), newValue: localStorage.getItem(DOC_KEY(meta.id)) }),
+      );
+    });
+    expect(switcher()).toHaveTextContent("Renamed Elsewhere");
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+  });
+});
+
+describe("builder: when browser storage can't be used", () => {
+  it("creates and imports documents in memory when storage is unavailable, and asks before replacing one", async () => {
+    const deny = denyStorage();
+    try {
+      const user = userEvent.setup();
+      renderBuilder();
+      await findFullName();
+      const status = screen.getByTestId("save-status");
+      expect(status).toHaveTextContent("Browser storage isn’t available, so nothing is saved in this browser.");
+      // The advice is something that works: a backup can be imported again.
+      expect(status).toHaveTextContent("download a JSON backup before you close the page and import it next time");
+
+      let dialog = await openDocuments(user);
+      expect(dialog).toHaveTextContent("Browser storage isn’t available, so documents can’t be saved or listed here.");
+      const input = dialog.querySelector<HTMLInputElement>('input[type="file"][accept*="json"]')!;
+      const file = new File([serializeDocument({ kind: "cv", data: sampleCV("graduate") })], "cv.json", {
+        type: "application/json",
+      });
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [file] } });
+      });
+      await waitFor(() => expect(fullName()).toHaveValue("Alex Example"));
+      expect(screen.getByLabelText("Template")).toHaveValue("graduate");
+      expect(screen.getByText("“Alex Example” was imported as a new document.")).toBeInTheDocument();
+      expect(screen.getByTestId("save-status")).toHaveTextContent("Browser storage isn’t available");
+
+      // It isn't saved anywhere, so replacing it asks first.
+      dialog = await openDocuments(user);
+      await user.click(within(dialog).getByRole("button", { name: "New CV" }));
+      let confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      expect(confirm).toHaveTextContent("“Alex Example” isn’t saved anywhere");
+      expect(within(confirm).getByRole("button", { name: "Cancel" })).toHaveFocus();
+      await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+      expect(fullName()).toHaveValue("Alex Example");
+
+      const more = await openMore(user);
+      await user.click(within(more).getByRole("button", { name: "New CV" }));
+      confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      await user.click(within(confirm).getByRole("button", { name: "Open anyway (discard unsaved changes)" }));
+      expect(fullName()).toHaveValue("");
+      expect(screen.getByText("New CV created.")).toBeInTheDocument();
+
+      // An empty document is replaced without asking, and cover letters work too.
+      const menu = await openMore(user);
+      await user.click(within(menu).getByRole("button", { name: "New cover letter…" }));
+      expect(screen.queryByRole("dialog", { name: "Discard unsaved changes?" })).toBeNull();
+      expect(await screen.findByRole("document", { name: "Cover letter preview" })).toBeInTheDocument();
+      expect(screen.getByText("New cover letter created.")).toBeInTheDocument();
+    } finally {
+      deny.mockRestore();
+    }
+    expect(localStorage.length).toBe(0);
+  });
+
+  it("offers to open another document anyway when storage is full, and saves once there's room", async () => {
+    const other = seedCV({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Other Person" } });
+    const spare = seedCV({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Spare Person" } });
+    const current = seedCV();
+    let full = true;
+    const quota = quotaFor((key) => full && key === DOC_KEY(current.id));
+    try {
+      const user = userEvent.setup();
+      renderBuilder();
+      fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Too Big" } });
+      await waitFor(() => expect(screen.getByTestId("save-status")).toHaveTextContent("Browser storage is full"));
+
+      let dialog = await openDocuments(user);
+      await user.click(within(dialog).getByRole("button", { name: "Open: Other Person" }));
+      let confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      // Advice that frees space, not a backup that leaves the same refusal in place.
+      expect(confirm).toHaveTextContent("delete a document you no longer need or remove the photo");
+      await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+      expect(fullName()).toHaveValue("Too Big");
+      expect(getActiveDocId()).toBe(current.id);
+
+      // Deleting a document makes room, and the waiting changes are saved.
+      dialog = await openDocuments(user);
+      full = false;
+      await user.click(within(dialog).getByRole("button", { name: "Delete: Spare Person" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Delete “Spare Person”?" })).getByRole("button", { name: "Delete" }),
+      );
+      expect(activeCV()?.personal.fullName).toBe("Too Big");
+      expect(screen.getByTestId("save-status")).toHaveTextContent("Saved on this device");
+      expect(listDocs().map((m) => m.id)).not.toContain(spare.id);
+
+      // Full again: "Open anyway" drops the changes and opens the other document.
+      full = true;
+      await user.keyboard("{Escape}");
+      fireEvent.change(fullName(), { target: { value: "Lost Edit" } });
+      dialog = await openDocuments(user);
+      await user.click(within(dialog).getByRole("button", { name: "Open: Other Person" }));
+      confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      await user.click(within(confirm).getByRole("button", { name: "Open anyway (discard unsaved changes)" }));
+      expect(fullName()).toHaveValue("Other Person");
+      expect(getActiveDocId()).toBe(other.id);
+      expect(screen.getByText("Now editing “Other Person”.")).toBeInTheDocument();
+    } finally {
+      quota.mockRestore();
+    }
+    const kept = loadDoc(current.id);
+    expect(kept.status === "ok" && kept.doc.kind === "cv" && kept.doc.data.personal.fullName).toBe("Too Big");
   });
 });
 
@@ -219,7 +468,7 @@ describe("builder: legacy drafts", () => {
     renderBuilder();
     expect(await findFullName()).toHaveValue("Alex Example");
     expect(screen.getByLabelText("Template")).toHaveValue("graduate");
-    expect(screen.getByText("Your draft was restored from this browser.")).toBeInTheDocument();
+    expect(screen.getByText("Opened “Alex Example” from this browser.")).toBeInTheDocument();
     expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
     expect(localStorage.getItem(BACKUP_KEY)).toBeNull();
     expect(docNames()).toEqual(["Alex Example", "Backup Person"]);
@@ -227,6 +476,32 @@ describe("builder: legacy drafts", () => {
     const dialog = await openDocuments(user);
     await user.click(within(dialog).getByRole("button", { name: "Open: Backup Person" }));
     expect(fullName()).toHaveValue("Backup Person");
+  });
+
+  it("opens a legacy draft that doesn't fit into storage, unsaved, and stores it once there's room", async () => {
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    let full = true;
+    const quota = quotaFor((key) => full && key.startsWith("free-cv-maker:doc:"));
+    try {
+      renderBuilder();
+      expect(await findFullName()).toHaveValue("Alex Example");
+      expect(screen.getByLabelText("Template")).toHaveValue("graduate");
+      expect(screen.getByRole("alert")).toHaveTextContent("browser storage is full, so it couldn’t be moved into “Your documents”");
+      expect(screen.getByTestId("save-status")).toHaveTextContent("Browser storage is full");
+      // Still kept under its old key, so nothing is lost.
+      expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+      expect(listDocs()).toEqual([]);
+
+      full = false;
+      fireEvent.change(fullName(), { target: { value: "Alex Moved" } });
+      await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Alex Moved"));
+      // Stored as a document now, so it isn't migrated a second time.
+      expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+      expect(listDocs()).toHaveLength(1);
+      expect(activeCV()?.meta.template).toBe("graduate");
+    } finally {
+      quota.mockRestore();
+    }
   });
 
   it("sets a corrupted legacy draft aside and starts empty", async () => {
@@ -273,7 +548,7 @@ describe("builder: documents", () => {
     expect(rows).toHaveLength(2);
     const current = rows.find((row) => row.getAttribute("aria-current") === "true")!;
     expect(current).toHaveTextContent("Second Person");
-    expect(current).toHaveTextContent("Open now");
+    expect(current).toHaveTextContent("Currently open");
     await user.click(within(dialog).getByRole("button", { name: "Open: Alex Example" }));
 
     expect(fullName()).toHaveValue("Alex Example");
@@ -466,6 +741,82 @@ describe("builder: documents", () => {
   });
 });
 
+describe("builder: toolbar and dialog focus", () => {
+  it("opens the documents dialog with focus on the list, never on a create button", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const dialog = await openDocuments(user);
+    expect(within(dialog).getByRole("heading", { name: "Saved documents" })).toHaveFocus();
+    // An accidental Enter doesn't create anything.
+    await user.keyboard("{Enter}");
+    expect(listDocs()).toHaveLength(1);
+
+    // Cancelling the letter setup puts focus back on the button that opened it.
+    await user.click(within(dialog).getByRole("button", { name: "New cover letter" }));
+    await user.click(within(within(dialog).getByTestId("new-letter-setup")).getByRole("button", { name: "Cancel" }));
+    expect(within(dialog).queryByTestId("new-letter-setup")).toBeNull();
+    expect(within(dialog).getByRole("button", { name: "New cover letter" })).toHaveFocus();
+  });
+
+  it("starts new documents from the More menu", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    let more = await openMore(user);
+    const labels = within(more)
+      .getAllByRole("button")
+      .map((el) => el.textContent);
+    expect(labels.slice(0, 2)).toEqual(["New CV", "New cover letter…"]);
+    expect(labels).toContain("All documents…");
+    // "Save" is in the menu too (CSS shows it on phones only, where the toolbar button is hidden).
+    expect(labels).toContain("Save");
+    await user.click(within(more).getByRole("button", { name: "New cover letter…" }));
+    const dialog = screen.getByRole("dialog", { name: "Your documents" });
+    expect(within(dialog).getByTestId("new-letter-setup")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Copy your details from")).toHaveFocus();
+    await user.click(within(dialog).getByRole("button", { name: "Create cover letter" }));
+    expect(await screen.findByRole("document", { name: "Cover letter preview" })).toHaveTextContent("Alex Example");
+
+    more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "New CV" }));
+    expect(fullName()).toHaveValue("");
+    expect(screen.getByText("New CV created.")).toBeInTheDocument();
+    expect(listDocs()).toHaveLength(3);
+
+    more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "All documents…" }));
+    expect(screen.getByRole("dialog", { name: "Your documents" })).toBeInTheDocument();
+  });
+
+  it("describes the CV and letter language selects with their hints", async () => {
+    seed({ kind: "letter", data: sampleLetter() });
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    expect(screen.getByLabelText("CV language")).toHaveAccessibleDescription(
+      "Sets the language of the CV’s headings and dates. Your own text isn’t translated.",
+    );
+    const dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: /^Open: Cover letter/ }));
+    expect(screen.getByLabelText("Letter language")).toHaveAccessibleDescription(
+      "Sets the language of the date and the “Subject” label. Your own text isn’t translated.",
+    );
+  });
+
+  it("has a single save status", async () => {
+    seedCV();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    expect(screen.getAllByTestId("save-status")).toHaveLength(1);
+    expect(screen.getAllByRole("status").filter((el) => el.textContent?.includes("Saved on this device"))).toHaveLength(1);
+  });
+});
+
 describe("builder: cover letters", () => {
   it("creates a cover letter with details copied from a CV", async () => {
     seedCV();
@@ -608,7 +959,7 @@ describe("builder: editor tabs and checks", () => {
     expect(document.querySelector("#personal")!.contains(document.activeElement)).toBe(true);
   });
 
-  it("opens the Design tab for design findings", async () => {
+  it("opens the Design tab for design findings and focuses the colour code of a custom accent", async () => {
     const cv = sampleCV();
     cv.meta.style = { ...cv.meta.style, accent: "#dddddd" };
     seedCV(cv);
@@ -620,15 +971,75 @@ describe("builder: editor tabs and checks", () => {
     expect(finding).not.toBeNull();
     await user.click(finding);
     expect(screen.getByRole("tab", { name: "Design" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByRole("tabpanel", { name: "Design" })).toHaveFocus();
+    const code = screen.getByLabelText("Colour code");
+    expect(code).toHaveFocus();
+    // Marked so it keeps a visible focus ring after a mouse click, until focus moves on.
+    expect(code).toHaveAttribute("data-jumped");
+    await user.tab();
+    expect(code).not.toHaveAttribute("data-jumped");
+  });
+});
+
+describe("builder: page count", () => {
+  /** Lets jsdom "lay out" the preview sheet at `height` px while `rendered` is true. */
+  function fakeSheetLayout(state: { height: number; rendered: boolean }) {
+    const isSheet = (el: Element) => el.classList.contains("cv-sheet") && !el.closest("#cv-print-root");
+    const height = vi.spyOn(Element.prototype, "scrollHeight", "get").mockImplementation(function (this: Element) {
+      return isSheet(this) && state.rendered ? state.height : 0;
+    });
+    const rects = vi.spyOn(Element.prototype, "getClientRects").mockImplementation(function (this: Element) {
+      return (isSheet(this) && state.rendered ? [new DOMRect(0, 0, 794, state.height)] : []) as unknown as DOMRectList;
+    });
+    return () => {
+      height.mockRestore();
+      rects.mockRestore();
+    };
+  }
+
+  it("jumps from the page count finding to the text size choice in the Design tab", async () => {
+    // About four A4 pages of content.
+    const restore = fakeSheetLayout({ height: 4000, rendered: true });
+    try {
+      seedCV();
+      const user = userEvent.setup();
+      renderBuilder();
+      await screen.findByDisplayValue("Alex Example");
+      await user.click(screen.getByRole("tab", { name: /^Check/ }));
+      const finding = document.querySelector<HTMLButtonElement>(`[data-check-id^="tooManyPages"]`)!;
+      expect(finding).not.toBeNull();
+      expect(finding).toHaveTextContent("4 pages");
+      await user.click(finding);
+      expect(screen.getByRole("tab", { name: "Design" })).toHaveAttribute("aria-selected", "true");
+      const size = within(screen.getByRole("group", { name: "Text size" })).getByRole("radio", { checked: true });
+      expect(size).toHaveFocus();
+      expect(size).toHaveAttribute("data-field", "fontSize");
+    } finally {
+      restore();
+    }
   });
 });
 
 describe("builder: downloads", () => {
   async function openFormats(user: ReturnType<typeof userEvent.setup>) {
-    await user.click(screen.getByRole("button", { name: "Other download formats" }));
+    await user.click(screen.getByRole("button", { name: "All formats" }));
     return screen.getByRole("group", { name: "Download formats" });
   }
+
+  it("names the formats button with the words it shows, so speech users can say what they see", async () => {
+    seedCV();
+    const { unmount } = renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    // jsdom applies no breakpoints, so the label shown from sm up is in the text here.
+    const trigger = screen.getByRole("button", { name: "All formats" });
+    expect(trigger).toHaveTextContent("All formats");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    unmount();
+
+    renderBuilder("id");
+    await screen.findByDisplayValue("Alex Example");
+    const idTrigger = screen.getByRole("button", { name: "Semua format" });
+    expect(idTrigger).toHaveTextContent("Semua format");
+  });
 
   it("downloads Word, plain text and JSON files", async () => {
     seedCV();

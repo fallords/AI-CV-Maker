@@ -61,7 +61,16 @@ export interface StoredDoc {
 export type CreateDocResult = { ok: true; meta: DocMeta } | { ok: false; reason: "unavailable" | "quota" };
 
 export type LoadDocResult =
-  | { status: "ok"; doc: AnyDoc; meta: DocMeta }
+  | {
+      status: "ok";
+      doc: AnyDoc;
+      meta: DocMeta;
+      /**
+       * When the stored copy was written (null when it doesn't say). The builder keeps it
+       * to notice when another tab or window has saved the document since.
+       */
+      savedAt: string | null;
+    }
   | { status: "missing" }
   | { status: "corrupted" }
   | { status: "unavailable" };
@@ -331,7 +340,31 @@ export function loadDoc(id: string): LoadDocResult {
       /* ignore */
     }
   }
-  return { status: "ok", doc: parsed.doc, meta };
+  return { status: "ok", doc: parsed.doc, meta, savedAt: parsed.savedAt };
+}
+
+/**
+ * The `savedAt` of a document's stored copy, read without checking the rest of it: null
+ * when the copy doesn't have one, undefined when nothing is stored under the id (or
+ * storage can't be read). Comparing it with the value from the last load or save tells
+ * whether another tab or window has saved the document in the meantime.
+ */
+export function storedSavedAt(id: string): string | null | undefined {
+  const storage = getStorage();
+  if (!storage || !isValidId(id)) return undefined;
+  let raw: string | null;
+  try {
+    raw = storage.getItem(DOC_KEY(id));
+  } catch {
+    return undefined;
+  }
+  if (raw === null) return undefined;
+  try {
+    const value: unknown = JSON.parse(raw);
+    return isObject(value) && typeof value.savedAt === "string" ? value.savedAt : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -529,6 +562,12 @@ export interface LegacyMigrationResult {
    * `<that key>:2`, `:3`, … so nothing kept earlier is overwritten).
    */
   corrupted: boolean;
+  /**
+   * Set when the legacy draft could be read but not stored as a document (usually because
+   * storage is full). The draft stays under its legacy key, so a later attempt can still
+   * move it; `data` lets the builder open it in the meantime without saving it.
+   */
+  blocked?: { reason: "unavailable" | "quota"; data: CVData; savedAt: string | null };
 }
 
 /**
@@ -575,7 +614,10 @@ export function migrateLegacyStorage(lang?: Language): LegacyMigrationResult {
     const doc: AnyDoc = { kind: "cv", data: draft.data };
     const created = insertDoc(storage, doc, defaultDocName(doc, uiLang ?? draft.data.meta.cvLanguage), stamps(draft.savedAt));
     // Without room for the draft, stop here and leave the legacy keys for the next attempt.
-    if (!created.ok) return result;
+    if (!created.ok) {
+      result.blocked = { reason: created.reason, data: draft.data, savedAt: draft.savedAt };
+      return result;
+    }
     result.migrated.push(created.meta);
     setActiveDocId(created.meta.id);
     try {
@@ -604,4 +646,17 @@ export function migrateLegacyStorage(lang?: Language): LegacyMigrationResult {
     }
   }
   return result;
+}
+
+/**
+ * Removes the legacy draft once its content has been stored as a document by other means
+ * (the builder saving a draft it opened while migration was blocked), so it isn't moved
+ * into documents a second time.
+ */
+export function discardLegacyDraft(): void {
+  try {
+    getStorage()?.removeItem(DRAFT_KEY);
+  } catch {
+    /* best effort: a draft left behind is migrated again later, never lost */
+  }
 }

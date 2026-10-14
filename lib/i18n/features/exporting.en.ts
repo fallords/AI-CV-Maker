@@ -6,8 +6,6 @@
  * own language (lib/cv-format.ts), not from these UI strings.
  */
 const exporting = {
-  /** Download menu button. */
-  title: "Download",
   /** Accessible name of the menu (the list of formats). */
   menuLabel: "Download formats",
   formats: {
@@ -43,9 +41,6 @@ const exporting = {
     cv: "Your CV is empty. Add some details before downloading.",
     letter: "Your letter is empty. Add some details before downloading.",
   },
-  /** Short note for the Word option (e.g. as a hint under the menu item or in help). */
-  wordNote:
-    "Word uses the fonts installed on the computer that opens the file. If the chosen font isn’t installed, Word shows a similar one.",
 };
 
 export default exporting;

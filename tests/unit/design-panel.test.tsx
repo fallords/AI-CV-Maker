@@ -9,12 +9,14 @@ import {
   parseHexInput,
   sectionDisplayName,
 } from "@/components/builder/DesignPanel";
-import { CV_LABELS } from "@/lib/cv-format";
+import { builtinSectionTitle } from "@/components/cv-form/section-titles";
 import { cvReducer, type CVAction } from "@/lib/cv-reducer";
 import { createEmptyCV, type CVData, type Language, type TemplateId } from "@/lib/cv-schema";
 import { TEMPLATE_SECTION_ORDER, allSectionsInOrder, customSectionKey } from "@/lib/cv-sections";
 import { DEFAULT_STYLE, contrastOnWhite, sanitizeStyle, type DocStyle } from "@/lib/doc-style";
 import { I18nProvider } from "@/lib/i18n";
+import en from "@/lib/i18n/en";
+import id from "@/lib/i18n/id";
 import { richSampleCV } from "@/lib/sample-cv";
 
 /** CV mode: DesignPanel wired to the real reducer, as the builder does it. */
@@ -111,13 +113,16 @@ describe("helpers", () => {
     expect(formatRatio(21, "en")).toBe("21.0");
   });
 
-  it("names built-in sections with the CV heading in the given language and custom sections by title", () => {
+  it("names built-in sections like the form does (sentence case, interface language) and custom sections by title", () => {
     const cv = richSampleCV();
-    expect(sectionDisplayName(cv, "experience", "en", "Untitled")).toBe("Work Experience");
-    expect(sectionDisplayName(cv, "experience", "id", "Untitled")).toBe("Pengalaman Kerja");
-    expect(sectionDisplayName(cv, customSectionKey("courses"), "en", "Untitled")).toBe("Courses");
+    expect(sectionDisplayName(cv, "experience", en, "Untitled")).toBe("Work experience");
+    expect(sectionDisplayName(cv, "summary", en, "Untitled")).toBe("Professional summary");
+    expect(sectionDisplayName(cv, "experience", id, "Untitled")).toBe("Pengalaman kerja");
+    expect(sectionDisplayName(cv, "experience", en, "Untitled")).toBe(en.form.experience.title);
+    expect(sectionDisplayName(cv, "organizations", en, "Untitled")).toBe(en.sections.organizations.title);
+    expect(sectionDisplayName(cv, customSectionKey("courses"), en, "Untitled")).toBe("Courses");
     cv.customSections[0].title = "   ";
-    expect(sectionDisplayName(cv, customSectionKey("courses"), "en", "Untitled")).toBe("Untitled");
+    expect(sectionDisplayName(cv, customSectionKey("courses"), en, "Untitled")).toBe("Untitled");
   });
 });
 
@@ -292,15 +297,15 @@ describe("DesignPanel appearance", () => {
 });
 
 describe("DesignPanel section manager", () => {
-  it("lists every section in allSectionsInOrder order with readable names", () => {
+  it("lists every section in allSectionsInOrder order with the form's section titles", () => {
     const cv = richSampleCV("graduate");
     renderCV(cv);
-    const labels = CV_LABELS.en;
     const expected = allSectionsInOrder(cv).map((key) =>
-      key === "custom:courses" ? "Courses" : labels[key as keyof typeof labels],
+      key === "custom:courses" ? "Courses" : builtinSectionTitle(key as Parameters<typeof builtinSectionTitle>[0], en),
     );
     expect(rowNames()).toEqual(expected);
-    expect(rowNames()[0]).toBe("Professional Summary");
+    // The same wording as the Content tab, not the CV's title-case headings.
+    expect(rowNames()[0]).toBe("Professional summary");
     expect(rowNames()[1]).toBe("Education");
     expect(rowNames().at(-1)).toBe("Courses");
     expect(screen.getByRole("heading", { level: 2, name: "Sections" })).toBeInTheDocument();
@@ -311,32 +316,32 @@ describe("DesignPanel section manager", () => {
     cv.meta.cvLanguage = "en";
     renderCV(cv, "id");
     const list = screen.getByRole("list", { name: "Urutan bagian CV" });
-    expect(within(list).getAllByTestId("section-name")[0]).toHaveTextContent("Ringkasan Profesional");
-    expect(screen.getByRole("button", { name: "Pindahkan Pengalaman Kerja ke bawah" })).toBeInTheDocument();
+    expect(within(list).getAllByTestId("section-name")[0]).toHaveTextContent("Ringkasan profesional");
+    expect(screen.getByRole("button", { name: "Pindahkan Pengalaman kerja ke bawah" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Tampilkan Minat" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("moves sections, keeps focus on the moved row and announces the new position", async () => {
     const { state, user } = renderCV(richSampleCV());
     const total = allSectionsInOrder(state.cv).length;
-    expect(screen.getByRole("button", { name: "Move Professional Summary up" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Move Professional summary up" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Move Courses down" })).toBeDisabled();
 
-    await user.click(screen.getByRole("button", { name: "Move Work Experience up" }));
-    expect(rowNames().slice(0, 2)).toEqual(["Work Experience", "Professional Summary"]);
+    await user.click(screen.getByRole("button", { name: "Move Work experience up" }));
+    expect(rowNames().slice(0, 2)).toEqual(["Work experience", "Professional summary"]);
     expect(state.cv.meta.sectionOrder.slice(0, 2)).toEqual(["experience", "summary"]);
-    expect(announcer()).toHaveTextContent(`Work Experience moved to position 1 of ${total}.`);
+    expect(announcer()).toHaveTextContent(`Work experience moved to position 1 of ${total}.`);
     // At the top the up button is disabled, so focus moves to the row's down button.
-    expect(screen.getByRole("button", { name: "Move Work Experience down" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Move Work experience down" })).toHaveFocus();
 
     await user.keyboard("{Enter}");
-    expect(rowNames().slice(0, 2)).toEqual(["Professional Summary", "Work Experience"]);
-    expect(screen.getByRole("button", { name: "Move Work Experience down" })).toHaveFocus();
-    expect(announcer()).toHaveTextContent(`Work Experience moved to position 2 of ${total}.`);
+    expect(rowNames().slice(0, 2)).toEqual(["Professional summary", "Work experience"]);
+    expect(screen.getByRole("button", { name: "Move Work experience down" })).toHaveFocus();
+    expect(announcer()).toHaveTextContent(`Work experience moved to position 2 of ${total}.`);
 
     await user.keyboard("{Enter}");
-    expect(rowNames().slice(1, 3)).toEqual(["Education", "Work Experience"]);
-    expect(screen.getByRole("button", { name: "Move Work Experience down" })).toHaveFocus();
+    expect(rowNames().slice(1, 3)).toEqual(["Education", "Work experience"]);
+    expect(screen.getByRole("button", { name: "Move Work experience down" })).toHaveFocus();
   });
 
   it("shows and hides sections with a pressed toggle", async () => {
@@ -374,7 +379,9 @@ describe("DesignPanel section manager", () => {
     expect(reset).not.toHaveAttribute("aria-disabled");
     await user.click(reset);
     expect(state.cv.meta.sectionOrder).toEqual([]);
-    expect(rowNames().slice(0, 11)).toEqual(TEMPLATE_SECTION_ORDER["modern-professional"].map((k) => CV_LABELS.en[k]));
+    expect(rowNames().slice(0, 11)).toEqual(
+      TEMPLATE_SECTION_ORDER["modern-professional"].map((k) => builtinSectionTitle(k, en)),
+    );
     expect(state.cv.meta.hiddenSections).toEqual(["interests"]);
     expect(announcer()).toHaveTextContent("Sections are back in the template’s order.");
     expect(reset).toHaveFocus();
@@ -392,7 +399,7 @@ describe("DesignPanel section manager", () => {
     const cv = createEmptyCV();
     const withCustom = cvReducer(cv, { type: "addCustomSection", id: "blank", title: "" });
     renderCV(withCustom);
-    expect(within(row("Professional Summary")).getByText(/Nothing filled in yet/)).toBeInTheDocument();
+    expect(within(row("Professional summary")).getByText(/Nothing filled in yet/)).toBeInTheDocument();
     expect(within(row("Untitled section")).getByText(/Nothing filled in yet/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Show Untitled section" })).toBeInTheDocument();
   });

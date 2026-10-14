@@ -101,5 +101,8 @@ test("a custom accent colour that is too light shows a contrast warning", async 
   await editorTab(page, "Check");
   await page.locator('[data-check-id="lowContrast:design"]').click();
   await expect(page.getByRole("tab", { name: "Design" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tabpanel", { name: "Design" })).toBeFocused();
+  // Straight to the control that fixes it, with a visible focus ring after a mouse click.
+  await expect(code).toBeFocused();
+  await expect(code).toHaveCSS("outline-style", "solid");
+  await expect(code).toBeInViewport();
 });

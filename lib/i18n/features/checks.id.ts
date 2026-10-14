@@ -81,9 +81,16 @@ const checks: typeof en = {
     noEndDate: "Tambahkan tanggal selesai, atau tandai entri ini sebagai masih berjalan.",
     dateOrder: "Tanggal selesai lebih awal dari tanggal mulai.",
     firstPerson: {
-      one: "Satu baris diawali “saya”, “aku”, atau “I”. Poin di CV biasanya ditulis tanpa kata ganti: “Mengelola…”, bukan “Saya mengelola…”.",
-      other:
-        "{count} baris diawali “saya”, “aku”, atau “I”. Poin di CV biasanya ditulis tanpa kata ganti: “Mengelola…”, bukan “Saya mengelola…”.",
+      en: {
+        one: "Satu baris diawali “I” atau “my”. Poin di CV biasanya ditulis tanpa kata ganti: “Managed…”, bukan “I managed…”.",
+        other:
+          "{count} baris diawali “I” atau “my”. Poin di CV biasanya ditulis tanpa kata ganti: “Managed…”, bukan “I managed…”.",
+      },
+      id: {
+        one: "Satu baris diawali “saya” atau “aku”. Poin di CV biasanya ditulis tanpa kata ganti: “Mengelola…”, bukan “Saya mengelola…”.",
+        other:
+          "{count} baris diawali “saya” atau “aku”. Poin di CV biasanya ditulis tanpa kata ganti: “Mengelola…”, bukan “Saya mengelola…”.",
+      },
     },
     longLines: {
       one: "Satu baris lebih dari {max} karakter. Poin yang lebih pendek lebih mudah dibaca sekilas.",

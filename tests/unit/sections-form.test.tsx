@@ -113,9 +113,9 @@ describe("new section editors", SLOW, () => {
     const user = userEvent.setup();
     const { state } = renderForm();
     const orgs = section("organizations");
-    await user.click(within(orgs).getByRole("button", { name: "Add organization" }));
+    await user.click(within(orgs).getByRole("button", { name: "Add organisation" }));
     await user.type(within(orgs).getByLabelText("Role"), "Treasurer");
-    await user.type(within(orgs).getByLabelText("Organization"), "Student Union");
+    await user.type(within(orgs).getByLabelText("Organisation"), "Student Union");
     expect(within(orgs).getByRole("heading", { level: 3 })).toHaveTextContent("Treasurer · Student Union");
 
     await user.selectOptions(within(orgs).getByLabelText("Start date: Year"), "2022");
@@ -160,7 +160,7 @@ describe("new section editors", SLOW, () => {
     await user.click(within(refs).getByRole("button", { name: "Add reference" }));
     await user.type(within(refs).getByLabelText("Name"), "Sam Placeholder");
     await user.type(within(refs).getByLabelText("Position"), "Head of Operations");
-    await user.type(within(refs).getByLabelText("Organization"), "Example Co.");
+    await user.type(within(refs).getByLabelText("Organisation"), "Example Co.");
     await user.type(within(refs).getByLabelText("Relationship"), "Line manager");
     await user.type(within(refs).getByLabelText("Phone number"), "+62 812 0000 0000");
     const email = within(refs).getByLabelText("Email");
@@ -376,7 +376,7 @@ describe("Indonesian UI", SLOW, () => {
     );
     await user.click(screen.getByRole("button", { name: "Batal" }));
 
-    await user.click(screen.getByRole("button", { name: "Tambah bagian khusus" }));
-    expect(screen.getByRole("dialog", { name: "Tambah bagian khusus" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Tambah bagian sendiri" }));
+    expect(screen.getByRole("dialog", { name: "Tambah bagian sendiri" })).toBeInTheDocument();
   });
 });

@@ -21,7 +21,7 @@ import {
 } from "@/lib/letter-schema";
 import { ConfirmDialog } from "../ui/Dialog";
 import { TextAreaField, TextField } from "../ui/Field";
-import { btn, inputClass } from "../ui/styles";
+import { btn, inputClass, selectClass } from "../ui/styles";
 
 /** Longest body the letter keeps (the cap `sanitizeLetter` applies). */
 export const LETTER_BODY_MAX = MAX_BODY;
@@ -170,7 +170,7 @@ function FillFromCV({ letter, dispatch, cvOptions, loadCV }: LetterFormProps) {
             setResult(null);
           }}
           aria-describedby={`${id}-hint`}
-          className={`${inputClass} min-w-0 flex-1`}
+          className={`${selectClass} min-w-0 flex-1`}
         >
           {cvOptions.map((o) => (
             <option key={o.id} value={o.id}>

@@ -116,10 +116,20 @@ export function DownloadMenu({ doc, onBeforeExport, onNotice }: DownloadMenuProp
         <button type="button" className={`${half} grow rounded-l-sm px-4`} onClick={onPdf}>
           <Download /> {b.downloadPdf}
         </button>
+        {/*
+          Phones show only the arrow; from sm up it also says "All formats", so Word and text
+          downloads are easy to find. The visible text and the accessible name are the same
+          string, so speech users can say what they see.
+        */}
         <MenuButton
-          triggerClassName={`${half} w-10 rounded-r-sm border-l border-accent-fg/25`}
+          triggerClassName={`${half} min-w-10 gap-1.5 rounded-r-sm border-l border-accent-fg/25 sm:px-3`}
           triggerLabel={t.docs.download.more}
-          triggerContent={<Chevron width={16} height={16} />}
+          triggerContent={
+            <>
+              <span className="hidden sm:inline">{t.docs.download.more}</span>
+              <Chevron width={16} height={16} />
+            </>
+          }
           panelLabel={x.menuLabel}
         >
           {(run) =>
@@ -158,7 +168,7 @@ export function DownloadMenu({ doc, onBeforeExport, onNotice }: DownloadMenuProp
             <button
               type="button"
               className={btn.primary}
-              autoFocus
+              data-autofocus
               onClick={() => {
                 if (hidePrintHint) writePreference(PRINT_HINT_KEY, "1");
                 setPrintHintOpen(false);

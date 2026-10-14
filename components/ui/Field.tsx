@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
-import { inputClass } from "./styles";
+import { inputClass, selectClass } from "./styles";
 
 interface BaseProps {
   label: string;
@@ -127,10 +127,13 @@ export function SelectField<T extends string>({
   value,
   onChange,
   options,
+  autoFocusInDialog = false,
 }: BaseProps & {
   value: T;
   onChange: (value: T) => void;
   options: { value: T; label: string }[];
+  /** Marks the select as the control to focus when its dialog opens (see Dialog's `data-autofocus`). */
+  autoFocusInDialog?: boolean;
 }) {
   const id = useId();
   return (
@@ -140,10 +143,11 @@ export function SelectField<T extends string>({
       </label>
       <select
         id={id}
+        data-autofocus={autoFocusInDialog || undefined}
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        className={inputClass}
+        className={selectClass}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

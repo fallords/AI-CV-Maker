@@ -75,6 +75,17 @@ body {
   outline-offset: 2px;
 }
 
+/*
+ * Where a check finding sent focus (BuilderApp sets data-jumped until it loses focus):
+ * ringed even after a mouse click, so it's clear where to continue. A visually hidden
+ * radio rings its label instead.
+ */
+[data-jumped]:focus,
+label:has(> [data-jumped]:focus) {
+  outline: 2px solid var(--color-accent-text);
+  outline-offset: 2px;
+}
+
 /* Links inside the white CV preview need a dark ring to stay visible. */
 .cv-sheet :focus-visible {
   outline: 3px solid #21507a;
@@ -153,21 +164,36 @@ dialog::backdrop {
   color: var(--cv-muted);
   margin-top: 1mm !important;
 }
-/* Separators are left borders; the one starting each wrapped line is clipped away. */
+/*
+ * Each item draws its separator in the gap before it. The first item of every line
+ * (the very first one, and the first after a wrap) has its separator outside the list's
+ * box, where overflow-x: clip removes it. The separator sits about 1mm beyond the clip
+ * edge, not on it, so no sub-pixel sliver shows on screen or in a PDF. The 1mm of
+ * padding inside that edge leaves room for focus rings on contact links.
+ */
 .cv-contact {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
+  column-gap: 4.3mm;
   row-gap: 0.5mm;
   /* Clip only horizontally, so focus rings on contact links are not cut off. */
   overflow-x: clip;
-  margin: calc(2.5mm * var(--cv-gap)) 0 0 -2mm !important;
+  padding-left: 1mm !important;
+  margin: calc(2.5mm * var(--cv-gap)) 0 0 -1mm !important;
   font-size: calc(9pt * var(--cv-fs));
   color: var(--cv-muted);
 }
 .cv-contact li {
-  padding: 0 2mm;
-  margin-left: -0.3mm;
+  position: relative;
+}
+.cv-contact li::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Centred in the column gap: half of 4.3mm, less half the 0.3mm rule. */
+  left: -2.3mm;
   border-left: 0.3mm solid var(--cv-rule);
 }
 .cv-section {

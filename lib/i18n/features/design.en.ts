@@ -66,7 +66,7 @@ const design = {
   sections: {
     title: "Sections",
     intro:
-      "Sections follow the template’s order until you move one. A hidden section keeps what you wrote, it just doesn’t appear on the CV.",
+      "Sections follow the template’s order until you move one. A hidden section keeps what you wrote but doesn’t appear on the CV.",
     personalNote: "Your name and contact details always come first.",
     listLabel: "CV sections in order",
     moveUp: "Move {name} up",

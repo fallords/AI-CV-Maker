@@ -52,7 +52,7 @@ const en = {
       },
       {
         q: "Can I lose my documents?",
-        a: "Yes, if you clear your browsing data or work in a private (incognito) window. They also won’t be on another device. To keep a copy, click the arrow next to “Download PDF” and choose “JSON backup”. To load it again, use “Import file” in “Your documents”.",
+        a: "Yes, if you clear your browsing data or work in a private (incognito) window. They also won’t be on another device. To keep a copy, click “All formats” next to “Download PDF” (on a phone, the arrow) and choose “JSON backup”. To load it again, use “Import file” in “Your documents”.",
       },
       {
         q: "Can the CV be in Indonesian?",
@@ -91,13 +91,13 @@ const en = {
   },
   builder: {
     title: "CV Builder",
-    loading: "Loading your draft…",
+    loading: "Loading your documents…",
     template: "Template",
     cvLanguage: "CV language",
     cvLanguageHint: "Sets the language of the CV’s headings and dates. Your own text isn’t translated.",
     languageNames: { en: "English", id: "Indonesian" },
     tabs: { edit: "Edit", preview: "Preview" },
-    saveNow: "Save draft",
+    saveNow: "Save",
     downloadPdf: "Download PDF",
     more: "More",
     dismiss: "Dismiss",
@@ -106,8 +106,8 @@ const en = {
       unsaved: "Unsaved changes…",
     },
     messages: {
-      saved: "Draft saved on this device.",
-      recovered: "Your draft was restored from this browser.",
+      saved: "Saved on this device.",
+      recovered: "Opened “{name}” from this browser.",
     },
     print: {
       title: "Download your CV as PDF",
@@ -273,7 +273,7 @@ const en = {
         title: "Fill in your CV",
         body: [
           "Open the CV Builder and fill in the sections that apply to you. Every field is optional, and empty sections are left out of the CV.",
-          "Besides work experience, education, projects, skills and certifications, there are sections for organizations and volunteering, awards, languages, references and interests. For anything else, such as courses or publications, use “Add custom section” and give it your own title.",
+          "Besides work experience, education, projects, skills and certifications, there are sections for organisations and volunteering, awards, languages, references and interests. For anything else, such as courses or publications, use “Add custom section” and give it your own title.",
           "Use the “Add …” buttons to add entries and the arrow buttons to change their order. Most people put the most recent entry first.",
           "In description fields, write one point per line. A line that starts with “-” becomes a bullet point.",
         ],
@@ -288,8 +288,8 @@ const en = {
       {
         title: "Your documents",
         body: [
-          "You can keep several CVs and cover letters in this browser. At the start of the toolbar, under “Document”, is the name of the one you have open. Click it to open “Your documents”, where you can open, rename, duplicate or delete any of them, start a new CV or cover letter, or import a file. The “More” menu has Rename, Duplicate and Delete for the open document.",
-          "Each document is saved in this browser automatically, a moment after each change, and also when you click “Save draft”.",
+          "You can keep several CVs and cover letters in this browser. At the start of the toolbar, under “Document”, is the name of the one you have open. Click it to open “Your documents”, where you can open, rename, duplicate or delete any of them, start a new CV or cover letter, or import a file. The “More” menu can also start a new CV or cover letter, and has Rename, Duplicate and Delete for the open document.",
+          "Each document is saved in this browser automatically, a moment after each change, and also when you click “Save” (on a phone, it’s in the “More” menu). If the same document is open in two tabs, a change saved in one tab appears in the other, and you’re asked which version to keep if both have unsaved changes.",
           "Duplicating a CV is a quick way to make a version for a different kind of job. “Import file” adds a JSON backup as a new document, so nothing you already have is replaced. Deleting a document removes it from this browser for good.",
           "If you used the builder before it could hold several documents, your draft and any previous draft are now in “Your documents”.",
           "Browser storage isn’t a backup. If you clear browser data, use a private window or switch to another device, your documents won’t be there. Download a JSON backup of anything you want to keep.",
@@ -338,7 +338,7 @@ const en = {
       {
         title: "Word, plain text and JSON backup",
         body: [
-          "Click the arrow next to “Download PDF” to see the other formats. Like the PDF, they’re created in your browser.",
+          "Click “All formats” next to “Download PDF” (on a phone, the arrow) to choose another format. Like the PDF, they’re created in your browser.",
           "Word (.docx) is for editing in Word, Google Docs or LibreOffice. Word uses the fonts installed on the computer that opens the file, so if the chosen font isn’t installed, it shows a similar one.",
           "Plain text (.txt) has the same content without formatting, for pasting into online application forms.",
           "A JSON backup is a copy of the document’s data. Keep it somewhere safe, and use “Import file” in “Your documents” to load it again, in this browser or another one. Files saved with “Export JSON” in the earlier version of the builder can be imported too.",

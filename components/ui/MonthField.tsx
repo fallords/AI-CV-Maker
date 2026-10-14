@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { CV_LABELS } from "@/lib/cv-format";
-import { inputClass } from "./styles";
+import { selectClass } from "./styles";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR + 8 - 1960 + 1 }, (_, i) => String(CURRENT_YEAR + 8 - i));
@@ -56,7 +56,7 @@ export function MonthField({
           data-field={field}
           value={month}
           onChange={(e) => emit(year, e.target.value)}
-          className={inputClass}
+          className={selectClass}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t.form.month}</option>
@@ -70,7 +70,7 @@ export function MonthField({
           aria-label={`${label}: ${t.form.year}`}
           value={year}
           onChange={(e) => emit(e.target.value, month)}
-          className={inputClass}
+          className={selectClass}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t.form.year}</option>

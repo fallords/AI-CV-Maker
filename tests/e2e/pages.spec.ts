@@ -45,9 +45,42 @@ test("no detectable accessibility violations in the builder's Design and Check t
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
 
-  await page.getByRole("button", { name: "Other download formats" }).click();
+  await page.getByRole("button", { name: "All formats" }).click();
   await expect(page.getByRole("group", { name: "Download formats" })).toBeVisible();
   await expectNoAxeViolations(page);
+});
+
+test("the form and the preview don't repeat each other's landmark names", async ({ page }) => {
+  // Each form section is a region named by its heading; the preview's sections, which use
+  // the same names, must not be landmarks too.
+  const cv = richSampleCV("ats-minimal");
+  await seedCV(page, cv);
+  await page.goto("/builder/");
+  await expect(fullNameField(page)).toHaveValue("Alex Example");
+  await expect(page.getByRole("document", { name: "CV preview" }).getByRole("heading", { name: "Courses" })).toBeVisible();
+  const results = await new AxeBuilder({ page }).withRules(["landmark-unique"]).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+});
+
+test("the formats button next to Download PDF is named with the words it shows", async ({ page }) => {
+  // WCAG 2.5.3 (label in name): from sm up the button shows a text label, and speech users
+  // activate it by saying that label. axe has the check, but doesn't run it by default.
+  await seedCV(page, sampleCV());
+  for (const width of [1280, 700]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/builder/");
+    await expect(fullNameField(page)).toHaveValue("Alex Example");
+    const trigger = page.getByRole("button", { name: "All formats", exact: true });
+    await expect(trigger.getByText("All formats", { exact: true })).toBeVisible();
+    const results = await new AxeBuilder({ page })
+      .include('button[aria-label="All formats"]')
+      .options({ rules: { "label-content-name-mismatch": { enabled: true } } })
+      .withRules(["label-content-name-mismatch"])
+      .analyze();
+    expect(results.violations.map((v) => v.nodes.map((n) => n.html).join(", "))).toEqual([]);
+    // The rule really looked at the button (a pass, not "not applicable").
+    expect(results.passes.flatMap((v) => v.nodes)).toHaveLength(1);
+  }
 });
 
 test("no detectable accessibility violations with a cover letter open", async ({ page }) => {
