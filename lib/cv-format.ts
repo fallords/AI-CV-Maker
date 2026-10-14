@@ -4,7 +4,7 @@
  * an Indonesian UI while producing an English CV and vice versa.
  */
 
-import type { Language, SkillLevel } from "./cv-schema";
+import type { Language, LanguageLevel, SkillLevel } from "./cv-schema";
 
 export interface CVLabels {
   summary: string;
@@ -15,13 +15,25 @@ export interface CVLabels {
   technicalSkills: string;
   softSkills: string;
   certifications: string;
+  languages: string;
+  organizations: string;
+  awards: string;
+  references: string;
+  interests: string;
+  /** Heading of a custom section whose title was left blank (the checker asks the user to name it). */
+  untitledSection: string;
   present: string;
   role: string;
   technologies: string;
   credential: string;
   issued: string;
   levels: Record<Exclude<SkillLevel, "">, string>;
+  languageLevels: Record<Exclude<LanguageLevel, "">, string>;
+  /** Letter subject line prefix, e.g. "Subject:". */
+  subjectPrefix: string;
   months: string[];
+  /** Full month names, used for letter dates ("13 October 2026"). */
+  monthsLong: string[];
 }
 
 export const CV_LABELS: Record<Language, CVLabels> = {
@@ -34,13 +46,41 @@ export const CV_LABELS: Record<Language, CVLabels> = {
     technicalSkills: "Technical Skills",
     softSkills: "Soft Skills",
     certifications: "Certifications",
+    languages: "Languages",
+    organizations: "Organizations & Volunteering",
+    awards: "Awards",
+    references: "References",
+    interests: "Interests",
+    untitledSection: "Additional Information",
     present: "Present",
     role: "Role",
     technologies: "Technologies",
     credential: "Credential",
     issued: "Issued",
     levels: { beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced", expert: "Expert" },
+    languageLevels: {
+      basic: "Basic",
+      conversational: "Conversational",
+      professional: "Professional",
+      fluent: "Fluent",
+      native: "Native",
+    },
+    subjectPrefix: "Subject:",
     months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    monthsLong: [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ],
   },
   id: {
     summary: "Ringkasan Profesional",
@@ -51,13 +91,41 @@ export const CV_LABELS: Record<Language, CVLabels> = {
     technicalSkills: "Keahlian Teknis",
     softSkills: "Soft Skill",
     certifications: "Sertifikasi",
+    languages: "Bahasa",
+    organizations: "Pengalaman Organisasi",
+    awards: "Penghargaan",
+    references: "Referensi",
+    interests: "Minat",
+    untitledSection: "Informasi Tambahan",
     present: "Sekarang",
     role: "Peran",
     technologies: "Teknologi",
     credential: "Kredensial",
     issued: "Terbit",
     levels: { beginner: "Pemula", intermediate: "Menengah", advanced: "Mahir", expert: "Ahli" },
+    languageLevels: {
+      basic: "Dasar",
+      conversational: "Percakapan",
+      professional: "Profesional",
+      fluent: "Fasih",
+      native: "Penutur asli",
+    },
+    subjectPrefix: "Perihal:",
     months: ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"],
+    monthsLong: [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ],
   },
 };
 

@@ -1,26 +1,30 @@
 # Free AI CV Maker
 
-A free, privacy-friendly CV builder that runs entirely in the browser. Create a professional CV, choose a template, save drafts locally and download a clean A4 PDF. There are no accounts, no watermarks, no download limits and no paid services.
+A free, privacy-friendly CV and cover letter builder that runs entirely in the browser. Write several CVs and cover letters, choose a template and adjust its design, check the CV for missing details, and download a clean A4 PDF, a Word file or plain text. There are no accounts, no watermarks, no download limits and no paid services.
 
-- **Free:** creating CVs and downloading PDFs costs nothing. There are no ads, subscriptions or premium tiers.
-- **No account:** drafts are stored in the browser's `localStorage`.
-- **Private:** CV data never leaves the device. The app has no backend, database or analytics.
-- **Works without AI:** AI assistance is optional, disabled by default and consent-gated.
-- **English & Indonesian** interface, with a separate CV language for headings and dates.
+- **Free:** creating documents and downloading them in any format costs nothing. There are no ads, subscriptions or premium tiers.
+- **No account:** documents are stored in the browser's `localStorage`.
+- **Private:** CV and letter data never leaves the device. The app has no backend, database or analytics, and every export file is made in the browser.
+- **Works without AI:** AI assistance is optional, disabled by default and consent-gated. The CV checker is rule-based and runs locally.
+- **English & Indonesian** interface, with a separate document language for headings, dates and letter labels.
 
 ## Features
 
 | Area | What's implemented |
 | --- | --- |
-| Pages | Landing (`/`), CV builder (`/builder/`), privacy notice (`/privacy/`), help (`/help/`) |
-| Editor | Personal info (with optional photo), summary with character guidance, work experience, education, projects, technical and soft skills with optional proficiency, certifications. Add, edit, remove (confirmation when an entry has content) and reorder entries with accessible up/down buttons. Non-blocking validation for email, URLs and date order. |
+| Pages | Landing (`/`), builder (`/builder/`), privacy notice (`/privacy/`), help (`/help/`) |
+| CV editor | Personal info (with optional photo), summary with character guidance, work experience, education, projects, technical and soft skills with optional proficiency, certifications, organizations & volunteering, awards, languages (with level), references, interests, and up to 20 custom sections with their own title (e.g. courses, publications). Add, edit, remove (confirmation when an entry has content) and reorder entries with accessible up/down buttons. Non-blocking validation for email, URLs and date order. |
+| Cover letters | Letter editor with sender details (copied from a chosen CV on request), recipient, date, subject, greeting, body, closing and signature. A new letter takes the template and design of the CV it was created from. Letter language sets the date format and the "Subject" / "Perihal" label; Indonesian letters put the sender's city before the date. |
+| Documents | Several CVs and cover letters per browser: a document switcher and "Your documents" dialog to open, rename, duplicate and delete documents, start a new CV or letter, and import a JSON file as a new document. Debounced autosave (600 ms) per document, plus a flush when the tab is hidden, before switching documents and before downloads. A tab never overwrites a copy another tab saved since it last loaded or wrote the document: it reloads that copy when it has no unsaved changes, and otherwise offers "Load the newer version" or "Keep mine". Without browser storage, new and imported documents still open in memory (unsaved), with a confirmation before one is replaced. "Erase all local data" on the privacy page. |
+| Design | Per-document accent colour (presets or custom, with a contrast warning below 4.5:1 on white), font (template default, system sans/serif, bundled IBM Plex Sans/Serif), text size, spacing and page margins. For CVs, a section manager to reorder sections, hide them without deleting content, and reset to the template order. |
+| CV check | Rule-based checker in the browser (no AI): a 0 to 100 score plus errors, warnings and tips from more than 30 rules, for example missing contact details, invalid email or URLs, summary length, missing or reversed dates, descriptions without bullet points, first-person or very long bullet lines, few action verbs, missing or duplicate skills, more than two pages, a photo with the ATS template, a low-contrast accent and untitled custom sections. Each finding jumps to the field or setting. Messages never suggest adding facts the user doesn't have. |
 | Preview | Live A4 preview scaled to fit, with approximate page-break guides and a page count |
-| Templates | **ATS Minimal** (single column, no photo), **Modern Professional** (serif name, accent rules, optional photo), **Graduate / Student** (education and projects first, skill tags). All three render the same data. |
-| PDF | Browser print-to-PDF with dedicated print CSS: A4, consistent margins, selectable text, headings kept with their content, no app UI, no watermark, no remote assets |
-| Drafts | Debounced autosave (600 ms) plus a flush when the tab is hidden, recovery after refresh, "Save draft", "Start new CV" (keeps the previous draft), "Restore previous draft", "Delete draft" with confirmation, "Erase all local data" on the privacy page |
-| Import/export | Versioned JSON export; import is validated, sanitised and migrated |
-| i18n | English and Indonesian UI (`lib/i18n`), with an independent CV language for headings and month names (`lib/cv-format.ts`) |
-| Accessibility | Semantic landmarks, labelled controls, visible focus, skip link, native `<dialog>` modals, live status messages, tab pattern on mobile, axe-checked pages |
+| Templates | **ATS Minimal** (single column, no photo), **Modern Professional** (serif name, accent rules, optional photo), **Graduate / Student** (education and projects first, skill tags). All three render the same data and have a matching cover letter layout. |
+| PDF | Browser print-to-PDF with dedicated print CSS: A4, margins from the document's design, selectable text, headings kept with their content, no app UI, no watermark, no remote assets |
+| Word & plain text | `.docx` built in the browser with the `docx` library (loaded on demand): A4, the document's margins, colours and font, real Word bullets, right-aligned dates, section order and visibility. `.txt` with uppercase headings and `-` bullets for pasting into application forms. |
+| Import/export | Versioned JSON backup for CVs and letters; import is validated, sanitised and migrated (files from the single-draft version still import) and always adds a new document |
+| i18n | English and Indonesian UI (`lib/i18n`), with an independent document language for headings, month names and letter labels (`lib/cv-format.ts`) |
+| Accessibility | Semantic landmarks, labelled controls, visible focus, skip link, native `<dialog>` modals, live status messages, tab patterns for the editor and on mobile, axe-checked pages |
 | AI (optional) | Provider contract, prompt templates and a consent → review → apply UI for summary rewrites. It only appears when an operator configures their own proxy. |
 
 ## Tech stack
@@ -28,42 +32,57 @@ A free, privacy-friendly CV builder that runs entirely in the browser. Create a 
 - [Next.js 16](https://nextjs.org) App Router with `output: "export"` (fully static), React 19, TypeScript (strict)
 - Tailwind CSS 4 for the app UI. The CV document uses plain CSS in physical units (`app/globals.css`).
 - Vitest + Testing Library (jsdom) for unit and integration tests, Playwright + axe-core for end-to-end tests
-- **No runtime dependencies** beyond `next`, `react` and `react-dom`
+- Runtime dependencies: `next`, `react`, `react-dom`, `docx` (Word export, loaded only when a Word file is requested) and the `@fontsource/ibm-plex-*` packages (fonts are bundled, nothing is loaded from a font CDN). `jszip` is a dev dependency used by the export tests.
 
 ## Repository structure
 
 ```
 app/
-  layout.tsx            Root layout (metadata, I18nProvider)
-  globals.css           Design tokens, CV template styles, A4 print stylesheet
+  layout.tsx            Root layout (metadata, I18nProvider, bundled fonts)
+  globals.css           Design tokens, CV and letter template styles, A4 print stylesheet
   page.tsx              Landing page
-  builder/page.tsx      CV builder
+  builder/page.tsx      Builder for CVs and cover letters
   privacy/page.tsx      Privacy notice + erase local data
   help/page.tsx         Instructions (incl. PDF export per browser)
   icon.svg
 components/
-  builder/BuilderApp.tsx   Builder state, autosave, toolbar, dialogs, import/export, print root
-  cv-form/                 Section editors, generic RepeatableSection, optional AI assist
-  cv-preview/CVPreview.tsx Scaled A4 preview with page guides
-  templates/               AtsMinimal, ModernProfessional, Graduate + shared parts
-  layout/                  Site header (with language switcher) and footer
-  pages/                   Client content for landing, help and privacy pages
-  ui/                      Field, MonthField, Dialog, Icons, shared class names
+  builder/
+    BuilderApp.tsx      Builder state, documents, autosave, toolbar, editor tabs, check jumps, print root
+    DocumentsDialog.tsx "Your documents": open, rename, duplicate, delete, new CV/letter, import
+    DownloadMenu.tsx    Download PDF plus Word, plain text and JSON backup
+    DesignPanel.tsx     Appearance settings and the CV section manager
+    ChecksPanel.tsx     CV check score and findings
+    MenuButton.tsx, Tabs.tsx, print.ts, doc-names.ts, notice.ts   Shared builder helpers
+  cv-form/              CV section editors (incl. extra and custom sections), EntryList/RepeatableSection, optional AI assist
+  letter/LetterForm.tsx Cover letter editor
+  cv-preview/           DocumentPreview (scaled A4 preview with page guides) and the CVPreview wrapper
+  templates/            AtsMinimal, ModernProfessional, Graduate, LetterDocument, DocumentView, PrintRoot, style variables
+  layout/               Site header (with language switcher) and footer
+  pages/                Client content for landing, help and privacy pages
+  ui/                   Field, MonthField, Dialog, Icons, shared class names
 lib/
-  cv-schema.ts          Typed, versioned data model and helpers
-  cv-validation.ts      Sanitisation, JSON import/export, migrations, field validators
-  cv-reducer.ts         Pure editor state transitions
-  cv-format.ts          CV-language labels, date formatting, bullet parsing
-  storage.ts            Safe localStorage access (draft, backup, corruption handling)
-  pdf.ts                Print-to-PDF helper and file naming
-  sample-cv.ts          Clearly fictional sample CV (previews and tests)
-  i18n/                 en.ts, id.ts dictionaries and provider
+  cv-schema.ts          Typed, versioned CV data model (v2) and helpers
+  cv-sections.ts        Section keys, template section order, visible/hidden sections
+  cv-validation.ts      Sanitisation, JSON import/export for CVs and letters, migrations, field validators
+  cv-reducer.ts         Pure CV editor state transitions
+  cv-checks.ts          Rule-based CV checker and score
+  cv-format.ts          Document-language labels, date formatting, bullet parsing
+  doc-style.ts          Appearance model shared by CVs and letters (accent, font, size, spacing, margins)
+  letter-schema.ts      Cover letter data model, defaults, sanitising, date line
+  letter-reducer.ts     Pure letter editor state transitions
+  documents.ts          Multi-document localStorage store and legacy draft migration
+  storage.ts            Safe localStorage access, preferences, erase, legacy draft reader
+  export/               docx.ts, text.ts, model.ts (shared export content), download.ts
+  pdf.ts                Print-to-PDF helpers and file naming
+  sample-cv.ts          Clearly fictional sample CVs and letter (previews and tests)
+  i18n/                 en.ts, id.ts dictionaries, features/*.ts per-feature dictionaries, provider
   ai/provider.ts        Optional AI provider contract (disabled by default)
   ai/prompts.ts         Prompt templates with no-fabrication rules
 tests/
   unit/                 Vitest unit and integration tests
   e2e/                  Playwright end-to-end tests
 public/_headers         Security headers for Cloudflare Pages
+vercel.json             Build settings and security headers for Vercel
 ```
 
 ## Local development
@@ -150,19 +169,47 @@ Notes:
 
 ## Data model and schema migrations
 
-`CVData` (in `lib/cv-schema.ts`) carries `schemaVersion`. Stored drafts and exported files wrap it as `{ schemaVersion, savedAt | exportedAt, data }`. All external input (localStorage, imported files) goes through `parseCVValue` / `parseCVJson` in `lib/cv-validation.ts`, which:
+### CVs
+
+`CVData` (in `lib/cv-schema.ts`) carries `schemaVersion`, currently **2**. Version 2 added `languages`, `organizations`, `awards`, `references`, `interests` and `customSections`, and extended `meta` with `sectionOrder`, `hiddenSections` (section keys such as `"experience"` or `"custom:<id>"`) and `style` (the appearance settings from `lib/doc-style.ts`). An empty `sectionOrder` means "use the template's order" (`lib/cv-sections.ts`).
+
+All external input (localStorage, imported files) goes through `parseDocumentValue` / `parseDocumentJson` (any document) or `parseCVValue` / `parseCVJson` (CVs only) in `lib/cv-validation.ts`, which:
 
 1. unwraps the envelope,
-2. migrates step by step using `migrations[fromVersion]`,
-3. sanitises every field (types, lengths, list sizes, unique ids, `data:image/*` photos only, http(s)-only links).
+2. migrates step by step using `migrations[fromVersion]` (v1 data gets the new lists empty, the template's section order and the default style, so it looks exactly as before),
+3. sanitises every field (types, lengths, list sizes, unique ids across all lists, valid section keys only, `data:image/*` photos only, http(s)-only links, valid colours and style options).
 
-To change the schema:
+Data without a version is treated as v1. Data from a *newer* version than the app knows is rejected (imports show an error).
+
+### Cover letters
+
+`LetterData` (in `lib/letter-schema.ts`) has `kind: "letter"` and its own `schemaVersion` (`LETTER_SCHEMA_VERSION`, currently 1), and is sanitised by `sanitizeLetter`.
+
+### Export files
+
+JSON backups are written by `serializeDocument` as `{ app: "free-ai-cv-maker", kind: "cv" | "letter", exportedAt, data }`. Files from the single-draft version (`{ app, exportedAt, data }` without `kind`) are read as CVs and migrated.
+
+### Browser storage
+
+`lib/documents.ts` keeps every document in `localStorage` under the `free-cv-maker:` prefix:
+
+| Key | Contents |
+| --- | --- |
+| `free-cv-maker:docs` | Index of documents: `{ id, kind, name, createdAt, updatedAt }[]` |
+| `free-cv-maker:doc:<id>` | One document: `{ schemaVersion, savedAt, kind, name, createdAt, data }` |
+| `free-cv-maker:active` | Id of the document the builder opens |
+| `free-cv-maker:corrupted:<id>` | Raw contents of a document that could not be read, set aside instead of overwritten |
+| `free-cv-maker:ui-lang`, `free-cv-maker:hide-print-hint` | Preferences |
+
+The index repairs itself: a corrupted index is rebuilt from the stored documents, and documents missing from it are added back.
+
+On opening the builder, `migrateLegacyStorage()` moves the single-draft version's `free-cv-maker:draft` and `free-cv-maker:backup` into documents (the draft becomes the active document, the backup is named after its content or "Previous draft") and then removes the old keys. Unreadable legacy data is kept under `free-cv-maker:corrupted` (or a numbered fallback key) rather than deleted. When storage is too full to hold the draft as a document, the migration reports it as `blocked`; the builder then shows the draft unsaved with a storage-full notice, leaves it under its old key, and stores it as a document (removing the old key) once a save succeeds. "Erase all local data" removes every `free-cv-maker:` key.
+
+### Changing the CV schema
 
 1. Update the interfaces and `CV_SCHEMA_VERSION` in `lib/cv-schema.ts`.
 2. Add `migrations[N] = (raw) => ({ ...raw, schemaVersion: N + 1, /* transform */ })` for the previous version `N`.
 3. Update `sanitizeCV` for the new fields, and add a test in `tests/unit/cv-validation.test.ts`.
-
-Data from a *newer* version than the app knows is rejected (imports show an error). An unreadable stored draft is moved to `free-cv-maker:corrupted` instead of being overwritten.
 
 ## Optional AI integration
 
@@ -185,16 +232,18 @@ AI is **off by default**, and nothing in the core workflow depends on it. To ena
 
 ## Testing status
 
-Run locally during development:
+Run locally during development (see the output of each command for current counts):
 
-- `npm test`: 73 unit and integration tests (schema validation, migration, reducer add/edit/delete/reorder, empty-section handling, storage persistence/corruption/quota, JSON import/export, template switching and rendering, PDF helper, AI-disabled and consent flows, builder integration).
-- `npm run test:e2e`: 15 Playwright tests. They cover the full user journey (landing → create → templates → refresh → restore → print → PDF inspection → delete), a multi-page A4 PDF per template (content complete, no blank pages, no heading stranded at a page bottom), no remote requests, axe WCAG 2.1 AA scans of all pages, the language switch, keyboard operation, the erase-data flow, corrupted-draft recovery, and the mobile tab layout with no horizontal overflow.
+- `npm test`: Vitest unit and integration tests. They cover schema validation and the v1 → v2 migration, the CV and letter reducers, section order and visibility, the documents store (index repair, corruption, quota, legacy draft migration), storage and erase, JSON import/export for CVs and letters, the CV checker rules and score, the Word and plain text exports (including the generated `word/document.xml`), template and letter rendering with design settings, the design panel, the section and letter editors, PDF helpers, AI-disabled and consent flows, and builder integration (documents, tabs, downloads, check jumps).
+- `npm run test:e2e`: Playwright tests against the static build. They cover the main user journey in a real browser, multi-page A4 PDFs per template (content complete, no blank pages, no heading stranded at a page bottom), no remote requests, axe WCAG 2.1 AA scans of all pages, the language switch, keyboard operation, the erase-data flow, corrupted-data recovery and the mobile tab layout with no horizontal overflow. See `tests/e2e/` for the current list.
 
 ## Known limitations
 
 - **PDF export uses the browser's print dialog.** Users must pick "Save as PDF", and on some browsers turn off headers/footers and turn on background graphics (the builder shows these steps). Output was verified in Chromium. Firefox and Safari can paginate slightly differently, and mobile print-to-PDF varies by OS.
 - **Preview page breaks are approximate.** The printed PDF may move a whole entry to the next page to avoid splitting it.
-- **Local storage only.** There is no sync between devices or browsers. Clearing site data or using private windows loses drafts, and storage is limited (typically about 5 MB; photos are resized to 360 px JPEG before saving). Only one current draft and one previous draft are kept; use JSON export for more.
+- **Local storage only.** There is no sync between devices or browsers. Clearing site data or using private windows loses documents, and storage is limited (typically about 5 MB shared by all documents; photos are resized to 360 px JPEG before saving). Use JSON backups to keep copies.
+- **Word files depend on installed fonts.** Word, Google Docs and LibreOffice use the fonts on the computer that opens the file and substitute a similar one when the chosen font is missing. The layout follows the templates closely but isn't identical to the PDF. A WebP photo from an imported file is left out of the Word file.
+- **The CV check is a heuristic.** It looks for missing details and common problems with word lists and simple rules; it can't judge the quality of the content.
 - **Static HTML is pre-rendered in English.** An Indonesian preference is applied right after load, so the page may briefly show English, and search engines see English.
 - **ATS compatibility** of the ATS Minimal template follows common guidance (single column, standard headings, real text), but no tool can guarantee how every ATS parses a document.
 - Reordering uses up/down buttons, not drag-and-drop.

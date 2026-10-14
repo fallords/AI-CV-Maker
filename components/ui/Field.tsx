@@ -1,13 +1,18 @@
 "use client";
 
 import { useId, type ReactNode } from "react";
-import { inputClass } from "./styles";
+import { inputClass, selectClass } from "./styles";
 
 interface BaseProps {
   label: string;
   hint?: ReactNode;
   error?: string | null;
   className?: string;
+  /**
+   * Name of the data field, written to `data-field` so the CV checker can jump straight
+   * to the control a finding is about (see lib/cv-checks.ts CheckItem.field).
+   */
+  field?: string;
 }
 
 function Describe({ id, hint, error }: { id: string; hint?: ReactNode; error?: string | null }) {
@@ -36,6 +41,7 @@ export function TextField({
   hint,
   error,
   className,
+  field,
   value,
   onChange,
   type = "text",
@@ -65,6 +71,7 @@ export function TextField({
         aria-describedby={describedBy(id, hint, error)}
         className={inputClass}
         maxLength={rest.maxLength ?? 300}
+        data-field={field}
         {...rest}
       />
       <Describe id={id} hint={hint} error={error} />
@@ -77,6 +84,7 @@ export function TextAreaField({
   hint,
   error,
   className,
+  field,
   value,
   onChange,
   rows = 4,
@@ -101,6 +109,7 @@ export function TextAreaField({
         rows={rows}
         placeholder={placeholder}
         maxLength={maxLength}
+        data-field={field}
         onChange={(e) => onChange(e.target.value)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
@@ -118,10 +127,13 @@ export function SelectField<T extends string>({
   value,
   onChange,
   options,
+  autoFocusInDialog = false,
 }: BaseProps & {
   value: T;
   onChange: (value: T) => void;
   options: { value: T; label: string }[];
+  /** Marks the select as the control to focus when its dialog opens (see Dialog's `data-autofocus`). */
+  autoFocusInDialog?: boolean;
 }) {
   const id = useId();
   return (
@@ -131,10 +143,11 @@ export function SelectField<T extends string>({
       </label>
       <select
         id={id}
+        data-autofocus={autoFocusInDialog || undefined}
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
         aria-describedby={hint ? `${id}-hint` : undefined}
-        className={inputClass}
+        className={selectClass}
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>

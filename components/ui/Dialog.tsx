@@ -6,6 +6,10 @@ import { btn } from "./styles";
 /**
  * Modal dialog built on the native <dialog> element: focus is trapped and
  * restored by the browser, and Escape closes it.
+ *
+ * On opening, focus goes to the element marked `data-autofocus`, else (the browser's
+ * default) to the first focusable element. React's `autoFocus` doesn't work here:
+ * it focuses on mount, and `showModal()` runs afterwards and moves focus again.
  */
 export function Dialog({
   open,
@@ -30,7 +34,10 @@ export function Dialog({
     openRef.current = open;
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -90,7 +97,7 @@ export function ConfirmDialog({
       title={title}
       footer={
         <>
-          <button type="button" className={btn.secondary} onClick={onCancel} autoFocus>
+          <button type="button" className={btn.secondary} onClick={onCancel} data-autofocus>
             {cancelLabel}
           </button>
           <button type="button" className={danger ? btn.dangerSolid : btn.primary} onClick={onConfirm}>

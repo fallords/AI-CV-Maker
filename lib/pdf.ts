@@ -12,25 +12,31 @@ import type { CVData } from "./cv-schema";
 
 export const PRINT_HINT_KEY = "free-cv-maker:hide-print-hint";
 
-/** File name suggested to the browser's "Save as PDF" (taken from document.title). */
-export function pdfFileName(cv: CVData): string {
-  const name = cv.personal.fullName
+/** "Dévi Lestari!" -> "Devi_Lestari": ASCII letters, digits, "_" and "-" only. */
+export function fileSafeName(value: string): string {
+  return value
     .normalize("NFKD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^\w\s-]/g, "")
     .trim()
     .replace(/\s+/g, "_");
+}
+
+/** File name suggested to the browser's "Save as PDF" (taken from document.title). */
+export function pdfFileName(cv: CVData): string {
+  const name = fileSafeName(cv.personal.fullName);
   return name ? `${name}_CV` : "CV";
 }
 
 /**
- * Opens the print dialog with a CV-specific document title, then restores the title.
+ * Opens the browser's print dialog with `title` as the page title (browsers suggest it as
+ * the PDF's file name), then restores the previous title once printing is done.
  * Returns false when printing is not available (e.g. some in-app browsers).
  */
-export function printCV(cv: CVData, win: Window = window): boolean {
+export function printWithTitle(title: string, win: Window = window): boolean {
   if (typeof win.print !== "function") return false;
   const previousTitle = win.document.title;
-  win.document.title = pdfFileName(cv);
+  win.document.title = title;
   const restore = () => {
     win.document.title = previousTitle;
     win.removeEventListener("afterprint", restore);
@@ -43,4 +49,9 @@ export function printCV(cv: CVData, win: Window = window): boolean {
     return false;
   }
   return true;
+}
+
+/** Opens the print dialog with a CV-specific document title, then restores the title. */
+export function printCV(cv: CVData, win: Window = window): boolean {
+  return printWithTitle(pdfFileName(cv), win);
 }

@@ -74,6 +74,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <TextField
+        field="fullName"
         className="sm:col-span-2"
         label={f.fullName}
         value={p.fullName}
@@ -81,6 +82,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         autoComplete="name"
       />
       <TextField
+        field="title"
         className="sm:col-span-2"
         label={f.jobTitle}
         value={p.title}
@@ -89,6 +91,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         autoComplete="organization-title"
       />
       <TextField
+        field="email"
         label={f.email}
         type="email"
         inputMode="email"
@@ -98,6 +101,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         error={emailError}
       />
       <TextField
+        field="phone"
         label={f.phone}
         type="tel"
         inputMode="tel"
@@ -105,14 +109,22 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         onChange={(v) => set({ phone: v })}
         autoComplete="tel"
       />
-      <TextField label={f.city} value={p.city} onChange={(v) => set({ city: v })} autoComplete="address-level2" />
       <TextField
+        field="city"
+        label={f.city}
+        value={p.city}
+        onChange={(v) => set({ city: v })}
+        autoComplete="address-level2"
+      />
+      <TextField
+        field="country"
         label={f.country}
         value={p.country}
         onChange={(v) => set({ country: v })}
         autoComplete="country-name"
       />
       <TextField
+        field="linkedin"
         label={f.linkedin}
         type="url"
         inputMode="url"
@@ -122,6 +134,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         error={urlError(p.linkedin)}
       />
       <TextField
+        field="website"
         label={f.website}
         type="url"
         inputMode="url"

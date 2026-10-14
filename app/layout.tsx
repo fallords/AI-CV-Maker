@@ -4,6 +4,12 @@ import { I18nProvider } from "@/lib/i18n";
 import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
+// Weights only used by CV/letter documents set in IBM Plex (lib/doc-style.ts font options).
+// Bundled like the UI fonts, so PDFs never depend on remote assets.
+import "@fontsource/ibm-plex-sans/700.css";
+import "@fontsource/ibm-plex-serif/400.css";
+import "@fontsource/ibm-plex-serif/600.css";
+import "@fontsource/ibm-plex-serif/700.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "./globals.css";

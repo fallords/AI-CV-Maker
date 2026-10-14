@@ -1,11 +1,38 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
-import { BuilderApp } from "@/components/builder/BuilderApp";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { BuilderApp, docReducer } from "@/components/builder/BuilderApp";
+import { copyName, followingName } from "@/components/builder/doc-names";
+import { createEmptyCV, type CVData } from "@/lib/cv-schema";
+import { serializeDocument } from "@/lib/cv-validation";
+import {
+  DOC_KEY,
+  createDoc,
+  getActiveDocId,
+  listDocs,
+  loadDoc,
+  setActiveDocId,
+  type AnyDoc,
+  type DocMeta,
+} from "@/lib/documents";
+import { exportDocx } from "@/lib/export/docx";
+import { downloadBlob } from "@/lib/export/download";
+import { exportText } from "@/lib/export/text";
 import { I18nProvider } from "@/lib/i18n";
-import { serializeCV } from "@/lib/cv-validation";
-import { sampleCV } from "@/lib/sample-cv";
-import { DRAFT_KEY, saveDraft } from "@/lib/storage";
+import { createEmptyLetter } from "@/lib/letter-schema";
+import { PRINT_HINT_KEY } from "@/lib/pdf";
+import { sampleCV, sampleLetter } from "@/lib/sample-cv";
+import { BACKUP_KEY, CORRUPT_KEY, DRAFT_KEY } from "@/lib/storage";
+
+// Exporters are tested in export.test.ts; here only the builder's wiring matters.
+vi.mock("@/lib/export/docx", () => ({
+  exportDocx: vi.fn(async () => new Blob(["docx"], { type: "application/octet-stream" })),
+}));
+vi.mock("@/lib/export/text", () => ({ exportText: vi.fn(() => "ALEX EXAMPLE") }));
+vi.mock("@/lib/export/download", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/export/download")>()),
+  downloadBlob: vi.fn(),
+}));
 
 function renderBuilder(lang: "en" | "id" = "en") {
   return render(
@@ -15,29 +42,153 @@ function renderBuilder(lang: "en" | "id" = "en") {
   );
 }
 
-const preview = () => screen.getByRole("document", { name: /CV preview|Pratinjau CV/i });
-const storedDraft = () => JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null");
+/** Stores a document and makes it the one the builder opens. */
+function seed(doc: AnyDoc, name = ""): DocMeta {
+  const result = createDoc(doc, name);
+  if (!result.ok) throw new Error("could not seed");
+  setActiveDocId(result.meta.id);
+  return result.meta;
+}
+const seedCV = (cv: CVData = sampleCV(), name = "") => seed({ kind: "cv", data: cv }, name);
 
-describe("CV builder integration", () => {
+const preview = () => screen.getByRole("document", { name: /CV preview|Pratinjau CV/i });
+const activeDoc = () => {
+  const id = getActiveDocId();
+  const result = id ? loadDoc(id) : null;
+  return result?.status === "ok" ? result.doc : null;
+};
+const activeCV = () => {
+  const doc = activeDoc();
+  return doc?.kind === "cv" ? doc.data : null;
+};
+const docNames = () => listDocs().map((m) => m.name).sort();
+const switcher = () => screen.getByTestId("document-switcher");
+
+/**
+ * The CV form's "Full name" field. Looked up through its label directly, because label
+ * queries over the whole builder are very slow in jsdom.
+ */
+function fullName(): HTMLInputElement {
+  const label = Array.from(document.querySelectorAll<HTMLLabelElement>("#personal label")).find((l) =>
+    /^(Full name|Nama lengkap)/.test(l.textContent ?? ""),
+  );
+  const field = label ? document.getElementById(label.htmlFor) : null;
+  if (!(field instanceof HTMLInputElement)) throw new Error("Full name field not found");
+  return field;
+}
+const findFullName = () => waitFor(fullName);
+
+async function openDocuments(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(switcher());
+  return screen.getByRole("dialog", { name: "Your documents" });
+}
+
+async function openMore(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "More" }));
+  return screen.getByRole("group", { name: "Document actions" });
+}
+
+/** A v1 (single-draft app) payload: no new sections, no order/visibility/appearance settings. */
+function legacyPayload(cv: CVData) {
+  const { languages, organizations, awards, references, interests, customSections, ...rest } = cv;
+  void [languages, organizations, awards, references, interests, customSections];
+  return JSON.stringify({
+    schemaVersion: 1,
+    savedAt: "2026-01-02T03:04:05.000Z",
+    data: { ...rest, schemaVersion: 1, meta: { template: cv.meta.template, cvLanguage: cv.meta.cvLanguage } },
+  });
+}
+
+/** Makes writes to matching keys fail as if browser storage were full. */
+function quotaFor(match: (key: string) => boolean) {
+  const original = Storage.prototype.setItem;
+  return vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, key: string, value: string) {
+    if (match(key)) throw new DOMException("full", "QuotaExceededError");
+    return original.call(this, key, value);
+  });
+}
+
+/** Makes browser storage unusable (e.g. blocked site data): every write throws. */
+function denyStorage() {
+  return vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    throw new DOMException("blocked", "SecurityError");
+  });
+}
+
+/**
+ * Stores a newer copy of a document the way a save in another tab would. Returns a
+ * function that delivers the "storage" event that tab's save fires in this one.
+ */
+function saveFromOtherTab(id: string, change: (cv: CVData) => void) {
+  const stored = JSON.parse(localStorage.getItem(DOC_KEY(id))!);
+  change(stored.data);
+  stored.savedAt = new Date(Date.parse(stored.savedAt) + 60_000).toISOString();
+  const value = JSON.stringify(stored);
+  localStorage.setItem(DOC_KEY(id), value);
+  return () =>
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: DOC_KEY(id), newValue: value, storageArea: localStorage }));
+    });
+}
+
+const professionalTitle = () => screen.getByLabelText("Professional title");
+
+// Each test renders the whole builder (form, preview, dialogs), which is slow in jsdom.
+vi.setConfig({ testTimeout: 30_000 });
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("builder: editing and autosave", () => {
   it("updates the live preview as the user types", async () => {
     const user = userEvent.setup();
     renderBuilder();
-    await user.type(await screen.findByLabelText(/Full name/), "Dewi Lestari");
+    await user.type(await findFullName(), "Dewi Lestari");
     await user.type(screen.getByLabelText("Professional title"), "UX Researcher");
     expect(within(preview()).getByRole("heading", { level: 1 })).toHaveTextContent("Dewi Lestari");
     expect(within(preview()).getByText("UX Researcher")).toBeInTheDocument();
   });
 
-  it("autosaves to localStorage and restores after a reload", async () => {
+  it("stores nothing until the first edit", async () => {
+    renderBuilder();
+    await findFullName();
+    await new Promise((r) => setTimeout(r, 750));
+    expect(listDocs()).toEqual([]);
+    expect(switcher()).toHaveTextContent("Untitled CV");
+  });
+
+  it("autosaves the document and restores it after a reload", async () => {
     const user = userEvent.setup();
     const first = renderBuilder();
-    await user.type(await screen.findByLabelText(/Full name/), "Persisted Person");
-    await waitFor(() => expect(storedDraft()?.data.personal.fullName).toBe("Persisted Person"), { timeout: 2000 });
+    await user.type(await findFullName(), "Persisted Person");
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Persisted Person"), { timeout: 2000 });
+    // The automatic name follows the content until the person picks their own.
+    await waitFor(() => expect(docNames()).toEqual(["Persisted Person"]));
+    expect(switcher()).toHaveTextContent("Persisted Person");
+    expect(screen.getByTestId("save-status")).toHaveTextContent("Saved on this device");
     first.unmount();
 
     renderBuilder();
-    expect(await screen.findByLabelText(/Full name/)).toHaveValue("Persisted Person");
-    expect(screen.getByText(/draft was restored/i)).toBeInTheDocument();
+    expect(await findFullName()).toHaveValue("Persisted Person");
+    expect(screen.getByText("Opened “Persisted Person” from this browser.")).toBeInTheDocument();
+    expect(listDocs()).toHaveLength(1);
+  });
+
+  it("writes pending edits when the page is hidden", async () => {
+    seedCV();
+    renderBuilder();
+    const name = await screen.findByDisplayValue("Alex Example");
+    fireEvent.change(name, { target: { value: "Quick Exit" } });
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
+    act(() => {
+      window.dispatchEvent(new Event("pagehide"));
+    });
+    expect(activeCV()?.personal.fullName).toBe("Quick Exit");
   });
 
   it("adds, edits, reorders and removes work experience", async () => {
@@ -56,7 +207,6 @@ describe("CV builder integration", () => {
     await user.click(screen.getByRole("button", { name: "Move up: Second Job" }));
     expect(entries()).toEqual(["Second Job", "First Job"]);
 
-    // Removing an entry with content asks for confirmation first.
     await user.click(screen.getByRole("button", { name: "Remove: First Job" }));
     const dialog = screen.getByRole("dialog", { name: "Remove this entry?" });
     await user.click(within(dialog).getByRole("button", { name: "Remove" }));
@@ -64,7 +214,7 @@ describe("CV builder integration", () => {
   });
 
   it("switches templates without losing data", async () => {
-    saveDraft(sampleCV());
+    seedCV();
     const user = userEvent.setup();
     renderBuilder();
     await screen.findByDisplayValue("Alex Example");
@@ -76,80 +226,889 @@ describe("CV builder integration", () => {
       );
       expect(preview()).toHaveTextContent("Example Logistics Co.");
     }
-    await waitFor(() => expect(storedDraft().data.experience).toHaveLength(3));
-    expect(storedDraft().data.meta.template).toBe("ats-minimal");
+    await waitFor(() => expect(activeCV()?.meta.template).toBe("ats-minimal"));
+    expect(activeCV()?.experience).toHaveLength(3);
   });
 
-  it("deletes the draft only after confirmation", async () => {
-    saveDraft(sampleCV());
+  it("saves on demand with the Save button", async () => {
+    seedCV();
     const user = userEvent.setup();
     renderBuilder();
-    await screen.findByDisplayValue("Alex Example");
-    await user.click(screen.getByRole("button", { name: "Delete draft" }));
-    const dialog = screen.getByRole("dialog", { name: "Delete this draft?" });
-    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
-    expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+    const name = await screen.findByDisplayValue("Alex Example");
+    fireEvent.change(name, { target: { value: "Saved Now" } });
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(activeCV()?.personal.fullName).toBe("Saved Now");
+    expect(screen.getByText("Saved on this device.")).toBeInTheDocument();
+  });
+});
 
-    await user.click(screen.getByRole("button", { name: "Delete draft" }));
-    await user.click(within(screen.getByRole("dialog", { name: "Delete this draft?" })).getByRole("button", { name: "Delete draft" }));
-    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
-    expect(screen.getByLabelText(/Full name/)).toHaveValue("");
+describe("builder: the same document in two tabs", () => {
+  it("shows what another tab saved when this tab has no unsaved changes", async () => {
+    const meta = seedCV();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Title From Tab 2";
+    })();
+    expect(professionalTitle()).toHaveValue("Title From Tab 2");
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+
+    // Later edits here build on that copy and save as usual.
+    fireEvent.change(fullName(), { target: { value: "Alex Later" } });
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Alex Later"));
+    expect(activeCV()?.personal.title).toBe("Title From Tab 2");
+  });
+
+  it("never overwrites another tab's newer copy, and saves this tab's version on “Keep mine”", async () => {
+    const meta = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Mine" } });
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Theirs";
+    })();
+
+    const conflict = screen.getByTestId("conflict-notice");
+    expect(conflict).toHaveAttribute("role", "alert");
+    expect(conflict).toHaveTextContent("“Alex Example” was changed in another tab or window");
+    // The autosave would have run by now; it leaves the other tab's copy alone.
     await new Promise((r) => setTimeout(r, 800));
-    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(activeCV()?.personal.title).toBe("Theirs");
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
+    expect(screen.getByTestId("save-status")).toHaveTextContent("Not saved: this document was changed in another tab or window.");
+    expect(fullName()).toHaveValue("Mine");
+
+    await user.click(within(conflict).getByRole("button", { name: "Keep mine" }));
+    expect(activeCV()?.personal.fullName).toBe("Mine");
+    expect(activeCV()?.personal.title).toBe("Data Analyst");
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+    expect(screen.getByText("Your version of “Alex Example” was saved.")).toBeInTheDocument();
+    expect(switcher()).toHaveFocus();
+
+    // Saving goes on normally afterwards.
+    fireEvent.change(fullName(), { target: { value: "Mine Again" } });
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Mine Again"));
   });
 
-  it("starts a new CV and can restore the previous draft", async () => {
-    saveDraft(sampleCV());
+  it("loads the other tab's newer copy on request", async () => {
+    const meta = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Mine" } });
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Theirs";
+    })();
+    await user.click(
+      within(screen.getByTestId("conflict-notice")).getByRole("button", { name: "Load the newer version" }),
+    );
+    expect(fullName()).toHaveValue("Alex Example");
+    expect(professionalTitle()).toHaveValue("Theirs");
+    expect(screen.getByText("The newer version of “Alex Example” is open.")).toBeInTheDocument();
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+    await new Promise((r) => setTimeout(r, 800));
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
+    expect(activeCV()?.personal.title).toBe("Theirs");
+  });
+
+  it("notices another tab's save before writing, even without a storage event", async () => {
+    const meta = seedCV();
     const user = userEvent.setup();
     renderBuilder();
     await screen.findByDisplayValue("Alex Example");
-    await user.click(screen.getByRole("button", { name: "Start new CV" }));
-    await user.click(within(screen.getByRole("dialog", { name: "Start a new CV?" })).getByRole("button", { name: "Start new CV" }));
-    expect(screen.getByLabelText(/Full name/)).toHaveValue("");
+    saveFromOtherTab(meta.id, (cv) => {
+      cv.personal.title = "Theirs";
+    });
+    fireEvent.change(fullName(), { target: { value: "Mine" } });
+    expect(await screen.findByTestId("conflict-notice", undefined, { timeout: 2000 })).toBeInTheDocument();
+    expect(activeCV()?.personal.title).toBe("Theirs");
+    expect(activeCV()?.personal.fullName).toBe("Alex Example");
 
-    await user.click(screen.getByRole("button", { name: "Restore previous draft" }));
-    await user.click(within(screen.getByRole("dialog", { name: /Restore the previous draft/ })).getByRole("button", { name: "Restore" }));
-    expect(screen.getByLabelText(/Full name/)).toHaveValue("Alex Example");
+    // Starting another document asks before dropping this tab's changes.
+    const more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "New CV" }));
+    const confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+    expect(confirm).toHaveTextContent("was also changed in another tab or window");
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    expect(fullName()).toHaveValue("Mine");
+    expect(listDocs()).toHaveLength(1);
   });
 
-  it("imports a valid JSON file and rejects an invalid one", async () => {
+  it("keeps the open document's name in step when another tab renames it", async () => {
+    const meta = seedCV();
     renderBuilder();
-    await screen.findByLabelText(/Full name/);
-    const input = document.querySelector<HTMLInputElement>('input[type="file"][accept*="json"]')!;
+    await screen.findByDisplayValue("Alex Example");
+    const index = listDocs().map((m) => (m.id === meta.id ? { ...m, name: "Renamed Elsewhere" } : m));
+    localStorage.setItem("free-cv-maker:docs", JSON.stringify(index));
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "free-cv-maker:docs", storageArea: localStorage }));
+    });
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", { key: DOC_KEY(meta.id), newValue: localStorage.getItem(DOC_KEY(meta.id)) }),
+      );
+    });
+    expect(switcher()).toHaveTextContent("Renamed Elsewhere");
+    expect(screen.queryByTestId("conflict-notice")).toBeNull();
+  });
+});
 
-    const bad = new File(["{oops"], "bad.json", { type: "application/json" });
+describe("builder: when browser storage can't be used", () => {
+  it("creates and imports documents in memory when storage is unavailable, and asks before replacing one", async () => {
+    const deny = denyStorage();
+    try {
+      const user = userEvent.setup();
+      renderBuilder();
+      await findFullName();
+      const status = screen.getByTestId("save-status");
+      expect(status).toHaveTextContent("Browser storage isn’t available, so nothing is saved in this browser.");
+      // The advice is something that works: a backup can be imported again.
+      expect(status).toHaveTextContent("download a JSON backup before you close the page and import it next time");
+
+      let dialog = await openDocuments(user);
+      expect(dialog).toHaveTextContent("Browser storage isn’t available, so documents can’t be saved or listed here.");
+      const input = dialog.querySelector<HTMLInputElement>('input[type="file"][accept*="json"]')!;
+      const file = new File([serializeDocument({ kind: "cv", data: sampleCV("graduate") })], "cv.json", {
+        type: "application/json",
+      });
+      await act(async () => {
+        fireEvent.change(input, { target: { files: [file] } });
+      });
+      await waitFor(() => expect(fullName()).toHaveValue("Alex Example"));
+      expect(screen.getByLabelText("Template")).toHaveValue("graduate");
+      expect(screen.getByText("“Alex Example” was imported as a new document.")).toBeInTheDocument();
+      expect(screen.getByTestId("save-status")).toHaveTextContent("Browser storage isn’t available");
+
+      // It isn't saved anywhere, so replacing it asks first.
+      dialog = await openDocuments(user);
+      await user.click(within(dialog).getByRole("button", { name: "New CV" }));
+      let confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      expect(confirm).toHaveTextContent("“Alex Example” isn’t saved anywhere");
+      expect(within(confirm).getByRole("button", { name: "Cancel" })).toHaveFocus();
+      await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+      expect(fullName()).toHaveValue("Alex Example");
+
+      const more = await openMore(user);
+      await user.click(within(more).getByRole("button", { name: "New CV" }));
+      confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      await user.click(within(confirm).getByRole("button", { name: "Open anyway (discard unsaved changes)" }));
+      expect(fullName()).toHaveValue("");
+      expect(screen.getByText("New CV created.")).toBeInTheDocument();
+
+      // An empty document is replaced without asking, and cover letters work too.
+      const menu = await openMore(user);
+      await user.click(within(menu).getByRole("button", { name: "New cover letter…" }));
+      expect(screen.queryByRole("dialog", { name: "Discard unsaved changes?" })).toBeNull();
+      expect(await screen.findByRole("document", { name: "Cover letter preview" })).toBeInTheDocument();
+      expect(screen.getByText("New cover letter created.")).toBeInTheDocument();
+    } finally {
+      deny.mockRestore();
+    }
+    expect(localStorage.length).toBe(0);
+  });
+
+  it("offers to open another document anyway when storage is full, and saves once there's room", async () => {
+    const other = seedCV({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Other Person" } });
+    const spare = seedCV({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Spare Person" } });
+    const current = seedCV();
+    let full = true;
+    const quota = quotaFor((key) => full && key === DOC_KEY(current.id));
+    try {
+      const user = userEvent.setup();
+      renderBuilder();
+      fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Too Big" } });
+      await waitFor(() => expect(screen.getByTestId("save-status")).toHaveTextContent("Browser storage is full"));
+
+      let dialog = await openDocuments(user);
+      await user.click(within(dialog).getByRole("button", { name: "Open: Other Person" }));
+      let confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      // Advice that frees space, not a backup that leaves the same refusal in place.
+      expect(confirm).toHaveTextContent("delete a document you no longer need or remove the photo");
+      await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+      expect(fullName()).toHaveValue("Too Big");
+      expect(getActiveDocId()).toBe(current.id);
+
+      // Deleting a document makes room, and the waiting changes are saved.
+      dialog = await openDocuments(user);
+      full = false;
+      await user.click(within(dialog).getByRole("button", { name: "Delete: Spare Person" }));
+      await user.click(
+        within(screen.getByRole("dialog", { name: "Delete “Spare Person”?" })).getByRole("button", { name: "Delete" }),
+      );
+      expect(activeCV()?.personal.fullName).toBe("Too Big");
+      expect(screen.getByTestId("save-status")).toHaveTextContent("Saved on this device");
+      expect(listDocs().map((m) => m.id)).not.toContain(spare.id);
+
+      // Full again: "Open anyway" drops the changes and opens the other document.
+      full = true;
+      await user.keyboard("{Escape}");
+      fireEvent.change(fullName(), { target: { value: "Lost Edit" } });
+      dialog = await openDocuments(user);
+      await user.click(within(dialog).getByRole("button", { name: "Open: Other Person" }));
+      confirm = screen.getByRole("dialog", { name: "Discard unsaved changes?" });
+      await user.click(within(confirm).getByRole("button", { name: "Open anyway (discard unsaved changes)" }));
+      expect(fullName()).toHaveValue("Other Person");
+      expect(getActiveDocId()).toBe(other.id);
+      expect(screen.getByText("Now editing “Other Person”.")).toBeInTheDocument();
+    } finally {
+      quota.mockRestore();
+    }
+    const kept = loadDoc(current.id);
+    expect(kept.status === "ok" && kept.doc.kind === "cv" && kept.doc.data.personal.fullName).toBe("Too Big");
+  });
+});
+
+describe("builder: legacy drafts", () => {
+  it("moves the v1 draft and backup into documents and opens the draft", async () => {
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    localStorage.setItem(
+      BACKUP_KEY,
+      legacyPayload({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Backup Person" } }),
+    );
+    const user = userEvent.setup();
+    renderBuilder();
+    expect(await findFullName()).toHaveValue("Alex Example");
+    expect(screen.getByLabelText("Template")).toHaveValue("graduate");
+    expect(screen.getByText("Opened “Alex Example” from this browser.")).toBeInTheDocument();
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+    expect(localStorage.getItem(BACKUP_KEY)).toBeNull();
+    expect(docNames()).toEqual(["Alex Example", "Backup Person"]);
+
+    const dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: "Open: Backup Person" }));
+    expect(fullName()).toHaveValue("Backup Person");
+  });
+
+  it("opens a legacy draft that doesn't fit into storage, unsaved, and stores it once there's room", async () => {
+    localStorage.setItem(DRAFT_KEY, legacyPayload(sampleCV("graduate")));
+    let full = true;
+    const quota = quotaFor((key) => full && key.startsWith("free-cv-maker:doc:"));
+    try {
+      renderBuilder();
+      expect(await findFullName()).toHaveValue("Alex Example");
+      expect(screen.getByLabelText("Template")).toHaveValue("graduate");
+      expect(screen.getByRole("alert")).toHaveTextContent("browser storage is full, so it couldn’t be moved into “Your documents”");
+      expect(screen.getByTestId("save-status")).toHaveTextContent("Browser storage is full");
+      // Still kept under its old key, so nothing is lost.
+      expect(localStorage.getItem(DRAFT_KEY)).not.toBeNull();
+      expect(listDocs()).toEqual([]);
+
+      full = false;
+      fireEvent.change(fullName(), { target: { value: "Alex Moved" } });
+      await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Alex Moved"));
+      // Stored as a document now, so it isn't migrated a second time.
+      expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+      expect(listDocs()).toHaveLength(1);
+      expect(activeCV()?.meta.template).toBe("graduate");
+    } finally {
+      quota.mockRestore();
+    }
+  });
+
+  it("sets a corrupted legacy draft aside and starts empty", async () => {
+    localStorage.setItem(DRAFT_KEY, "{corrupted");
+    renderBuilder();
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not be read");
+    expect(fullName()).toHaveValue("");
+    expect(localStorage.getItem(CORRUPT_KEY)).toBe("{corrupted");
+    expect(localStorage.getItem(DRAFT_KEY)).toBeNull();
+  });
+
+  it("opens the newest readable document when the active one is corrupted", async () => {
+    const good = seedCV();
+    const bad = seedCV(sampleCV(), "Broken");
+    localStorage.setItem(DOC_KEY(bad.id), "{broken");
+    renderBuilder();
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not be read");
+    expect(fullName()).toHaveValue("Alex Example");
+    expect(getActiveDocId()).toBe(good.id);
+  });
+});
+
+describe("builder: documents", () => {
+  it("creates a second CV and switches between documents, saving each to its own place", async () => {
+    const first = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    let dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: "New CV" }));
+    expect(screen.queryByRole("dialog", { name: "Your documents" })).toBeNull();
+    expect(fullName()).toHaveValue("");
+    expect(screen.getByText("New CV created.")).toBeInTheDocument();
+    expect(switcher()).toHaveTextContent("Untitled CV");
+    const secondId = getActiveDocId();
+    expect(secondId).not.toBe(first.id);
+
+    await user.type(fullName(), "Second Person");
+    await waitFor(() => expect(docNames()).toEqual(["Alex Example", "Second Person"]), { timeout: 2000 });
+
+    dialog = await openDocuments(user);
+    const rows = within(dialog).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    const current = rows.find((row) => row.getAttribute("aria-current") === "true")!;
+    expect(current).toHaveTextContent("Second Person");
+    expect(current).toHaveTextContent("Currently open");
+    await user.click(within(dialog).getByRole("button", { name: "Open: Alex Example" }));
+
+    expect(fullName()).toHaveValue("Alex Example");
+    expect(getActiveDocId()).toBe(first.id);
+    expect(screen.getByText("Now editing “Alex Example”.")).toBeInTheDocument();
+    const second = loadDoc(secondId!);
+    expect(second.status === "ok" && second.doc.kind === "cv" && second.doc.data.personal.fullName).toBe(
+      "Second Person",
+    );
+
+    // Edits now go to the first document only.
+    fireEvent.change(fullName(), { target: { value: "Alex Edited" } });
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Alex Edited"));
+    const again = loadDoc(secondId!);
+    expect(again.status === "ok" && again.doc.kind === "cv" && again.doc.data.personal.fullName).toBe(
+      "Second Person",
+    );
+  });
+
+  it("saves pending edits before opening another document", async () => {
+    const other = seedCV({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Other Person" } });
+    const current = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Unsaved Edit" } });
+    const dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: /^Open: / }));
+    expect(getActiveDocId()).toBe(other.id);
+    const stored = loadDoc(current.id);
+    expect(stored.status === "ok" && stored.doc.kind === "cv" && stored.doc.data.personal.fullName).toBe(
+      "Unsaved Edit",
+    );
+  });
+
+  it("renames, duplicates and deletes documents in the documents dialog", async () => {
+    const meta = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const dialog = await openDocuments(user);
+
+    // Rename inline; an empty name is refused.
+    await user.click(within(dialog).getByRole("button", { name: "Rename: Alex Example" }));
+    const field = within(dialog).getByLabelText("Document name");
+    expect(field).toHaveFocus();
+    await user.clear(field);
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(within(dialog).getByRole("alert")).toHaveTextContent("Enter a name.");
+    await user.type(field, "Data analyst CV");
+    await user.keyboard("{Enter}");
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Renamed to “Data analyst CV”.");
+    expect(within(dialog).getByRole("button", { name: "Rename: Data analyst CV" })).toHaveFocus();
+    expect(listDocs().find((m) => m.id === meta.id)?.name).toBe("Data analyst CV");
+    expect(switcher()).toHaveTextContent("Data analyst CV");
+
+    // Duplicate keeps the open document and adds a copy.
+    await user.click(within(dialog).getByRole("button", { name: "Duplicate: Data analyst CV" }));
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Copy created: “Data analyst CV (copy)”.");
+    expect(docNames()).toEqual(["Data analyst CV", "Data analyst CV (copy)"]);
+    expect(getActiveDocId()).toBe(meta.id);
+    expect(within(dialog).getByRole("button", { name: "Open: Data analyst CV (copy)" })).toHaveFocus();
+
+    // Delete asks first; cancelling keeps the document.
+    await user.click(within(dialog).getByRole("button", { name: "Delete: Data analyst CV (copy)" }));
+    let confirm = screen.getByRole("dialog", { name: "Delete “Data analyst CV (copy)”?" });
+    await user.click(within(confirm).getByRole("button", { name: "Cancel" }));
+    expect(listDocs()).toHaveLength(2);
+
+    await user.click(within(dialog).getByRole("button", { name: "Delete: Data analyst CV (copy)" }));
+    confirm = screen.getByRole("dialog", { name: "Delete “Data analyst CV (copy)”?" });
+    await user.click(within(confirm).getByRole("button", { name: "Delete" }));
+    expect(docNames()).toEqual(["Data analyst CV"]);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("“Data analyst CV (copy)” was deleted from this browser.");
+    expect(fullName()).toHaveValue("Alex Example");
+  });
+
+  it("deletes the open document without letting a pending autosave bring it back", async () => {
+    const other = seedCV({ ...sampleCV(), personal: { ...sampleCV().personal, fullName: "Other Person" } });
+    const current = seedCV();
+    renderBuilder();
+    // An edit whose autosave is still pending when the document is deleted. The clicks are
+    // synchronous, so the 600 ms autosave timer can't fire in between.
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "About To Go" } });
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    fireEvent.click(within(screen.getByRole("group", { name: "Document actions" })).getByRole("button", { name: "Delete" }));
+    const confirm = screen.getByRole("dialog", { name: "Delete “Alex Example”?" });
+    fireEvent.click(within(confirm).getByRole("button", { name: "Delete" }));
+
+    expect(fullName()).toHaveValue("Other Person");
+    expect(screen.getByText("“Alex Example” was deleted. You’re now editing “Other Person”.")).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 800));
+    expect(localStorage.getItem(DOC_KEY(current.id))).toBeNull();
+    expect(listDocs().map((m) => m.id)).toEqual([other.id]);
+    expect(getActiveDocId()).toBe(other.id);
+  });
+
+  it("starts an empty CV after the last document is deleted", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "Delete" }));
+    await user.click(
+      within(screen.getByRole("dialog", { name: "Delete “Alex Example”?" })).getByRole("button", { name: "Delete" }),
+    );
+    expect(fullName()).toHaveValue("");
+    expect(screen.getByText("“Alex Example” was deleted from this browser.")).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 800));
+    expect(listDocs()).toEqual([]);
+    // Nothing to delete or duplicate until the new CV is saved.
+    const menu = await openMore(user);
+    expect(within(menu).getByRole("button", { name: "Delete" })).toBeDisabled();
+    expect(within(menu).getByRole("button", { name: "Duplicate" })).toBeDisabled();
+  });
+
+  it("renames and duplicates the open document from the toolbar", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    let more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "Rename" }));
+    const dialog = screen.getByRole("dialog", { name: "Rename document" });
+    const field = within(dialog).getByLabelText("Document name");
+    await user.clear(field);
+    await user.type(field, "For Example Corp");
+    await user.click(within(dialog).getByRole("button", { name: "Save" }));
+    expect(screen.queryByRole("dialog", { name: "Rename document" })).toBeNull();
+    expect(switcher()).toHaveTextContent("For Example Corp");
+    expect(docNames()).toEqual(["For Example Corp"]);
+
+    // A custom name no longer follows the content.
+    fireEvent.change(fullName(), { target: { value: "Alexandra Example" } });
+    await waitFor(() => expect(activeCV()?.personal.fullName).toBe("Alexandra Example"));
+    expect(docNames()).toEqual(["For Example Corp"]);
+
+    more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "Duplicate" }));
+    expect(switcher()).toHaveTextContent("For Example Corp (copy)");
+    expect(screen.getByText("Copy created. You’re now editing “For Example Corp (copy)”.")).toBeInTheDocument();
+    expect(docNames()).toEqual(["For Example Corp", "For Example Corp (copy)"]);
+    expect(fullName()).toHaveValue("Alexandra Example");
+  });
+
+  it("imports a JSON file as a new document and never replaces the open one", async () => {
+    const original = seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    let dialog = await openDocuments(user);
+    let input = dialog.querySelector<HTMLInputElement>('input[type="file"][accept*="json"]')!;
     await act(async () => {
-      fireEvent.change(input, { target: { files: [bad] } });
+      fireEvent.change(input, { target: { files: [new File(["{oops"], "bad.json", { type: "application/json" })] } });
     });
     expect(await screen.findByRole("alert")).toHaveTextContent("not valid JSON");
+    expect(listDocs()).toHaveLength(1);
 
-    const good = new File([serializeCV(sampleCV("graduate"))], "cv.json", { type: "application/json" });
-    await act(async () => {
-      fireEvent.change(input, { target: { files: [good] } });
+    dialog = await openDocuments(user);
+    input = dialog.querySelector<HTMLInputElement>('input[type="file"][accept*="json"]')!;
+    const file = new File([serializeDocument({ kind: "cv", data: sampleCV("graduate") })], "cv.json", {
+      type: "application/json",
     });
-    expect(await screen.findByDisplayValue("Alex Example")).toBeInTheDocument();
-    expect(screen.getByLabelText("Template")).toHaveValue("graduate");
-  });
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [file] } });
+    });
+    await waitFor(() => expect(screen.getByLabelText("Template")).toHaveValue("graduate"));
+    expect(screen.getByText("“Alex Example” was imported as a new document.")).toBeInTheDocument();
+    expect(listDocs()).toHaveLength(2);
+    expect(getActiveDocId()).not.toBe(original.id);
+    const kept = loadDoc(original.id);
+    expect(kept.status === "ok" && kept.doc.data.meta.template).toBe("ats-minimal");
 
-  it("exports the CV as a JSON download", async () => {
-    saveDraft(sampleCV());
+    // A cover letter file becomes a letter document.
+    dialog = await openDocuments(user);
+    input = dialog.querySelector<HTMLInputElement>('input[type="file"][accept*="json"]')!;
+    const letter = new File([serializeDocument({ kind: "letter", data: sampleLetter() })], "letter.json", {
+      type: "application/json",
+    });
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [letter] } });
+    });
+    expect(await screen.findByRole("document", { name: "Cover letter preview" })).toHaveTextContent(
+      "Example Analytics Ltd.",
+    );
+    expect(activeDoc()?.kind).toBe("letter");
+    expect(listDocs()).toHaveLength(3);
+  });
+});
+
+describe("builder: toolbar and dialog focus", () => {
+  it("opens the documents dialog with focus on the list, never on a create button", async () => {
+    seedCV();
     const user = userEvent.setup();
-    const createUrl = vi.fn(() => "blob:mock");
-    const revokeUrl = vi.fn();
-    Object.assign(URL, { createObjectURL: createUrl, revokeObjectURL: revokeUrl });
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
     renderBuilder();
     await screen.findByDisplayValue("Alex Example");
-    await user.click(screen.getByRole("button", { name: "Export JSON" }));
-    expect(click).toHaveBeenCalledOnce();
-    const blob = (createUrl.mock.calls[0] as unknown as [Blob])[0];
-    const json = JSON.parse(await blob.text());
+    const dialog = await openDocuments(user);
+    expect(within(dialog).getByRole("heading", { name: "Saved documents" })).toHaveFocus();
+    // An accidental Enter doesn't create anything.
+    await user.keyboard("{Enter}");
+    expect(listDocs()).toHaveLength(1);
+
+    // Cancelling the letter setup puts focus back on the button that opened it.
+    await user.click(within(dialog).getByRole("button", { name: "New cover letter" }));
+    await user.click(within(within(dialog).getByTestId("new-letter-setup")).getByRole("button", { name: "Cancel" }));
+    expect(within(dialog).queryByTestId("new-letter-setup")).toBeNull();
+    expect(within(dialog).getByRole("button", { name: "New cover letter" })).toHaveFocus();
+  });
+
+  it("starts new documents from the More menu", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    let more = await openMore(user);
+    const labels = within(more)
+      .getAllByRole("button")
+      .map((el) => el.textContent);
+    expect(labels.slice(0, 2)).toEqual(["New CV", "New cover letter…"]);
+    expect(labels).toContain("All documents…");
+    // "Save" is in the menu too (CSS shows it on phones only, where the toolbar button is hidden).
+    expect(labels).toContain("Save");
+    await user.click(within(more).getByRole("button", { name: "New cover letter…" }));
+    const dialog = screen.getByRole("dialog", { name: "Your documents" });
+    expect(within(dialog).getByTestId("new-letter-setup")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Copy your details from")).toHaveFocus();
+    await user.click(within(dialog).getByRole("button", { name: "Create cover letter" }));
+    expect(await screen.findByRole("document", { name: "Cover letter preview" })).toHaveTextContent("Alex Example");
+
+    more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "New CV" }));
+    expect(fullName()).toHaveValue("");
+    expect(screen.getByText("New CV created.")).toBeInTheDocument();
+    expect(listDocs()).toHaveLength(3);
+
+    more = await openMore(user);
+    await user.click(within(more).getByRole("button", { name: "All documents…" }));
+    expect(screen.getByRole("dialog", { name: "Your documents" })).toBeInTheDocument();
+  });
+
+  it("describes the CV and letter language selects with their hints", async () => {
+    seed({ kind: "letter", data: sampleLetter() });
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    expect(screen.getByLabelText("CV language")).toHaveAccessibleDescription(
+      "Sets the language of the CV’s headings and dates. Your own text isn’t translated.",
+    );
+    const dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: /^Open: Cover letter/ }));
+    expect(screen.getByLabelText("Letter language")).toHaveAccessibleDescription(
+      "Sets the language of the date and the “Subject” label. Your own text isn’t translated.",
+    );
+  });
+
+  it("has a single save status", async () => {
+    seedCV();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    expect(screen.getAllByTestId("save-status")).toHaveLength(1);
+    expect(screen.getAllByRole("status").filter((el) => el.textContent?.includes("Saved on this device"))).toHaveLength(1);
+  });
+});
+
+describe("builder: cover letters", () => {
+  it("creates a cover letter with details copied from a CV", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    const dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: "New cover letter" }));
+    const select = within(dialog).getByLabelText("Copy your details from");
+    expect(select).toHaveValue(getActiveDocId());
+    await user.click(within(dialog).getByRole("button", { name: "Create cover letter" }));
+
+    expect(await screen.findByRole("document", { name: "Cover letter preview" })).toHaveTextContent("Alex Example");
+    expect(screen.getByText("New cover letter created with your details from “Alex Example”.")).toBeInTheDocument();
+    expect(switcher()).toHaveTextContent("Cover letter");
+    expect(screen.getByLabelText("Letter language")).toHaveValue("en");
+    expect(screen.queryByLabelText("CV language")).toBeNull();
+
+    // Letters have Content and Design tabs only.
+    const tabs = screen.getByRole("tablist", { name: "Editor" });
+    expect(within(tabs).getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Content", "Design"]);
+
+    const stored = activeDoc();
+    expect(stored?.kind).toBe("letter");
+    expect(stored?.kind === "letter" && stored.data.sender.email).toBe("alex@example.com");
+
+    // Edits autosave into the letter; the automatic name picks up the company.
+    await user.type(screen.getByLabelText("Company or organisation"), "Example Corp");
+    await waitFor(() => expect(docNames()).toContain("Cover letter – Example Corp"), { timeout: 2000 });
+  });
+
+  it("creates an empty cover letter when no CV is chosen", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const dialog = await openDocuments(user);
+    await user.click(within(dialog).getByRole("button", { name: "New cover letter" }));
+    await user.selectOptions(within(dialog).getByLabelText("Copy your details from"), "");
+    await user.click(within(dialog).getByRole("button", { name: "Create cover letter" }));
+    expect(screen.getByText("New cover letter created.")).toBeInTheDocument();
+    const stored = activeDoc();
+    expect(stored?.kind === "letter" && stored.data.sender.fullName).toBe("");
+  });
+
+  it("prints a letter with its own instructions title", async () => {
+    seed({ kind: "letter", data: sampleLetter() });
+    const user = userEvent.setup();
+    const print = vi.spyOn(window, "print").mockImplementation(() => {});
+    renderBuilder();
+    await screen.findByRole("document", { name: "Cover letter preview" });
+    await user.click(screen.getByRole("button", { name: "Download PDF" }));
+    const dialog = screen.getByRole("dialog", { name: "Download your cover letter as PDF" });
+    await user.click(within(dialog).getByRole("button", { name: "Open print dialog" }));
+    await waitFor(() => expect(print).toHaveBeenCalledOnce());
+    expect(document.getElementById("cv-print-root")).toHaveTextContent("Example Analytics Ltd.");
+    print.mockRestore();
+  });
+});
+
+describe("builder: editor tabs and checks", () => {
+  it("switches between Content, Design and Check", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const tablist = screen.getByRole("tablist", { name: "Editor" });
+    const tab = (name: RegExp) => within(tablist).getByRole("tab", { name });
+
+    expect(tab(/^Content$/)).toHaveAttribute("aria-selected", "true");
+    await user.click(tab(/^Design$/));
+    expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
+    const contentPanel = document.getElementById(tab(/^Content$/).getAttribute("aria-controls")!)!;
+    expect(contentPanel).not.toBeVisible();
+
+    // The Check tab carries the score; the panel shows the same number.
+    const check = tab(/^Check/);
+    expect(check).toHaveAccessibleName(/Score: \d+ out of 100/);
+    await user.click(check);
+    const panel = screen.getByTestId("checks-panel");
+    expect(panel).toBeVisible();
+    const badge = screen.getByTestId("check-score-badge").textContent;
+    expect(within(panel).getByTestId("checks-score")).toHaveTextContent(badge!);
+
+    // Arrow keys move between tabs.
+    await user.keyboard("{ArrowLeft}");
+    expect(tab(/^Design$/)).toHaveAttribute("aria-selected", "true");
+    expect(tab(/^Design$/)).toHaveFocus();
+    await user.keyboard("{Home}");
+    expect(tab(/^Content$/)).toHaveAttribute("aria-selected", "true");
+    expect(contentPanel).toBeVisible();
+    expect(contentPanel).toContainElement(fullName());
+  });
+
+  it("keeps design changes in the document", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    await user.click(screen.getByRole("tab", { name: "Design" }));
+    await user.click(screen.getByRole("radio", { name: "Large 10.5 pt" }));
+    await waitFor(() => expect(activeCV()?.meta.style.fontSize).toBe("large"));
+  });
+
+  it("jumps from a finding to the entry in the form", async () => {
+    const cv = sampleCV();
+    cv.experience[1] = { ...cv.experience[1], startDate: "", endDate: "", current: false };
+    seedCV(cv);
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    await user.click(screen.getByRole("tab", { name: /^Check/ }));
+    const finding = document.querySelector<HTMLButtonElement>(`[data-check-id^="noDates:"]`)!;
+    expect(finding).not.toBeNull();
+    await user.click(finding);
+
+    expect(screen.getByRole("tab", { name: "Content" })).toHaveAttribute("aria-selected", "true");
+    const entry = document.querySelector(`#experience [data-item-id="${cv.experience[1].id}"]`)!;
+    expect(entry).not.toBeNull();
+    await waitFor(() => expect(entry.contains(document.activeElement)).toBe(true));
+    // The start date is what's missing, so that's the field that gets focus.
+    expect(document.activeElement).toHaveAttribute("data-field", "startDate");
+    expect(document.activeElement).toHaveAccessibleName("Start date: Month");
+  });
+
+  it("jumps from a personal details finding to the field it is about", async () => {
+    const cv = sampleCV();
+    cv.personal.email = "";
+    seedCV(cv);
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    await user.click(screen.getByRole("tab", { name: /^Check/ }));
+    const finding = document.querySelector<HTMLButtonElement>(`[data-check-id="missingEmail:personal"]`)!;
+    expect(finding).not.toBeNull();
+    await user.click(finding);
+    await waitFor(() => expect(document.activeElement).toHaveAttribute("data-field", "email"));
+    expect(document.activeElement).toHaveAccessibleName("Email");
+    expect(document.querySelector("#personal")!.contains(document.activeElement)).toBe(true);
+  });
+
+  it("opens the Design tab for design findings and focuses the colour code of a custom accent", async () => {
+    const cv = sampleCV();
+    cv.meta.style = { ...cv.meta.style, accent: "#dddddd" };
+    seedCV(cv);
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    await user.click(screen.getByRole("tab", { name: /^Check/ }));
+    const finding = document.querySelector<HTMLButtonElement>(`[data-check-id^="lowContrast"]`)!;
+    expect(finding).not.toBeNull();
+    await user.click(finding);
+    expect(screen.getByRole("tab", { name: "Design" })).toHaveAttribute("aria-selected", "true");
+    const code = screen.getByLabelText("Colour code");
+    expect(code).toHaveFocus();
+    // Marked so it keeps a visible focus ring after a mouse click, until focus moves on.
+    expect(code).toHaveAttribute("data-jumped");
+    await user.tab();
+    expect(code).not.toHaveAttribute("data-jumped");
+  });
+});
+
+describe("builder: page count", () => {
+  /** Lets jsdom "lay out" the preview sheet at `height` px while `rendered` is true. */
+  function fakeSheetLayout(state: { height: number; rendered: boolean }) {
+    const isSheet = (el: Element) => el.classList.contains("cv-sheet") && !el.closest("#cv-print-root");
+    const height = vi.spyOn(Element.prototype, "scrollHeight", "get").mockImplementation(function (this: Element) {
+      return isSheet(this) && state.rendered ? state.height : 0;
+    });
+    const rects = vi.spyOn(Element.prototype, "getClientRects").mockImplementation(function (this: Element) {
+      return (isSheet(this) && state.rendered ? [new DOMRect(0, 0, 794, state.height)] : []) as unknown as DOMRectList;
+    });
+    return () => {
+      height.mockRestore();
+      rects.mockRestore();
+    };
+  }
+
+  it("jumps from the page count finding to the text size choice in the Design tab", async () => {
+    // About four A4 pages of content.
+    const restore = fakeSheetLayout({ height: 4000, rendered: true });
+    try {
+      seedCV();
+      const user = userEvent.setup();
+      renderBuilder();
+      await screen.findByDisplayValue("Alex Example");
+      await user.click(screen.getByRole("tab", { name: /^Check/ }));
+      const finding = document.querySelector<HTMLButtonElement>(`[data-check-id^="tooManyPages"]`)!;
+      expect(finding).not.toBeNull();
+      expect(finding).toHaveTextContent("4 pages");
+      await user.click(finding);
+      expect(screen.getByRole("tab", { name: "Design" })).toHaveAttribute("aria-selected", "true");
+      const size = within(screen.getByRole("group", { name: "Text size" })).getByRole("radio", { checked: true });
+      expect(size).toHaveFocus();
+      expect(size).toHaveAttribute("data-field", "fontSize");
+    } finally {
+      restore();
+    }
+  });
+});
+
+describe("builder: downloads", () => {
+  async function openFormats(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole("button", { name: "All formats" }));
+    return screen.getByRole("group", { name: "Download formats" });
+  }
+
+  it("names the formats button with the words it shows, so speech users can say what they see", async () => {
+    seedCV();
+    const { unmount } = renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    // jsdom applies no breakpoints, so the label shown from sm up is in the text here.
+    const trigger = screen.getByRole("button", { name: "All formats" });
+    expect(trigger).toHaveTextContent("All formats");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    unmount();
+
+    renderBuilder("id");
+    await screen.findByDisplayValue("Alex Example");
+    const idTrigger = screen.getByRole("button", { name: "Semua format" });
+    expect(idTrigger).toHaveTextContent("Semua format");
+  });
+
+  it("downloads Word, plain text and JSON files", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+
+    let menu = await openFormats(user);
+    for (const name of ["PDF", "Word (.docx)", "Plain text (.txt)", "JSON backup"]) {
+      expect(within(menu).getByRole("button", { name })).toHaveAccessibleDescription();
+    }
+    await user.click(within(menu).getByRole("button", { name: "Word (.docx)" }));
+    await waitFor(() => expect(downloadBlob).toHaveBeenCalledOnce());
+    expect(vi.mocked(exportDocx).mock.calls[0][0]).toMatchObject({ kind: "cv", data: { personal: { fullName: "Alex Example" } } });
+    expect(vi.mocked(downloadBlob).mock.calls[0][1]).toBe("Alex_Example_CV.docx");
+    expect(await screen.findByText("Word file downloaded.")).toBeInTheDocument();
+
+    menu = await openFormats(user);
+    await user.click(within(menu).getByRole("button", { name: "Plain text (.txt)" }));
+    expect(exportText).toHaveBeenCalledOnce();
+    const [textFile, textName] = vi.mocked(downloadBlob).mock.calls[1];
+    expect(textName).toBe("Alex_Example_CV.txt");
+    expect(await textFile.text()).toBe("ALEX EXAMPLE");
+
+    menu = await openFormats(user);
+    await user.click(within(menu).getByRole("button", { name: "JSON backup" }));
+    const [jsonFile, jsonName] = vi.mocked(downloadBlob).mock.calls[2];
+    expect(jsonName).toBe("Alex_Example_CV.json");
+    const json = JSON.parse(await jsonFile.text());
+    expect(json.kind).toBe("cv");
     expect(json.data.personal.fullName).toBe("Alex Example");
-    click.mockRestore();
+    expect(screen.getByText("JSON file downloaded.")).toBeInTheDocument();
+  });
+
+  it("writes pending edits before exporting", async () => {
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    fireEvent.change(await screen.findByDisplayValue("Alex Example"), { target: { value: "Fresh Name" } });
+    const menu = await openFormats(user);
+    await user.click(within(menu).getByRole("button", { name: "JSON backup" }));
+    expect(activeCV()?.personal.fullName).toBe("Fresh Name");
+    expect(vi.mocked(downloadBlob).mock.calls[0][1]).toBe("Fresh_Name_CV.json");
+  });
+
+  it("reports a failed Word export", async () => {
+    vi.mocked(exportDocx).mockRejectedValueOnce(new Error("boom"));
+    seedCV();
+    const user = userEvent.setup();
+    renderBuilder();
+    await screen.findByDisplayValue("Alex Example");
+    const menu = await openFormats(user);
+    await user.click(within(menu).getByRole("button", { name: "Word (.docx)" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("The Word file couldn’t be created.");
+    expect(downloadBlob).not.toHaveBeenCalled();
+  });
+
+  it("refuses Word and text exports of an empty document", async () => {
+    const user = userEvent.setup();
+    renderBuilder();
+    await findFullName();
+    const menu = await openFormats(user);
+    await user.click(within(menu).getByRole("button", { name: "Word (.docx)" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/CV is empty/);
+    expect(exportDocx).not.toHaveBeenCalled();
   });
 
   it("downloads the PDF through the print dialog after showing instructions", async () => {
-    saveDraft(sampleCV());
+    seedCV();
     const user = userEvent.setup();
     const print = vi.spyOn(window, "print").mockImplementation(() => {});
     renderBuilder();
@@ -157,12 +1116,19 @@ describe("CV builder integration", () => {
     await user.click(screen.getByRole("button", { name: "Download PDF" }));
     const dialog = screen.getByRole("dialog", { name: "Download your CV as PDF" });
     expect(dialog).toHaveTextContent("Save as PDF");
+    await user.click(within(dialog).getByLabelText("Don’t show these instructions again"));
     await user.click(within(dialog).getByRole("button", { name: "Open print dialog" }));
     await waitFor(() => expect(print).toHaveBeenCalledOnce());
     // The print-only copy contains the CV and no application controls.
     const printRoot = document.getElementById("cv-print-root")!;
     expect(printRoot).toHaveTextContent("Alex Example");
     expect(printRoot.querySelector("button, input, select, textarea")).toBeNull();
+    expect(localStorage.getItem(PRINT_HINT_KEY)).toBe("1");
+
+    // The PDF item in the formats menu prints straight away once the hint is hidden.
+    const menu = await openFormats(user);
+    await user.click(within(menu).getByRole("button", { name: "PDF" }));
+    expect(print).toHaveBeenCalledTimes(2);
     print.mockRestore();
   });
 
@@ -170,41 +1136,88 @@ describe("CV builder integration", () => {
     const user = userEvent.setup();
     const print = vi.spyOn(window, "print").mockImplementation(() => {});
     renderBuilder();
-    await screen.findByLabelText(/Full name/);
+    await findFullName();
     await user.click(screen.getByRole("button", { name: "Download PDF" }));
     expect(screen.getByRole("alert")).toHaveTextContent(/CV is empty/);
     expect(print).not.toHaveBeenCalled();
     print.mockRestore();
   });
+});
 
+describe("builder: language and accessibility", () => {
   it("works without any AI provider and shows no AI controls", async () => {
-    saveDraft(sampleCV());
+    seedCV();
     renderBuilder();
     await screen.findByDisplayValue("Alex Example");
     expect(screen.queryByRole("button", { name: /AI/ })).toBeNull();
   });
 
   it("renders the interface in Indonesian while keeping CV content as written", async () => {
-    saveDraft(sampleCV());
+    seedCV();
     renderBuilder("id");
-    expect(await screen.findByLabelText(/Nama lengkap/)).toHaveValue("Alex Example");
+    expect(await findFullName()).toHaveValue("Alex Example");
     expect(screen.getByRole("button", { name: "Unduh PDF" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Isi" })).toBeInTheDocument();
     // The CV language is still English, so the CV headings are English.
     expect(within(preview()).getByRole("heading", { name: "Work Experience" })).toBeInTheDocument();
   });
 
   it("labels every form control", async () => {
-    saveDraft(sampleCV());
+    seedCV();
+    const user = userEvent.setup();
     renderBuilder();
     await screen.findByDisplayValue("Alex Example");
-    const controls = document.querySelectorAll<HTMLElement>(
-      "main input:not([type=hidden]):not([aria-hidden=true]), input:not([aria-hidden=true]), select, textarea",
+    const check = () => {
+      const controls = document.querySelectorAll<HTMLElement>("input, select, textarea");
+      for (const el of Array.from(controls)) {
+        if (el.getAttribute("aria-hidden") === "true" || el.closest("[hidden]")) continue;
+        const labelled =
+          el.getAttribute("aria-label") ||
+          el.getAttribute("aria-labelledby") ||
+          (el.id && document.querySelector(`label[for="${el.id}"]`)) ||
+          el.closest("label");
+        expect(labelled, el.outerHTML).toBeTruthy();
+      }
+    };
+    check();
+    await user.click(screen.getByRole("tab", { name: "Design" }));
+    check();
+    await openDocuments(user);
+    check();
+  });
+});
+
+describe("builder helpers", () => {
+  it("applies CV actions to CVs and letter actions to letters only", () => {
+    const cv: AnyDoc = { kind: "cv", data: createEmptyCV() };
+    const letter: AnyDoc = { kind: "letter", data: createEmptyLetter("en") };
+    const named = docReducer(cv, { type: "cv", action: { type: "setPersonal", patch: { fullName: "Ana" } } });
+    expect(named.kind === "cv" && named.data.personal.fullName).toBe("Ana");
+    expect(docReducer(letter, { type: "cv", action: { type: "setSummary", value: "x" } })).toBe(letter);
+    expect(docReducer(cv, { type: "letter", action: { type: "setField", field: "body", value: "x" } })).toBe(cv);
+    expect(docReducer(cv, { type: "load", doc: letter })).toBe(letter);
+  });
+
+  it("lets automatic names follow the content until the person renames", () => {
+    const empty: AnyDoc = { kind: "cv", data: createEmptyCV() };
+    const named: AnyDoc = { kind: "cv", data: { ...createEmptyCV(), personal: { ...createEmptyCV().personal, fullName: "Ana" } } };
+    expect(followingName("Untitled CV", empty, named, "en")).toBe("Ana");
+    expect(followingName("CV tanpa judul", empty, named, "en")).toBe("Ana");
+    expect(followingName("Ana", named, empty, "id")).toBe("CV tanpa judul");
+    expect(followingName("My own name", empty, named, "en")).toBeNull();
+    expect(followingName("Ana", named, named, "en")).toBeNull();
+
+    const letter = createEmptyLetter("en");
+    const withCompany = { ...letter, recipient: { ...letter.recipient, company: "Acme" } };
+    expect(followingName("Cover letter", { kind: "letter", data: letter }, { kind: "letter", data: withCompany }, "en")).toBe(
+      "Cover letter – Acme",
     );
-    for (const el of Array.from(controls)) {
-      if (el.getAttribute("aria-hidden") === "true") continue;
-      const labelled =
-        el.getAttribute("aria-label") || (el.id && document.querySelector(`label[for="${el.id}"]`)) || el.closest("label");
-      expect(labelled, el.outerHTML).toBeTruthy();
-    }
+  });
+
+  it("names copies within the name limit", () => {
+    expect(copyName("Jane Doe", "{name} (copy)")).toBe("Jane Doe (copy)");
+    const long = copyName("x".repeat(200), "{name} (salinan)");
+    expect(long.length).toBeLessThanOrEqual(120);
+    expect(long.endsWith("… (salinan)")).toBe(true);
   });
 });

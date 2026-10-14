@@ -1,4 +1,10 @@
 import type { Dictionary } from "./en";
+import checks from "./features/checks.id";
+import design from "./features/design.id";
+import docs from "./features/docs.id";
+import exporting from "./features/exporting.id";
+import letter from "./features/letter.id";
+import sections from "./features/sections.id";
 
 /** Indonesian interface strings. */
 const id: Dictionary = {
@@ -15,22 +21,26 @@ const id: Dictionary = {
   landing: {
     title: "Tulis CV di browser, lalu unduh sebagai PDF",
     subtitle:
-      "Saat Anda mengisi formulir, CV langsung tersusun di pratinjau berukuran A4. Setelah hasilnya sesuai, simpan sebagai PDF lewat jendela cetak browser.",
+      "Saat Anda mengisi formulir, CV langsung tersusun di pratinjau berukuran A4. Tab Periksa menunjukkan data yang belum diisi dan masalah yang sering muncul. Setelah hasilnya sesuai, unduh sebagai PDF, file Word, atau teks biasa.",
     ctaPrimary: "Buat CV gratis",
     ctaSecondary: "Lihat template",
-    ctaContinue: "Lanjutkan draf yang tersimpan",
+    ctaContinue: "Lanjutkan dokumen yang tersimpan",
     facts: [
-      { label: "Biaya", value: "Pembuat CV dan unduhan PDF-nya gratis. Tidak ada iklan atau paket berbayar." },
+      { label: "Biaya", value: "Pembuat CV dan semua format unduhannya gratis. Tidak ada iklan atau paket berbayar." },
       { label: "Akun", value: "Tidak perlu membuat akun." },
       {
-        label: "Tempat draf disimpan",
-        value: "Di penyimpanan lokal browser ini, pada perangkat Anda. CV Anda tidak diunggah ke server.",
+        label: "Dokumen Anda",
+        value:
+          "Disimpan di penyimpanan lokal browser ini, pada perangkat Anda. Anda bisa menyimpan beberapa CV dan surat lamaran, dan tidak ada yang diunggah ke server.",
       },
-      { label: "PDF", value: "Halaman A4 dengan teks yang bisa dipilih, tanpa watermark." },
+      {
+        label: "Unduhan",
+        value: "PDF A4 dengan teks yang bisa dipilih, tanpa watermark. Anda juga bisa mengunduh file Word (.docx) atau teks biasa.",
+      },
     ],
     templatesTitle: "Template",
     templatesBody:
-      "Template bisa diganti kapan saja di Pembuat CV, dan data yang sudah Anda isi tetap terbawa.",
+      "Template bisa diganti kapan saja di Pembuat CV, dan data yang sudah Anda isi tetap terbawa. Di tab Desain, Anda juga bisa mengubah warna aksen, jenis huruf, ukuran teks, jarak, dan margin. Surat lamaran memakai template yang sama, jadi tampilannya bisa serasi dengan CV Anda.",
     privacyTitle: "Privasi",
     privacyBody:
       "Tidak ada akun dan tidak ada analitik. Pemberitahuan privasi menjelaskan apa saja yang disimpan di browser Anda dan cara menghapusnya.",
@@ -38,16 +48,20 @@ const id: Dictionary = {
     faqTitle: "Pertanyaan umum",
     faq: [
       {
-        q: "Apakah draf bisa hilang?",
-        a: "Bisa, jika Anda menghapus data browser atau menulisnya di mode penyamaran (incognito). Draf juga tidak akan ada di perangkat lain. Simpan salinan lewat Lainnya → Ekspor JSON, lalu muat lagi dengan Impor JSON.",
+        q: "Apakah saya juga bisa menulis surat lamaran di sini?",
+        a: "Bisa. Buka “Dokumen Anda”, lalu pilih “Surat lamaran baru”. Nama dan kontak Anda bisa disalin dari salah satu CV, dan surat itu akan memakai template serta desain CV tersebut, jadi keduanya serasi. Surat lamaran bisa diunduh dalam format yang sama dengan CV.",
+      },
+      {
+        q: "Apakah dokumen saya bisa hilang?",
+        a: "Bisa, jika Anda menghapus data browser atau menulisnya di mode penyamaran (incognito). Dokumen Anda juga tidak akan ada di perangkat lain. Untuk menyimpan salinan, klik “Semua format” di samping “Unduh PDF” (di ponsel, tanda panahnya), lalu pilih “Cadangan JSON”. Untuk memuatnya lagi, gunakan “Impor file” di “Dokumen Anda”.",
       },
       {
         q: "Apakah CV bisa dibuat dalam bahasa Indonesia?",
-        a: "Bisa. Pilih Indonesia di “Bahasa CV”, dan judul bagian serta nama bulan akan berganti ke bahasa Indonesia. Teks yang Anda tulis sendiri tidak diterjemahkan, jadi tulis dalam bahasa yang Anda inginkan.",
+        a: "Bisa. Pilih Indonesia di “Bahasa CV”, dan judul bagian serta nama bulan akan berganti ke bahasa Indonesia. Teks yang Anda tulis sendiri tidak diterjemahkan, jadi tulis dalam bahasa yang Anda inginkan. Surat lamaran punya pengaturan yang sama, namanya “Bahasa surat”.",
       },
       {
         q: "Apakah CV saya bisa dibaca oleh sistem pelacak pelamar (ATS)?",
-        a: "Gunakan template ATS Minimal. Template ini memakai satu kolom dan judul bagian standar, dan PDF-nya berisi teks asli, bukan gambar. Sebagian besar sistem bisa membacanya dengan baik, meski cara kerja tiap ATS sedikit berbeda.",
+        a: "Gunakan template ATS Minimal. Template ini memakai satu kolom dan judul bagian standar, dan PDF-nya berisi teks asli, bukan gambar. Sebagian besar sistem bisa membacanya dengan baik, meski cara kerja tiap ATS sedikit berbeda. Jika formulir lamaran meminta Anda menempelkan isi CV, unduhan teks biasa berisi konten yang sama tanpa format.",
       },
     ],
     aiFaq: {
@@ -77,63 +91,23 @@ const id: Dictionary = {
   },
   builder: {
     title: "Pembuat CV",
-    loading: "Memuat draf…",
+    loading: "Memuat dokumen Anda…",
     template: "Template",
     cvLanguage: "Bahasa CV",
     cvLanguageHint: "Mengatur bahasa judul bagian dan tanggal di CV. Teks yang Anda tulis tidak diterjemahkan.",
     languageNames: { en: "Inggris", id: "Indonesia" },
     tabs: { edit: "Ubah", preview: "Pratinjau" },
-    actions: "Tindakan draf",
-    saveNow: "Simpan draf",
-    restore: "Pulihkan draf sebelumnya",
-    newCv: "Mulai CV baru",
-    deleteDraft: "Hapus draf",
-    importJson: "Impor JSON",
-    exportJson: "Ekspor JSON",
+    saveNow: "Simpan",
     downloadPdf: "Unduh PDF",
     more: "Lainnya",
     dismiss: "Tutup",
     status: {
       saved: "Tersimpan di perangkat ini",
       unsaved: "Ada perubahan yang belum disimpan…",
-      unavailable:
-        "Penyimpanan browser tidak tersedia, jadi perubahan tidak akan tersimpan. Gunakan Ekspor JSON untuk menyimpan salinan.",
-      quota: "Penyimpanan browser penuh. Hapus foto atau gunakan Ekspor JSON untuk menyimpan salinan.",
     },
     messages: {
-      saved: "Draf tersimpan di perangkat ini.",
-      restored: "Draf sebelumnya dipulihkan. Draf yang tadi terbuka sekarang menjadi draf sebelumnya.",
-      noBackup: "Tidak ada draf sebelumnya yang bisa dipulihkan.",
-      newCv: "CV baru dimulai. Draf sebelumnya bisa dipulihkan lewat “Pulihkan draf sebelumnya”.",
-      deleted: "Draf dihapus dari browser ini.",
-      imported: "CV berhasil diimpor.",
-      importedMigrated: "CV diimpor dan dikonversi dari format file lama.",
-      exported: "File JSON sudah diunduh.",
-      corrupted: "Draf yang tersimpan tidak dapat dibaca, jadi draf itu disisihkan. Editor dimulai dengan CV kosong.",
-      recovered: "Draf Anda dipulihkan dari browser ini.",
-      importErrors: {
-        invalid_json: "File ini bukan JSON yang valid.",
-        not_object: "File ini tidak berisi data CV.",
-        unsupported_version: "File ini berasal dari versi aplikasi yang lebih baru atau tidak dikenal, jadi tidak bisa diimpor.",
-        too_large: "File terlalu besar. Batasnya 5 MB.",
-        read_failed: "File tidak dapat dibaca.",
-      },
-    },
-    confirm: {
-      cancel: "Batal",
-      newTitle: "Mulai CV baru?",
-      newBody: "Draf saat ini akan menjadi draf sebelumnya. Draf sebelumnya yang lebih lama akan tergantikan.",
-      newConfirm: "Mulai CV baru",
-      deleteTitle: "Hapus draf ini?",
-      deleteBody:
-        "Draf saat ini dan draf sebelumnya akan dihapus permanen dari browser ini. Jika mungkin masih diperlukan, ekspor salinan JSON terlebih dahulu.",
-      deleteConfirm: "Hapus draf",
-      restoreTitle: "Pulihkan draf sebelumnya?",
-      restoreBody: "Draf saat ini dan draf sebelumnya akan bertukar tempat, jadi tidak ada yang hilang.",
-      restoreConfirm: "Pulihkan",
-      importTitle: "Ganti draf yang sedang dibuka?",
-      importBody: "CV yang diimpor akan menggantikan isi editor. Draf saat ini akan disimpan sebagai draf sebelumnya.",
-      importConfirm: "Impor",
+      saved: "Tersimpan di perangkat ini.",
+      recovered: "“{name}” dibuka dari browser ini.",
     },
     print: {
       title: "Unduh CV Anda sebagai PDF",
@@ -148,7 +122,6 @@ const id: Dictionary = {
       dontShow: "Jangan tampilkan petunjuk ini lagi",
       continue: "Buka jendela cetak",
       cancel: "Batal",
-      empty: "CV Anda masih kosong. Isi beberapa data sebelum mengunduh.",
       unavailable: "Fitur cetak tidak tersedia di browser ini. Coba Chrome, Edge, Firefox, atau Safari.",
     },
     preview: {
@@ -159,7 +132,6 @@ const id: Dictionary = {
       pageMany: "{count} halaman",
       atsPhotoNote: "Template ATS Minimal tidak menampilkan foto.",
     },
-    restorePrompt: "Draf dipulihkan",
   },
   form: {
     sectionNav: "Bagian CV",
@@ -295,12 +267,13 @@ const id: Dictionary = {
   },
   help: {
     title: "Cara menggunakan Pembuat CV",
-    intro: "Petunjuk memakai Pembuat CV, termasuk pengaturan cetak untuk tiap browser.",
+    intro: "Petunjuk menulis CV dan surat lamaran di Pembuat CV, termasuk pengaturan cetak untuk tiap browser.",
     sections: [
       {
         title: "Mengisi CV",
         body: [
           "Buka Pembuat CV, lalu isi bagian yang sesuai dengan Anda. Semua kolom boleh dikosongkan, dan bagian yang kosong tidak akan muncul di CV.",
+          "Selain pengalaman kerja, pendidikan, proyek, keahlian, dan sertifikasi, ada juga bagian untuk pengalaman organisasi, penghargaan, bahasa, referensi, dan minat. Untuk hal lain, misalnya kursus atau publikasi, gunakan “Tambah bagian sendiri”, lalu beri judul yang Anda inginkan.",
           "Gunakan tombol “Tambah …” untuk menambah entri dan tombol panah untuk mengubah urutannya. Biasanya entri terbaru diletakkan paling atas.",
           "Di kolom deskripsi, tulis satu poin per baris. Baris yang diawali “-” akan menjadi butir.",
         ],
@@ -313,11 +286,38 @@ const id: Dictionary = {
         ],
       },
       {
-        title: "Menyimpan dan memulihkan draf",
+        title: "Dokumen Anda",
         body: [
-          "Draf tersimpan otomatis di browser ini sesaat setelah setiap perubahan, dan juga saat Anda mengklik “Simpan draf”.",
-          "Saat Anda memulai CV baru atau mengimpor file, draf yang sedang dibuka disimpan sebagai “draf sebelumnya” dan bisa dipulihkan.",
-          "Penyimpanan browser bukan cadangan. Draf tidak akan ada jika Anda menghapus data browser, memakai mode penyamaran (incognito), atau membuka situs ini di perangkat lain. Gunakan “Ekspor JSON” untuk menyimpan salinan dan “Impor JSON” untuk memuatnya lagi.",
+          "Anda bisa menyimpan beberapa CV dan surat lamaran di browser ini. Di awal toolbar, di bawah tulisan “Dokumen”, ada nama dokumen yang sedang dibuka. Klik nama itu untuk membuka “Dokumen Anda”. Di sana Anda bisa membuka, mengganti nama, membuat salinan, atau menghapus dokumen, membuat CV atau surat lamaran baru, dan mengimpor file. Menu “Lainnya” juga bisa dipakai untuk membuat CV atau surat lamaran baru, dan berisi Ganti nama, Buat salinan, dan Hapus untuk dokumen yang sedang dibuka.",
+          "Setiap dokumen tersimpan otomatis di browser ini sesaat setelah setiap perubahan, dan juga saat Anda mengklik “Simpan” (di ponsel, tombol ini ada di menu “Lainnya”). Jika dokumen yang sama terbuka di dua tab, perubahan yang disimpan di satu tab akan muncul di tab lainnya. Jika keduanya punya perubahan yang belum disimpan, Anda akan ditanya versi mana yang ingin dipakai.",
+          "Membuat salinan CV adalah cara cepat untuk menyiapkan versi lain bagi jenis pekerjaan yang berbeda. “Impor file” menambahkan cadangan JSON sebagai dokumen baru, jadi dokumen yang sudah ada tidak tertimpa. Dokumen yang dihapus akan hilang permanen dari browser ini.",
+          "Jika Anda sudah memakai Pembuat CV sebelum fitur beberapa dokumen tersedia, draf dan draf sebelumnya Anda kini ada di “Dokumen Anda”.",
+          "Penyimpanan browser bukan cadangan. Dokumen Anda tidak akan ada jika Anda menghapus data browser, memakai mode penyamaran (incognito), atau membuka situs ini di perangkat lain. Unduh cadangan JSON untuk dokumen yang ingin Anda simpan.",
+        ],
+      },
+      {
+        title: "Mengubah desain",
+        body: [
+          "Tab Desain, di samping tab Isi, mengubah tampilan dokumen yang sedang dibuka: warna aksen, jenis huruf, ukuran teks, jarak, dan margin halaman. Pengaturannya hanya berlaku untuk dokumen itu, dan perubahannya langsung terlihat di pratinjau. “Kembalikan tampilan awal” mengembalikan pengaturan bawaan template.",
+          "Jika Anda memilih warna aksen sendiri, akan muncul peringatan bila warnanya terlalu terang untuk dibaca di atas kertas putih.",
+          "Untuk CV, tab Desain juga menampilkan daftar bagian CV. Pindahkan bagian ke atas atau ke bawah untuk mengubah letaknya di CV, atau matikan “Tampilkan” agar bagian itu tidak muncul di CV tanpa menghapus isinya. “Kembalikan urutan template” mengembalikan urutan bawaan template. Nama dan kontak Anda selalu berada paling atas.",
+        ],
+      },
+      {
+        title: "Memeriksa CV",
+        body: [
+          "Tab Periksa memberi CV Anda skor dari 100 dan menampilkan daftar kesalahan, peringatan, dan saran. Yang diperiksa antara lain kontak yang belum diisi, entri tanpa tanggal, tanggal selesai yang lebih awal dari tanggal mulai, ringkasan yang terlalu pendek atau terlalu panjang, dan CV yang lebih dari dua halaman.",
+          "Klik salah satu temuan untuk langsung menuju kolom atau pengaturan yang dimaksud.",
+          "Pemeriksaan ini berjalan di browser Anda dan tidak memakai AI. Pemeriksaan bisa menemukan data yang belum diisi dan masalah yang sering muncul, tetapi tidak bisa menilai kualitas pengalaman Anda. Jika ada saran untuk menambahkan angka atau bagian lain, tambahkan hanya yang benar.",
+        ],
+      },
+      {
+        title: "Surat lamaran",
+        body: [
+          "Untuk membuat surat, buka “Dokumen Anda”, lalu pilih “Surat lamaran baru”. Nama, jabatan, dan kontak Anda bisa disalin dari salah satu CV, dan surat itu akan memakai template serta desain CV tersebut. Nanti, “Salin data dari CV” di formulir surat bisa menyalin data itu lagi.",
+          "Setelah itu, isi penerima, tanggal dan perihal, salam pembuka, teks utama, dan salam penutup. Pisahkan setiap paragraf dengan satu baris kosong.",
+          "“Bahasa surat” mengatur bahasa tanggal dan label “Perihal”. Teks yang Anda tulis tidak diterjemahkan. Surat berbahasa Indonesia mencantumkan kota Anda di depan tanggal, misalnya “Bandung, 13 Oktober 2026”.",
+          "Surat lamaran punya tab Desain sendiri dan bisa diunduh dalam format yang sama dengan CV. Tab Periksa hanya tersedia untuk CV.",
         ],
       },
       {
@@ -326,13 +326,22 @@ const id: Dictionary = {
           "PDF dibuat oleh fungsi cetak di browser Anda sendiri. Teks di dalamnya tetap bisa dipilih, dan tidak ada watermark yang ditambahkan.",
         ],
         steps: [
-          "Klik “Unduh PDF”. Jendela cetak browser akan terbuka dan hanya berisi CV dalam halaman A4.",
+          "Klik “Unduh PDF”. Jendela cetak browser akan terbuka dan hanya berisi CV atau surat dalam halaman A4.",
           "Pilih “Simpan sebagai PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows), atau “PDF → Simpan sebagai PDF” (macOS / Safari).",
           "Atur ukuran kertas ke A4 dan margin ke Default.",
           "Matikan “Header dan footer”, lalu aktifkan “Grafis latar belakang”.",
         ],
         after: [
           "Di iPhone atau iPad, buka pratinjau cetak, ketuk tombol Bagikan, lalu pilih “Simpan ke File”. Di Android, pilih “Simpan sebagai PDF” sebagai printer.",
+        ],
+      },
+      {
+        title: "Word, teks biasa, dan cadangan JSON",
+        body: [
+          "Klik “Semua format” di samping “Unduh PDF” (di ponsel, tanda panahnya) untuk memilih format lain. Sama seperti PDF, semua file ini dibuat di browser Anda.",
+          "Word (.docx) untuk diedit di Word, Google Docs, atau LibreOffice. Word memakai font yang terpasang di komputer yang membuka file, jadi jika font pilihan Anda tidak terpasang, Word akan menampilkan font yang mirip.",
+          "Teks biasa (.txt) berisi konten yang sama tanpa format, untuk ditempel ke formulir lamaran online.",
+          "Cadangan JSON adalah salinan data dokumen. Simpan di tempat yang aman, lalu gunakan “Impor file” di “Dokumen Anda” untuk memuatnya lagi, di browser ini atau di browser lain. File yang dibuat lewat “Ekspor JSON” di versi Pembuat CV sebelumnya juga bisa diimpor.",
         ],
       },
       {
@@ -352,22 +361,24 @@ const id: Dictionary = {
       {
         title: "Ringkasan",
         body: [
-          "Free AI CV Maker tidak memiliki akun pengguna, basis data, iklan, maupun analitik. CV yang Anda tulis diproses di browser dan hanya disimpan di perangkat Anda.",
+          "Free AI CV Maker tidak memiliki akun pengguna, basis data, iklan, maupun analitik. CV dan surat lamaran yang Anda tulis diproses di browser dan hanya disimpan di perangkat Anda.",
         ],
       },
       {
         title: "Apa yang disimpan dan di mana",
         body: [
-          "Draf CV, draf sebelumnya (disimpan saat Anda memulai CV baru atau mengimpor file), dan pilihan bahasa antarmuka disimpan di penyimpanan lokal browser, dengan kunci yang diawali “free-cv-maker:”.",
-          "Penyimpanan lokal bukan layanan cloud yang terenkripsi. Siapa pun yang bisa membuka profil browser ini dapat membacanya, dan datanya bisa terhapus saat Anda menghapus data penjelajahan, memakai mode penyamaran (incognito), atau saat browser perlu mengosongkan ruang. Ekspor salinan JSON jika Anda ingin punya cadangan.",
+          "CV dan surat lamaran Anda disimpan di penyimpanan lokal browser, dengan kunci yang diawali “free-cv-maker:”. Yang disimpan adalah daftar dokumen beserta nama dan tanggalnya, satu kunci untuk setiap dokumen, ID dokumen yang terakhir Anda buka, dan dua preferensi: bahasa antarmuka dan apakah petunjuk cetak perlu ditampilkan.",
+          "Jika dokumen yang tersimpan tidak dapat dibaca, isinya disisihkan di kunci “free-cv-maker:” tersendiri, bukan dihapus.",
+          "Draf dari versi lama aplikasi ini, yang hanya menyimpan satu draf (kunci “free-cv-maker:draft” dan “free-cv-maker:backup”), dipindahkan ke daftar dokumen saat Anda membuka Pembuat CV lagi. Setelah itu, kunci lama tersebut dihapus.",
+          "Penyimpanan lokal bukan layanan cloud yang terenkripsi. Siapa pun yang bisa membuka profil browser ini dapat membacanya, dan datanya bisa terhapus saat Anda menghapus data penjelajahan, memakai mode penyamaran (incognito), atau saat browser perlu mengosongkan ruang. Unduh cadangan JSON jika Anda ingin punya salinan.",
         ],
       },
       {
         title: "Apa yang dikirim lewat internet",
         body: [
           "Saat situs ini dimuat, file aplikasinya diambil dari penyedia hosting (misalnya Cloudflare). Seperti penyedia hosting pada umumnya, penyedia ini dapat menyimpan log teknis standar seperti alamat IP dan jenis browser.",
-          "Isi CV Anda tidak dikirim ke mana pun. File PDF dibuat oleh fungsi cetak di browser Anda sendiri.",
-          "File JSON yang diekspor langsung diunduh ke perangkat Anda.",
+          "Isi CV dan surat lamaran Anda tidak dikirim ke mana pun. Pemeriksaan CV juga berjalan di browser Anda. File PDF dibuat oleh fungsi cetak di browser Anda sendiri.",
+          "File Word, teks biasa, dan JSON dibuat di browser Anda dan langsung diunduh ke perangkat Anda.",
         ],
       },
       {
@@ -379,17 +390,26 @@ const id: Dictionary = {
       {
         title: "Menghapus data Anda",
         body: [
-          "Gunakan “Hapus draf” di Pembuat CV, atau tombol di bawah ini, untuk menghapus semua data yang disimpan aplikasi ini di browser ini.",
+          "Untuk menghapus satu dokumen, buka “Dokumen Anda” di Pembuat CV, lalu pilih “Hapus”. Untuk menghapus semua data yang disimpan aplikasi ini di browser ini, termasuk semua dokumen dan preferensi, gunakan tombol di bawah ini.",
         ],
       },
     ],
     eraseButton: "Hapus semua data aplikasi ini",
     eraseConfirmTitle: "Hapus semua data aplikasi ini?",
-    eraseConfirmBody: "Draf dan preferensi Anda akan dihapus dari browser ini. Tindakan ini tidak bisa dibatalkan.",
+    eraseConfirmBody:
+      "Semua CV, surat lamaran, dan preferensi Anda akan dihapus dari browser ini. Tindakan ini tidak bisa dibatalkan.",
     eraseConfirm: "Hapus semuanya",
+    cancel: "Batal",
     erased: "Semua data lokal telah dihapus.",
     eraseFailed: "Penyimpanan browser tidak tersedia, jadi tidak ada data yang bisa dihapus.",
   },
+  // Feature dictionaries live in ./features so each feature owns its own file.
+  sections,
+  design,
+  checks,
+  docs,
+  exporting,
+  letter,
 };
 
 export default id;

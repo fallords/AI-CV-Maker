@@ -1,6 +1,14 @@
 import { writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { DRAFT_KEY, expectNoExternalRequests, pdfPageCount, pdfText } from "./helpers";
+import {
+  DOCS_INDEX_KEY,
+  DRAFT_KEY,
+  appStorage,
+  expectNoExternalRequests,
+  openDocuments,
+  pdfPageCount,
+  pdfText,
+} from "./helpers";
 
 test("complete user journey: create, switch templates, refresh, export PDF, delete", async ({ page, baseURL }, testInfo) => {
   // Record print() calls instead of opening a native dialog.
@@ -78,7 +86,7 @@ test("complete user journey: create, switch templates, refresh, export PDF, dele
     await expect(page.getByLabel(/Full name/)).toHaveValue("Rina Kusuma");
     await expect(page.getByLabel("Template")).toHaveValue("modern-professional");
     await expect(page.locator("#experience li").first().getByLabel("Company")).toHaveValue("Example Studio");
-    await expect(page.getByText("Your draft was restored from this browser.")).toBeVisible();
+    await expect(page.getByText("Opened “Rina Kusuma” from this browser.")).toBeVisible();
 
     // 9. Download PDF → instructions → print dialog.
     await page.getByRole("button", { name: "Download PDF" }).click();
@@ -102,7 +110,7 @@ test("complete user journey: create, switch templates, refresh, export PDF, dele
     for (const s of ["Rina Kusuma", "Junior Software Engineer", "rina@example.com", "Frontend Developer Intern", "Feb 2024 – Present", "Built reusable form components", "Example State University", "Campus Event Finder", "TypeScript", "Teamwork"]) {
       expect(text).toContain(s);
     }
-    for (const ui of ["Download PDF", "Save draft", "Full name", "Add work experience", "Free AI CV Maker"]) {
+    for (const ui of ["Download PDF", "All formats", "Full name", "Add work experience", "Free AI CV Maker"]) {
       expect(text).not.toContain(ui);
     }
     expect(text.toLowerCase()).not.toContain("watermark");
@@ -112,14 +120,22 @@ test("complete user journey: create, switch templates, refresh, export PDF, dele
   await expect(page.getByRole("button", { name: /AI/ })).toHaveCount(0);
   await expect(page.getByText(/sign in|log in|register/i)).toHaveCount(0);
 
-  // 12. Delete the local draft (with confirmation).
-  await page.getByText("More").click();
-  await page.getByRole("button", { name: "Delete draft" }).click();
-  const confirm = page.getByRole("dialog", { name: "Delete this draft?" });
-  await confirm.getByRole("button", { name: "Delete draft" }).click();
+  // 12. Delete the current document (with confirmation) from the document actions.
+  await expect(page.getByTestId("document-switcher")).toContainText("Rina Kusuma");
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("group", { name: "Document actions" }).getByRole("button", { name: "Delete" }).click();
+  const confirm = page.getByRole("dialog", { name: "Delete “Rina Kusuma”?" });
+  await confirm.getByRole("button", { name: "Delete" }).click();
+  await expect(confirm).toBeHidden();
   await expect(page.getByLabel(/Full name/)).toHaveValue("");
+  await expect(page.getByRole("status").filter({ hasText: "“Rina Kusuma” was deleted from this browser." })).toBeVisible();
   await page.waitForTimeout(1000);
-  expect(await page.evaluate((k) => localStorage.getItem(k), DRAFT_KEY)).toBeNull();
+  const stored = await appStorage(page);
+  expect(JSON.parse(stored[DOCS_INDEX_KEY] ?? "[]")).toEqual([]);
+  expect(Object.keys(stored).filter((k) => k.startsWith("free-cv-maker:doc:"))).toEqual([]);
+  expect(stored[DRAFT_KEY]).toBeUndefined();
   await page.reload();
   await expect(page.getByLabel(/Full name/)).toHaveValue("");
+  const dialog = await openDocuments(page);
+  await expect(dialog.getByText("Nothing is saved yet.", { exact: false })).toBeVisible();
 });

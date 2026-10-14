@@ -6,6 +6,7 @@ import { CVDocument } from "@/components/templates";
 import { btn } from "@/components/ui/styles";
 import { isAIEnabled } from "@/lib/ai/provider";
 import { TEMPLATE_IDS } from "@/lib/cv-schema";
+import { listDocs } from "@/lib/documents";
 import { useI18n } from "@/lib/i18n";
 import { showcaseCV } from "@/lib/sample-cv";
 import { hasDraft } from "@/lib/storage";
@@ -52,9 +53,10 @@ const getNarrowOnServer = () => false;
 export function LandingContent() {
   const { t, lang } = useI18n();
   const l = t.landing;
-  const [draftExists, setDraftExists] = useState(false);
+  const [hasSavedDocs, setHasSavedDocs] = useState(false);
+  // A draft from the single-draft version still counts: the builder moves it into the documents store on open.
   // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage is only readable after mount
-  useEffect(() => setDraftExists(hasDraft()), []);
+  useEffect(() => setHasSavedDocs(listDocs().length > 0 || hasDraft()), []);
   const stripScrolls = useSyncExternalStore(subscribeNarrow, getNarrow, getNarrowOnServer);
 
   return (
@@ -77,7 +79,7 @@ export function LandingContent() {
                 {l.ctaSecondary}
               </a>
             </div>
-            {draftExists && (
+            {hasSavedDocs && (
               <p className="mt-3 text-sm">
                 <Link href="/builder/" className={textLink}>
                   {l.ctaContinue}

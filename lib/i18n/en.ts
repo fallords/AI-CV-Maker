@@ -1,3 +1,10 @@
+import checks from "./features/checks.en";
+import design from "./features/design.en";
+import docs from "./features/docs.en";
+import exporting from "./features/exporting.en";
+import letter from "./features/letter.en";
+import sections from "./features/sections.en";
+
 /** English interface strings. `id.ts` must provide the same shape (enforced by the type). */
 const en = {
   appName: "Free AI CV Maker",
@@ -13,22 +20,26 @@ const en = {
   landing: {
     title: "Write your CV in the browser and download it as a PDF",
     subtitle:
-      "As you fill in the form, the preview lays out your CV on A4 pages. When it looks right, save it as a PDF from your browser’s print dialog.",
+      "As you fill in the form, the preview lays out your CV on A4 pages. The Check tab points out missing details and common problems. When it looks right, download it as a PDF, a Word file or plain text.",
     ctaPrimary: "Create Your Free CV",
     ctaSecondary: "See the templates",
-    ctaContinue: "Continue your saved draft",
+    ctaContinue: "Continue with your saved documents",
     facts: [
-      { label: "Price", value: "Using the builder and downloading PDFs is free. There are no ads or paid plans." },
+      { label: "Price", value: "The builder and every download format are free. There are no ads or paid plans." },
       { label: "Account", value: "You don’t need one." },
       {
-        label: "Where drafts are kept",
-        value: "In this browser’s local storage, on your device. Your CV isn’t uploaded to a server.",
+        label: "Your documents",
+        value:
+          "Kept in this browser’s local storage, on your device. You can have several CVs and cover letters, and none of them are uploaded to a server.",
       },
-      { label: "PDF", value: "A4 pages with selectable text and no watermark." },
+      {
+        label: "Downloads",
+        value: "A4 PDF with selectable text and no watermark. You can also download a Word file (.docx) or plain text.",
+      },
     ],
     templatesTitle: "Templates",
     templatesBody:
-      "You can switch templates at any time in the builder, and your details carry over.",
+      "You can switch templates at any time in the builder, and your details carry over. In the Design tab you can also change the accent colour, font, text size, spacing and margins. Cover letters use the same templates, so a letter can match its CV.",
     privacyTitle: "Privacy",
     privacyBody:
       "There are no accounts and no analytics. The privacy notice lists exactly what’s kept in your browser and how to delete it.",
@@ -36,16 +47,20 @@ const en = {
     faqTitle: "Common questions",
     faq: [
       {
-        q: "Can I lose my draft?",
-        a: "Yes, if you clear your browsing data or work in a private (incognito) window. It also won’t be there on another device. Use More → Export JSON to keep a copy, and Import JSON to load it again.",
+        q: "Can I write a cover letter here too?",
+        a: "Yes. Open “Your documents” and choose “New cover letter”. You can copy your name and contact details from one of your CVs, and the letter then uses that CV’s template and design, so the two match. A letter downloads in the same formats as a CV.",
+      },
+      {
+        q: "Can I lose my documents?",
+        a: "Yes, if you clear your browsing data or work in a private (incognito) window. They also won’t be on another device. To keep a copy, click “All formats” next to “Download PDF” (on a phone, the arrow) and choose “JSON backup”. To load it again, use “Import file” in “Your documents”.",
       },
       {
         q: "Can the CV be in Indonesian?",
-        a: "Yes. Set “CV language” to Indonesian and the section headings and month names switch to Indonesian. Your own text isn’t translated, so write it in the language you want.",
+        a: "Yes. Set “CV language” to Indonesian and the section headings and month names switch to Indonesian. Your own text isn’t translated, so write it in the language you want. Cover letters have the same setting, called “Letter language”.",
       },
       {
         q: "Will applicant tracking systems (ATS) read my CV?",
-        a: "Use the ATS Minimal template. It has a single column and standard section headings, and the PDF contains real text rather than an image. Most systems read that well, though each ATS works a little differently.",
+        a: "Use the ATS Minimal template. It has a single column and standard section headings, and the PDF contains real text rather than an image. Most systems read that well, though each ATS works a little differently. If an application form asks you to paste your CV, the plain text download has the same content without formatting.",
       },
     ],
     /** Rendered after `faq`; `on` or `off` depending on whether AI is configured for this deployment. */
@@ -76,62 +91,23 @@ const en = {
   },
   builder: {
     title: "CV Builder",
-    loading: "Loading your draft…",
+    loading: "Loading your documents…",
     template: "Template",
     cvLanguage: "CV language",
     cvLanguageHint: "Sets the language of the CV’s headings and dates. Your own text isn’t translated.",
     languageNames: { en: "English", id: "Indonesian" },
     tabs: { edit: "Edit", preview: "Preview" },
-    actions: "Draft actions",
-    saveNow: "Save draft",
-    restore: "Restore previous draft",
-    newCv: "Start new CV",
-    deleteDraft: "Delete draft",
-    importJson: "Import JSON",
-    exportJson: "Export JSON",
+    saveNow: "Save",
     downloadPdf: "Download PDF",
     more: "More",
     dismiss: "Dismiss",
     status: {
       saved: "Saved on this device",
       unsaved: "Unsaved changes…",
-      unavailable: "Browser storage isn’t available, so changes won’t be saved. Use Export JSON to keep a copy.",
-      quota: "Browser storage is full. Remove the photo or use Export JSON to keep a copy.",
     },
     messages: {
-      saved: "Draft saved on this device.",
-      restored: "Previous draft restored. The draft it replaced is now the previous draft.",
-      noBackup: "There’s no previous draft to restore.",
-      newCv: "New CV started. You can bring the previous draft back with “Restore previous draft”.",
-      deleted: "Draft deleted from this browser.",
-      imported: "CV imported.",
-      importedMigrated: "CV imported and converted from an older file format.",
-      exported: "JSON file downloaded.",
-      corrupted: "Your saved draft could not be read, so it’s been set aside. The editor starts with an empty CV.",
-      recovered: "Your draft was restored from this browser.",
-      importErrors: {
-        invalid_json: "This file is not valid JSON.",
-        not_object: "This file doesn’t contain CV data.",
-        unsupported_version: "This file comes from a newer or unknown version of the app and can’t be imported.",
-        too_large: "This file is too large. The limit is 5 MB.",
-        read_failed: "The file could not be read.",
-      },
-    },
-    confirm: {
-      cancel: "Cancel",
-      newTitle: "Start a new CV?",
-      newBody: "Your current draft becomes the previous draft. Any older previous draft is replaced.",
-      newConfirm: "Start new CV",
-      deleteTitle: "Delete this draft?",
-      deleteBody:
-        "This permanently removes the current and previous drafts from this browser. If you might need them later, export a JSON copy first.",
-      deleteConfirm: "Delete draft",
-      restoreTitle: "Restore the previous draft?",
-      restoreBody: "The current draft and the previous draft swap places, so nothing is lost.",
-      restoreConfirm: "Restore",
-      importTitle: "Replace your current draft?",
-      importBody: "The imported CV replaces what’s in the editor. Your current draft becomes the previous draft.",
-      importConfirm: "Import",
+      saved: "Saved on this device.",
+      recovered: "Opened “{name}” from this browser.",
     },
     print: {
       title: "Download your CV as PDF",
@@ -146,7 +122,6 @@ const en = {
       dontShow: "Don’t show these instructions again",
       continue: "Open print dialog",
       cancel: "Cancel",
-      empty: "Your CV is empty. Add some details before downloading.",
       unavailable: "Printing isn’t available in this browser. Try Chrome, Edge, Firefox or Safari.",
     },
     preview: {
@@ -157,7 +132,6 @@ const en = {
       pageMany: "{count} pages",
       atsPhotoNote: "The ATS Minimal template doesn’t show a photo.",
     },
-    restorePrompt: "Draft restored",
   },
   form: {
     sectionNav: "CV sections",
@@ -293,12 +267,13 @@ const en = {
   },
   help: {
     title: "How to use the CV builder",
-    intro: "Instructions for the builder, including the print settings for each browser.",
+    intro: "Instructions for writing CVs and cover letters in the builder, including the print settings for each browser.",
     sections: [
       {
         title: "Fill in your CV",
         body: [
           "Open the CV Builder and fill in the sections that apply to you. Every field is optional, and empty sections are left out of the CV.",
+          "Besides work experience, education, projects, skills and certifications, there are sections for organisations and volunteering, awards, languages, references and interests. For anything else, such as courses or publications, use “Add custom section” and give it your own title.",
           "Use the “Add …” buttons to add entries and the arrow buttons to change their order. Most people put the most recent entry first.",
           "In description fields, write one point per line. A line that starts with “-” becomes a bullet point.",
         ],
@@ -311,11 +286,38 @@ const en = {
         ],
       },
       {
-        title: "Saving and restoring drafts",
+        title: "Your documents",
         body: [
-          "Your draft is saved in this browser automatically, a moment after each change, and also when you click “Save draft”.",
-          "When you start a new CV or import a file, the current draft is kept as the “previous draft”, and you can restore it.",
-          "Browser storage isn’t a backup. If you clear browser data, use a private window or switch to another device, the draft won’t be there. Use “Export JSON” to keep a copy and “Import JSON” to load it again.",
+          "You can keep several CVs and cover letters in this browser. At the start of the toolbar, under “Document”, is the name of the one you have open. Click it to open “Your documents”, where you can open, rename, duplicate or delete any of them, start a new CV or cover letter, or import a file. The “More” menu can also start a new CV or cover letter, and has Rename, Duplicate and Delete for the open document.",
+          "Each document is saved in this browser automatically, a moment after each change, and also when you click “Save” (on a phone, it’s in the “More” menu). If the same document is open in two tabs, a change saved in one tab appears in the other, and you’re asked which version to keep if both have unsaved changes.",
+          "Duplicating a CV is a quick way to make a version for a different kind of job. “Import file” adds a JSON backup as a new document, so nothing you already have is replaced. Deleting a document removes it from this browser for good.",
+          "If you used the builder before it could hold several documents, your draft and any previous draft are now in “Your documents”.",
+          "Browser storage isn’t a backup. If you clear browser data, use a private window or switch to another device, your documents won’t be there. Download a JSON backup of anything you want to keep.",
+        ],
+      },
+      {
+        title: "Changing the design",
+        body: [
+          "The Design tab, next to Content, changes how the open document looks: accent colour, font, text size, spacing and page margins. The settings apply to that document only, and the preview updates straight away. “Reset appearance” goes back to the template’s defaults.",
+          "If you pick your own accent colour, the panel warns you when it’s too light to read on white paper.",
+          "For a CV, the Design tab also lists its sections. Move a section up or down to change where it appears on the CV, or turn off “Show” to leave it off the CV without deleting what you wrote. “Reset to template order” puts them back in the template’s order. Your name and contact details always come first.",
+        ],
+      },
+      {
+        title: "Checking your CV",
+        body: [
+          "The Check tab gives your CV a score out of 100 and lists errors, warnings and tips. It looks for things like missing contact details, entries without dates, an end date before the start date, a very short or very long summary, and a CV that runs over two pages.",
+          "Click a finding to go straight to the field or setting it refers to.",
+          "The checks run in your browser and don’t use AI. They can spot missing details and common problems, but they can’t judge how strong your experience is. If a tip suggests adding numbers or more sections, only add what’s true.",
+        ],
+      },
+      {
+        title: "Cover letters",
+        body: [
+          "To start a letter, open “Your documents” and choose “New cover letter”. You can copy your name, title and contact details from one of your CVs, and the letter then uses that CV’s template and design. Later, “Fill in from a CV” in the letter copies the details again.",
+          "Then fill in the recipient, the date and subject, the greeting, the main text and the closing. Leave a blank line between paragraphs.",
+          "“Letter language” sets the language of the date and the “Subject” label. Your own text isn’t translated. A letter in Indonesian puts your city before the date, for example “Bandung, 13 Oktober 2026”.",
+          "A letter has its own Design tab and downloads in the same formats as a CV. There’s no Check tab for letters.",
         ],
       },
       {
@@ -324,13 +326,22 @@ const en = {
           "The PDF is created by your browser’s own print function. The text in it can still be selected, and no watermark is added.",
         ],
         steps: [
-          "Click “Download PDF”. Your browser’s print dialog opens with only the CV, on A4 pages.",
+          "Click “Download PDF”. Your browser’s print dialog opens with only the CV or letter, on A4 pages.",
           "Choose “Save as PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows) or “PDF → Save as PDF” (macOS / Safari).",
           "Set paper size to A4 and margins to Default.",
           "Turn off “Headers and footers” and turn on “Background graphics”.",
         ],
         after: [
           "On iPhone or iPad, open the print preview, tap the Share button and choose “Save to Files”. On Android, choose “Save as PDF” as the printer.",
+        ],
+      },
+      {
+        title: "Word, plain text and JSON backup",
+        body: [
+          "Click “All formats” next to “Download PDF” (on a phone, the arrow) to choose another format. Like the PDF, they’re created in your browser.",
+          "Word (.docx) is for editing in Word, Google Docs or LibreOffice. Word uses the fonts installed on the computer that opens the file, so if the chosen font isn’t installed, it shows a similar one.",
+          "Plain text (.txt) has the same content without formatting, for pasting into online application forms.",
+          "A JSON backup is a copy of the document’s data. Keep it somewhere safe, and use “Import file” in “Your documents” to load it again, in this browser or another one. Files saved with “Export JSON” in the earlier version of the builder can be imported too.",
         ],
       },
       {
@@ -350,22 +361,24 @@ const en = {
       {
         title: "Summary",
         body: [
-          "Free AI CV Maker has no user accounts, database, advertising or analytics. The CV you write is processed in your browser and stored only on your device.",
+          "Free AI CV Maker has no user accounts, database, advertising or analytics. The CVs and cover letters you write are processed in your browser and stored only on your device.",
         ],
       },
       {
         title: "What is stored and where",
         body: [
-          "Your CV draft, a previous draft (kept when you start a new CV or import a file) and your interface language are stored in your browser’s local storage, under keys that start with “free-cv-maker:”.",
-          "Local storage isn’t an encrypted cloud service. Anyone with access to this browser profile can read it, and it can be deleted when you clear browsing data, use a private window, or when the browser needs to free up space. Export a JSON copy if you want a backup.",
+          "Your CVs and cover letters are stored in your browser’s local storage, under keys that start with “free-cv-maker:”. There’s a list of your documents with their names and dates, one key for each document, the ID of the document you last had open, and two preferences: the interface language and whether to show the print instructions.",
+          "If a saved document can’t be read, its contents are set aside under a separate “free-cv-maker:” key instead of being deleted.",
+          "Drafts saved by the earlier, single-draft version of this app (“free-cv-maker:draft” and “free-cv-maker:backup”) are moved into your documents the next time you open the builder, and the old keys are removed.",
+          "Local storage isn’t an encrypted cloud service. Anyone with access to this browser profile can read it, and it can be deleted when you clear browsing data, use a private window, or when the browser needs to free up space. Download a JSON backup if you want a copy.",
         ],
       },
       {
         title: "What is sent over the internet",
         body: [
           "When you load the website, its files come from the hosting provider (for example, Cloudflare). Like any web host, it may keep standard technical logs such as your IP address and browser type.",
-          "Your CV content isn’t sent anywhere. PDF files are created by your own browser’s print function.",
-          "Exported JSON files are downloaded straight to your device.",
+          "The content of your CVs and cover letters isn’t sent anywhere. The CV check runs in your browser. PDF files are created by your own browser’s print function.",
+          "Word, plain text and JSON files are created in your browser and downloaded straight to your device.",
         ],
       },
       {
@@ -377,17 +390,26 @@ const en = {
       {
         title: "Deleting your data",
         body: [
-          "Use “Delete draft” in the builder, or the button below, to remove everything this app has stored in this browser.",
+          "To delete a single document, open “Your documents” in the builder and choose “Delete”. To remove everything this app has stored in this browser, including all documents and preferences, use the button below.",
         ],
       },
     ],
     eraseButton: "Erase all locally stored data",
     eraseConfirmTitle: "Erase all data stored by this app?",
-    eraseConfirmBody: "This removes your drafts and preferences from this browser. It can’t be undone.",
+    eraseConfirmBody:
+      "This removes all your CVs, cover letters and preferences from this browser. It can’t be undone.",
     eraseConfirm: "Erase everything",
+    cancel: "Cancel",
     erased: "All locally stored data was erased.",
     eraseFailed: "Browser storage isn’t available, so there’s nothing to erase.",
   },
+  // Feature dictionaries live in ./features so each feature owns its own file.
+  sections,
+  design,
+  checks,
+  docs,
+  exporting,
+  letter,
 };
 
 export default en;

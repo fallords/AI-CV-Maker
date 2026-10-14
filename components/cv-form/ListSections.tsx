@@ -22,16 +22,23 @@ export function ExperienceSection(props: SectionProps) {
       getTitle={(e) => joinNonEmpty([e.jobTitle, e.company], " · ")}
       renderFields={(e, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label={f.jobTitle} value={e.jobTitle} onChange={(v) => update({ jobTitle: v })} />
-          <TextField label={f.company} value={e.company} onChange={(v) => update({ company: v })} />
+          <TextField field="jobTitle" label={f.jobTitle} value={e.jobTitle} onChange={(v) => update({ jobTitle: v })} />
+          <TextField field="company" label={f.company} value={e.company} onChange={(v) => update({ company: v })} />
           <TextField
+            field="location"
             className="sm:col-span-2"
             label={f.location}
             value={e.location}
             onChange={(v) => update({ location: v })}
           />
-          <MonthField label={f.startDate} value={e.startDate} onChange={(v) => update({ startDate: v })} />
           <MonthField
+            field="startDate"
+            label={f.startDate}
+            value={e.startDate}
+            onChange={(v) => update({ startDate: v })}
+          />
+          <MonthField
+            field="endDate"
             label={f.endDate}
             value={e.current ? "" : e.endDate}
             disabled={e.current}
@@ -45,6 +52,7 @@ export function ExperienceSection(props: SectionProps) {
             onChange={(v) => update({ current: v })}
           />
           <TextAreaField
+            field="description"
             className="sm:col-span-2"
             label={f.description}
             hint={f.descriptionHint}
@@ -72,21 +80,29 @@ export function EducationSection(props: SectionProps) {
       renderFields={(e, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
+            field="institution"
             className="sm:col-span-2"
             label={f.institution}
             value={e.institution}
             onChange={(v) => update({ institution: v })}
           />
-          <TextField label={f.degree} value={e.degree} onChange={(v) => update({ degree: v })} />
-          <TextField label={f.field} value={e.field} onChange={(v) => update({ field: v })} />
-          <MonthField label={f.startDate} value={e.startDate} onChange={(v) => update({ startDate: v })} />
+          <TextField field="degree" label={f.degree} value={e.degree} onChange={(v) => update({ degree: v })} />
+          <TextField field="field" label={f.field} value={e.field} onChange={(v) => update({ field: v })} />
           <MonthField
+            field="startDate"
+            label={f.startDate}
+            value={e.startDate}
+            onChange={(v) => update({ startDate: v })}
+          />
+          <MonthField
+            field="endDate"
             label={f.endDate}
             value={e.endDate}
             onChange={(v) => update({ endDate: v })}
             error={!isValidMonthRange(e.startDate, e.endDate) ? t.form.errors.dateOrder : null}
           />
           <TextAreaField
+            field="description"
             className="sm:col-span-2"
             label={f.description}
             hint={f.descriptionHint}
@@ -113,9 +129,10 @@ export function ProjectsSection(props: SectionProps) {
       getTitle={(p) => p.name}
       renderFields={(p, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
-          <TextField label={f.name} value={p.name} onChange={(v) => update({ name: v })} />
-          <TextField label={f.role} value={p.role} onChange={(v) => update({ role: v })} />
+          <TextField field="name" label={f.name} value={p.name} onChange={(v) => update({ name: v })} />
+          <TextField field="role" label={f.role} value={p.role} onChange={(v) => update({ role: v })} />
           <TextAreaField
+            field="description"
             className="sm:col-span-2"
             label={f.description}
             hint={f.descriptionHint}
@@ -124,12 +141,14 @@ export function ProjectsSection(props: SectionProps) {
             onChange={(v) => update({ description: v })}
           />
           <TextField
+            field="technologies"
             label={f.technologies}
             placeholder={f.technologiesPlaceholder}
             value={p.technologies}
             onChange={(v) => update({ technologies: v })}
           />
           <TextField
+            field="url"
             label={f.url}
             type="url"
             inputMode="url"
@@ -156,8 +175,8 @@ function SkillList(props: SectionProps & { section: Extract<ListSection, "techni
       itemLabel={f.item}
       getTitle={(s) => s.name}
       renderFields={(s, update) => (
-        <div className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[1fr_11rem]">
-          <TextField label={f.name} value={s.name} onChange={(v) => update({ name: v })} />
+        <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_11rem]">
+          <TextField field="name" label={f.name} value={s.name} onChange={(v) => update({ name: v })} />
           <SelectField<SkillLevel>
             label={f.level}
             value={s.level}
@@ -200,14 +219,21 @@ export function CertificationsSection(props: SectionProps) {
       renderFields={(c, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
+            field="name"
             className="sm:col-span-2"
             label={f.name}
             value={c.name}
             onChange={(v) => update({ name: v })}
           />
-          <TextField label={f.issuer} value={c.issuer} onChange={(v) => update({ issuer: v })} />
-          <MonthField label={f.issueDate} value={c.issueDate} onChange={(v) => update({ issueDate: v })} />
+          <TextField field="issuer" label={f.issuer} value={c.issuer} onChange={(v) => update({ issuer: v })} />
+          <MonthField
+            field="issueDate"
+            label={f.issueDate}
+            value={c.issueDate}
+            onChange={(v) => update({ issueDate: v })}
+          />
           <TextField
+            field="credential"
             className="sm:col-span-2"
             label={f.credential}
             value={c.credential}

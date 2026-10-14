@@ -55,7 +55,7 @@ export function PrivacyContent() {
         title={p.eraseConfirmTitle}
         body={p.eraseConfirmBody}
         confirmLabel={p.eraseConfirm}
-        cancelLabel={t.builder.confirm.cancel}
+        cancelLabel={p.cancel}
         danger
         onCancel={() => setConfirmOpen(false)}
         onConfirm={() => {

@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { CV_LABELS } from "@/lib/cv-format";
-import { inputClass } from "./styles";
+import { selectClass } from "./styles";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: CURRENT_YEAR + 8 - 1960 + 1 }, (_, i) => String(CURRENT_YEAR + 8 - i));
@@ -19,6 +19,7 @@ export function MonthField({
   disabled = false,
   error,
   className,
+  field,
 }: {
   label: string;
   value: string;
@@ -26,6 +27,8 @@ export function MonthField({
   disabled?: boolean;
   error?: string | null;
   className?: string;
+  /** Data field name, written to `data-field` on the month select (the checker jumps there). */
+  field?: string;
 }) {
   const { t, lang } = useI18n();
   const id = useId();
@@ -50,9 +53,10 @@ export function MonthField({
       <div className="grid grid-cols-2 gap-2">
         <select
           aria-label={`${label}: ${t.form.month}`}
+          data-field={field}
           value={month}
           onChange={(e) => emit(year, e.target.value)}
-          className={inputClass}
+          className={selectClass}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t.form.month}</option>
@@ -66,7 +70,7 @@ export function MonthField({
           aria-label={`${label}: ${t.form.year}`}
           value={year}
           onChange={(e) => emit(e.target.value, month)}
-          className={inputClass}
+          className={selectClass}
           aria-invalid={error ? true : undefined}
         >
           <option value="">{t.form.year}</option>
