@@ -8,11 +8,6 @@ A free, privacy-friendly CV and cover letter builder that runs entirely in the b
 - **Works without AI:** AI assistance is optional, disabled by default and consent-gated. The CV checker is rule-based and runs locally.
 - **English & Indonesian** interface, with a separate document language for headings, dates and letter labels.
 
-## Documentation
-
-- [docs/PANDUAN-PROYEK.md](docs/PANDUAN-PROYEK.md): plain-language guide to the project for the owner (Indonesian)
-- [docs/DOKUMEN-TEKNIS.md](docs/DOKUMEN-TEKNIS.md): technical documentation covering architecture, data model, storage, exports, the CV checker, testing and change recipes (Indonesian)
-
 ## Features
 
 | Area | What's implemented |
