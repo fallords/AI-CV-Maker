@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { fmt, useI18n } from "@/lib/i18n";
 import { ConfirmDialog } from "../ui/Dialog";
 import { ArrowDown, ArrowUp, Plus, Trash } from "../ui/Icons";
+import { prefersReducedMotion, useFlipList } from "../ui/motion";
 import { btn } from "../ui/styles";
 
 /** Entries per list. sanitizeCV keeps at most 100 entries per list, so more would be lost on reload. */
@@ -29,10 +30,17 @@ export interface EntryListProps<T extends { id: string }> {
   compact?: boolean;
 }
 
+/** How long an added entry keeps its entrance class (longer than the --motion-base transition). */
+const ENTER_MS = 400;
+
 /**
  * Generic editor for a list of entries: add, edit, remove (with confirmation
  * when the entry has content) and reorder with keyboard-accessible buttons.
  * State lives with the caller; this component only renders and reports intents.
+ *
+ * Motion answers the person's own actions only: an entry added with "Add" comes in
+ * (entries already there when the list mounts never do), moved entries slide to their
+ * new place, and removal is instant.
  */
 export function EntryList<T extends { id: string }>({
   items,
@@ -58,19 +66,45 @@ export function EntryList<T extends { id: string }>({
   const pendingFocus = useRef<string | null>(null);
   // Position of an entry that was just removed; focus moves to its neighbour (or the add button).
   const removedIndex = useRef<number | null>(null);
+  // Entry whose move button was just pressed; focus stays on that button (or the other one
+  // once the entry reaches the top or bottom), even when the browser moves its element.
+  const pendingMove = useRef<{ id: string; direction: -1 | 1 } | null>(null);
+  // Entry that was just added with "Add" and is coming in.
+  const [entering, setEntering] = useState<string | null>(null);
+
+  useFlipList(
+    listRef,
+    items.map((item) => item.id),
+  );
+
+  useEffect(() => {
+    if (entering === null) return;
+    const timer = window.setTimeout(() => setEntering(null), ENTER_MS);
+    return () => window.clearTimeout(timer);
+  }, [entering]);
 
   useEffect(() => {
     const firstField = (id: string) =>
       listRef.current?.querySelector<HTMLElement>(
         `[data-item-id="${id}"] input, [data-item-id="${id}"] select, [data-item-id="${id}"] textarea`,
       );
+    const moved = pendingMove.current;
+    if (moved) {
+      pendingMove.current = null;
+      const row = listRef.current?.querySelector<HTMLElement>(`[data-item-id="${moved.id}"]`);
+      const same = row?.querySelector<HTMLButtonElement>(`[data-move="${moved.direction}"]`);
+      const other = row?.querySelector<HTMLButtonElement>(`[data-move="${-moved.direction}"]`);
+      const target = same && !same.disabled ? same : other && !other.disabled ? other : null;
+      if (target && document.activeElement !== target) target.focus();
+      return;
+    }
     const id = pendingFocus.current;
     if (id) {
       const el = firstField(id);
       if (!el) return;
       pendingFocus.current = null;
       el.focus();
-      el.scrollIntoView({ block: "center", behavior: "smooth" });
+      el.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
       return;
     }
     const removed = removedIndex.current;
@@ -84,7 +118,14 @@ export function EntryList<T extends { id: string }>({
 
   const add = () => {
     if (atLimit) return;
-    pendingFocus.current = onAdd();
+    const id = onAdd();
+    pendingFocus.current = id;
+    setEntering(id);
+  };
+
+  const move = (id: string, direction: -1 | 1) => {
+    pendingMove.current = { id, direction };
+    onMove(id, direction);
   };
 
   const removeNow = (id: string) => {
@@ -102,11 +143,9 @@ export function EntryList<T extends { id: string }>({
   return (
     <div>
       {items.length === 0 ? (
-        <p className="rounded-sm border border-dashed border-line-strong px-4 py-3 text-sm text-fg-muted">
-          {emptyText}
-        </p>
+        <p className="max-w-[65ch] text-sm text-fg-muted">{emptyText}</p>
       ) : (
-        <ol ref={listRef} className={compact ? "space-y-4 sm:space-y-2" : "space-y-3"}>
+        <ol ref={listRef} className={compact ? "space-y-4 sm:space-y-2" : "space-y-4"}>
           {items.map((item, index) => {
             const rawTitle = getTitle(item).trim();
             const title = rawTitle || c.untitled;
@@ -117,7 +156,8 @@ export function EntryList<T extends { id: string }>({
                 <button
                   type="button"
                   className={btn.icon}
-                  onClick={() => onMove(item.id, -1)}
+                  onClick={() => move(item.id, -1)}
+                  data-move="-1"
                   disabled={index === 0}
                   aria-label={`${c.moveUp}: ${title}`}
                   title={c.moveUp}
@@ -127,7 +167,8 @@ export function EntryList<T extends { id: string }>({
                 <button
                   type="button"
                   className={btn.icon}
-                  onClick={() => onMove(item.id, 1)}
+                  onClick={() => move(item.id, 1)}
+                  data-move="1"
                   disabled={index === items.length - 1}
                   aria-label={`${c.moveDown}: ${title}`}
                   title={c.moveDown}
@@ -146,24 +187,28 @@ export function EntryList<T extends { id: string }>({
               </div>
             );
 
+            const enter = item.id === entering ? "motion-enter" : "";
             return compact ? (
-              <li key={item.id} data-item-id={item.id} className="flex items-end gap-2">
+              <li key={item.id} data-item-id={item.id} data-flip-key={item.id} className={`flex items-end gap-2 ${enter}`}>
                 <div className="min-w-0 flex-1">{renderFields(item, update)}</div>
                 {controls}
               </li>
             ) : (
-              <li key={item.id} data-item-id={item.id} className="rounded-sm border border-line">
-                <div className="flex items-center justify-between gap-2 border-b border-line py-1 pr-1 pl-4">
-                  <h3 className="min-w-0 truncate text-sm font-medium text-fg">
-                    <span aria-hidden="true" className="mr-2 font-mono text-xs text-fg-subtle tabular-nums">
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
+              // One light outline per entry, no inner rule: the title row and the fields share the box.
+              <li
+                key={item.id}
+                data-item-id={item.id}
+                data-flip-key={item.id}
+                className={`rounded-[3px] border border-line-strong bg-surface ${enter}`}
+              >
+                <div className="flex items-center justify-between gap-2 py-1 pr-1 pl-4">
+                  <h3 className="min-w-0 truncate text-sm font-semibold text-fg">
                     <span className="sr-only">{index + 1}. </span>
-                    <span className={rawTitle ? undefined : "text-fg-muted"}>{title}</span>
+                    <span className={rawTitle ? undefined : "font-normal text-fg-muted"}>{title}</span>
                   </h3>
                   {controls}
                 </div>
-                <div className="p-4">{renderFields(item, update)}</div>
+                <div className="px-4 pt-1 pb-4">{renderFields(item, update)}</div>
               </li>
             );
           })}
@@ -172,7 +217,7 @@ export function EntryList<T extends { id: string }>({
       <button ref={addRef} type="button" className={`${btn.secondary} mt-4`} onClick={add} disabled={atLimit}>
         <Plus /> {addLabel}
       </button>
-      {atLimit && <p className="mt-2 text-xs text-fg-muted">{fmt(t.sections.listLimit, { max: maxItems })}</p>}
+      {atLimit && <p className="mt-2 text-sm text-fg-muted">{fmt(t.sections.listLimit, { max: maxItems })}</p>}
       <ConfirmDialog
         open={pendingRemove !== null}
         title={c.removeTitle}

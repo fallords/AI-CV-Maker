@@ -32,6 +32,7 @@ import {
 import { fmt, useI18n } from "@/lib/i18n";
 import type { Dictionary } from "@/lib/i18n/en";
 import { ArrowDown, ArrowUp, Check } from "../ui/Icons";
+import { useFlipList } from "../ui/motion";
 import { btn, inputClass } from "../ui/styles";
 
 /** WCAG AA minimum for normal-size text; accents below this get a warning. */
@@ -113,7 +114,7 @@ function Group({ legend, hint, children }: { legend: string; hint?: string; chil
     <fieldset aria-describedby={hint ? hintId : undefined} className="min-w-0">
       <legend className="text-sm font-medium text-fg">{legend}</legend>
       {hint && (
-        <p id={hintId} className="mt-1 max-w-[65ch] text-xs leading-relaxed text-fg-muted">
+        <p id={hintId} className="mt-1 max-w-[65ch] text-sm leading-relaxed text-fg-muted">
           {hint}
         </p>
       )}
@@ -147,7 +148,7 @@ function RadioList<T extends string>({
           <label
             key={o.value}
             htmlFor={id}
-            className="flex min-h-10 min-w-0 cursor-pointer items-center gap-3 rounded-sm px-2 py-1.5 text-sm text-fg hover:bg-raised"
+            className="flex min-h-10 min-w-0 cursor-pointer items-center gap-3 rounded-[3px] px-2 py-1.5 text-sm text-fg transition-colors duration-150 hover:bg-overlay"
           >
             <input
               id={id}
@@ -190,14 +191,14 @@ function Segmented<T extends string>({
   field?: string;
 }) {
   return (
-    <div className="grid grid-flow-col auto-cols-fr rounded-sm border border-control-line">
+    <div className="grid grid-flow-col auto-cols-fr rounded-[4px] border border-control-line">
       {options.map((o) => {
         const id = `${name}-${o.value}`;
         return (
           <label
             key={o.value}
             htmlFor={id}
-            className="group relative flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center px-1.5 py-1.5 text-center text-sm text-fg not-first:border-l not-first:border-control-line first:rounded-l-sm last:rounded-r-sm hover:bg-raised has-checked:bg-accent has-checked:text-accent-fg has-checked:hover:bg-accent-hover has-focus-visible:z-10 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent-text"
+            className="group relative flex min-h-11 min-w-0 cursor-pointer flex-col items-center justify-center px-1.5 py-1.5 text-center text-sm text-fg transition-colors duration-150 not-first:border-l not-first:border-control-line first:rounded-l-[3px] last:rounded-r-[3px] hover:bg-overlay has-checked:bg-accent has-checked:text-accent-fg has-checked:hover:bg-accent-hover has-focus-visible:z-10 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-accent-text"
           >
             <input
               id={id}
@@ -215,7 +216,7 @@ function Segmented<T extends string>({
             </span>
             {/* The space keeps "Small 9.5 pt" apart in the accessible name; flex layout drops it visually. */}
             {o.detail && " "}
-            {o.detail && <span className="text-xs text-fg-muted group-has-checked:text-accent-fg">{o.detail}</span>}
+            {o.detail && <span className="text-sm text-fg-muted group-has-checked:text-accent-fg">{o.detail}</span>}
           </label>
         );
       })}
@@ -223,12 +224,12 @@ function Segmented<T extends string>({
   );
 }
 
-/** Decorative colour sample next to a colour option. */
+/** Decorative colour sample next to a colour option: a round, ink-edged dot (dashed while there is no colour yet). */
 function Swatch({ hex }: { hex: string | null }) {
   return (
     <span
       aria-hidden="true"
-      className={`size-5 shrink-0 rounded-sm ${hex ? "ring-1 ring-white/25 ring-inset" : "border border-dashed border-control-line"}`}
+      className={`size-5 shrink-0 rounded-full ${hex ? "ring-1 ring-fg/20 ring-inset" : "border border-dashed border-control-line"}`}
       style={hex ? { backgroundColor: hex } : undefined}
     />
   );
@@ -308,7 +309,7 @@ function CustomColour({
               if (parsed !== value) onChange(parsed);
             }}
             aria-describedby={describedBy(contrastId, low && warningId)}
-            className="block h-10 w-16 cursor-pointer rounded-sm border border-control-line bg-raised p-1"
+            className="block h-10 w-16 cursor-pointer rounded-[3px] border border-control-line bg-raised p-1"
           />
         </div>
         <div className="w-40 max-w-full">
@@ -349,11 +350,11 @@ function CustomColour({
           />
         </div>
       </div>
-      <p id={hintId} className="mt-1 text-xs text-fg-muted">
+      <p id={hintId} className="mt-1 text-sm text-fg-muted">
         {d.hexHint}
       </p>
       {invalid && (
-        <p id={errorId} role="alert" className="mt-1 text-xs font-medium text-danger-text">
+        <p id={errorId} role="alert" className="mt-1 text-sm font-medium text-danger-text">
           {d.hexError}
         </p>
       )}
@@ -365,7 +366,7 @@ function CustomColour({
         {low && (
           <p
             id={warningId}
-            className="mt-2 max-w-[65ch] rounded-sm border-l-2 border-warn-text bg-surface px-3 py-2 text-sm leading-relaxed text-warn-text"
+            className="mt-2 max-w-[65ch] rounded-[3px] border border-warn-line bg-warn-soft px-3 py-2 text-sm leading-relaxed text-warn-text"
             data-testid="contrast-warning"
           >
             {d.lowContrast}
@@ -392,6 +393,7 @@ function SectionManager({
   const { t } = useI18n();
   const s = t.design.sections;
   const titleId = useId();
+  const listRef = useRef<HTMLOListElement>(null);
   const order = allSectionsInOrder(cv);
   const templateOrder = allSectionsInOrder({ ...cv, meta: { ...cv.meta, sectionOrder: [] } });
   const isTemplateOrder = sameOrder(order, templateOrder);
@@ -420,6 +422,9 @@ function SectionManager({
     target?.focus();
   });
 
+  // Rows slide to their new place after a move.
+  useFlipList(listRef, order);
+
   const nameOf = (key: SectionKey) => sectionDisplayName(cv, key, t, s.untitled);
 
   const move = (key: SectionKey, index: number, direction: -1 | 1) => {
@@ -437,21 +442,21 @@ function SectionManager({
   };
 
   return (
-    <section aria-labelledby={titleId} className="border-t border-line pt-6 pb-8" data-testid="section-manager">
-      <h2 id={titleId} className="font-display text-lg font-semibold text-fg">
+    <section aria-labelledby={titleId} className="border-t border-line pt-8 pb-6" data-testid="section-manager">
+      <h2 id={titleId} className="font-display text-[21px] leading-tight font-semibold text-fg">
         {s.title}
       </h2>
-      <p className="mt-1 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{s.intro}</p>
+      <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{s.intro}</p>
       <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{s.personalNote}</p>
 
-      <ol aria-label={s.listLabel} className="mt-4 divide-y divide-line border-y border-line">
+      <ol ref={listRef} aria-label={s.listLabel} className="mt-4 divide-y divide-line">
         {order.map((key, index) => {
           const name = nameOf(key);
           const hidden = isSectionHidden(cv, key);
           const note = hidden ? s.hiddenNote : isSectionFilled(cv, key) ? "" : s.emptyNote;
           const untitled = !isBuiltinSection(key) && name === s.untitled;
           return (
-            <li key={key} className="flex items-center gap-2 py-1.5" data-section={key}>
+            <li key={key} className="flex items-center gap-2 bg-surface py-1.5" data-section={key} data-flip-key={key}>
               <div className="min-w-0 flex-1 py-1">
                 <p
                   className={`text-sm font-medium break-words ${hidden || untitled ? "text-fg-muted" : "text-fg"}`}
@@ -459,7 +464,7 @@ function SectionManager({
                 >
                   {name}
                 </p>
-                {note && <p className="text-xs text-fg-muted">{note}</p>}
+                {note && <p className="text-sm text-fg-muted">{note}</p>}
               </div>
               <div className="flex shrink-0 items-center">
                 <button
@@ -487,12 +492,12 @@ function SectionManager({
                   aria-pressed={!hidden}
                   aria-label={fmt(s.showLabel, { name })}
                   onClick={() => dispatch({ type: "setSectionHidden", key, hidden: !hidden })}
-                  className="ml-1 inline-flex min-h-10 items-center gap-2 rounded-sm px-2 text-sm text-fg hover:bg-raised"
+                  className="ml-1 inline-flex min-h-10 items-center gap-2 rounded-[4px] px-2 text-sm text-fg transition-colors duration-150 hover:bg-overlay"
                 >
                   <span
                     aria-hidden="true"
-                    className={`flex size-4 shrink-0 items-center justify-center rounded-sm border ${
-                      hidden ? "border-control-line" : "border-accent-control bg-accent-control text-canvas"
+                    className={`flex size-4 shrink-0 items-center justify-center rounded-[3px] border ${
+                      hidden ? "border-control-line bg-surface" : "border-accent-control bg-accent-control text-accent-fg"
                     }`}
                   >
                     {!hidden && <Check width={12} height={12} strokeWidth={3} />}
@@ -508,7 +513,7 @@ function SectionManager({
       <div className="mt-4">
         <button
           type="button"
-          className={`${btn.secondary} aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-line-strong aria-disabled:hover:bg-transparent`}
+          className={`${btn.secondary} aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-control-line aria-disabled:hover:bg-surface aria-disabled:active:translate-y-0`}
           aria-disabled={isTemplateOrder ? true : undefined}
           onClick={resetOrder}
         >
@@ -598,11 +603,11 @@ export function DesignPanel({
 
   return (
     <div className="min-w-0" data-testid="design-panel">
-      <section aria-labelledby={appearanceTitleId} className="pb-8">
-        <h2 id={appearanceTitleId} className="font-display text-lg font-semibold text-fg">
+      <section aria-labelledby={appearanceTitleId} className="pb-10">
+        <h2 id={appearanceTitleId} className="font-display text-[21px] leading-tight font-semibold text-fg">
           {d.appearance.title}
         </h2>
-        <p className="mt-1 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{d.appearance.intro}</p>
+        <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{d.appearance.intro}</p>
 
         <div className="mt-6 space-y-7">
           <Group legend={d.accent.legend} hint={d.accent.hint}>
@@ -672,7 +677,7 @@ export function DesignPanel({
         <div className="mt-7">
           <button
             type="button"
-            className={`${btn.secondary} aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-line-strong aria-disabled:hover:bg-transparent`}
+            className={`${btn.secondary} aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:border-control-line aria-disabled:hover:bg-surface aria-disabled:active:translate-y-0`}
             aria-disabled={isDefault ? true : undefined}
             onClick={resetAppearance}
           >

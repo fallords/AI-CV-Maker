@@ -19,12 +19,12 @@ function Describe({ id, hint, error }: { id: string; hint?: ReactNode; error?: s
   return (
     <>
       {hint && (
-        <p id={`${id}-hint`} className="mt-1 text-xs text-fg-muted">
+        <p id={`${id}-hint`} className="mt-1 text-sm text-fg-muted">
           {hint}
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-danger-text" role="alert">
+        <p id={`${id}-error`} className="mt-1 text-sm font-medium text-danger-text" role="alert">
           {error}
         </p>
       )}

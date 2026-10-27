@@ -100,11 +100,21 @@ function subscribeWide(onChange: () => void): () => void {
 const isWide = () => typeof window.matchMedia !== "function" || window.matchMedia(WIDE_QUERY).matches;
 const wideOnServer = () => true;
 
+/** Score badge on the selected (white) Check tab; on the darker unselected tab it is white. */
 const BADGE: Record<ScoreBand, string> = {
-  high: "border-line-strong text-fg-muted",
+  high: "border-control-line text-fg",
   medium: "border-warn-line text-warn-text",
   low: "border-danger-line text-danger-text",
 };
+
+/** Paper lying on the folder (components/ui/styles.ts `card`, without its radius). */
+const PAPER_SHADOW = "shadow-[0_1px_0_var(--color-kraft-deep),0_2px_6px_-2px_rgb(74_48_25/0.35)]";
+/** A slip of paper on the board with a stamp-red edge: error notices and the conflict banner. */
+const SLIP =
+  "rounded-[2px] bg-surface shadow-[inset_3px_0_0_var(--color-stamp),0_1px_0_var(--color-kraft-deep),0_2px_6px_-2px_rgb(74_48_25/0.35)]";
+
+/** A notice as shown: `id` keys its entrance, `enter` is false for notices shown while the page loads. */
+type ShownNotice = Notice & { id: number; enter: boolean };
 
 /**
  * The builder: several CVs and cover letters stored in this browser (lib/documents.ts),
@@ -132,7 +142,10 @@ export function BuilderApp() {
   const [docs, setDocs] = useState<DocMeta[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
-  const [notice, setNotice] = useState<Notice | null>(null);
+  const [notice, setNoticeState] = useState<ShownNotice | null>(null);
+  // Motion answers what the person does: nothing fades or slides in while the page loads,
+  // only after they first edit or switch a tab.
+  const [interacted, setInteracted] = useState(false);
   // Another tab saved the open document while this one had unsaved changes.
   const [conflict, setConflict] = useState(false);
   // Asked before another document replaces one whose latest changes couldn't be saved.
@@ -169,6 +182,9 @@ export function BuilderApp() {
   const langRef = useRef<Language>(lang);
   const pendingSave = useRef<number | null>(null);
   const switcherRef = useRef<HTMLButtonElement>(null);
+  const noticeSeq = useRef(0);
+  /** True once the first document is open: notices from then on enter with motion. */
+  const settledRef = useRef(false);
 
   useEffect(() => {
     docRef.current = doc;
@@ -187,6 +203,15 @@ export function BuilderApp() {
   }, []);
 
   const refreshDocs = useCallback(() => setDocs(listDocs()), []);
+
+  const setNotice = useCallback((next: Notice | null) => {
+    if (!next) {
+      setNoticeState(null);
+      return;
+    }
+    noticeSeq.current += 1;
+    setNoticeState({ ...next, id: noticeSeq.current, enter: settledRef.current });
+  }, []);
 
   const cancelPendingSave = useCallback(() => {
     if (pendingSave.current !== null) window.clearTimeout(pendingSave.current);
@@ -335,6 +360,7 @@ export function BuilderApp() {
     if (!storageOk) setSaveState("unavailable");
     refreshDocs();
     setLoaded(true);
+    settledRef.current = true;
     /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount
   }, []);
@@ -432,7 +458,7 @@ export function BuilderApp() {
     if (!notice || notice.kind === "error") return;
     const timer = window.setTimeout(() => setNotice(null), 6000);
     return () => window.clearTimeout(timer);
-  }, [notice]);
+  }, [notice, setNotice]);
 
   // Jump to a section (and entry), or a Design tab control, after its tab has been shown.
   useEffect(() => {
@@ -476,8 +502,23 @@ export function BuilderApp() {
 
   /* ---------------- dispatchers ---------------- */
 
-  const cvDispatch = useCallback((action: CVAction) => dispatch({ type: "cv", action }), []);
-  const letterDispatch = useCallback((action: LetterAction) => dispatch({ type: "letter", action }), []);
+  const cvDispatch = useCallback((action: CVAction) => {
+    setInteracted(true);
+    dispatch({ type: "cv", action });
+  }, []);
+  const letterDispatch = useCallback((action: LetterAction) => {
+    setInteracted(true);
+    dispatch({ type: "letter", action });
+  }, []);
+
+  const selectEditorTab = (tab: EditorTab) => {
+    setInteracted(true);
+    setEditorTab(tab);
+  };
+  const selectMobileTab = (tab: MobileTab) => {
+    setInteracted(true);
+    setMobileTab(tab);
+  };
 
   const cvOptions = useMemo(
     () => docs.filter((m) => m.kind === "cv").map(({ id, name }) => ({ id, name })),
@@ -755,13 +796,13 @@ export function BuilderApp() {
   /* ---------------- check jumps ---------------- */
 
   const onJump = (target: string, itemId?: string, field?: string) => {
-    setMobileTab("edit");
+    selectMobileTab("edit");
     if (target === DESIGN_TARGET) {
-      setEditorTab("design");
+      selectEditorTab("design");
       setJump({ target: `${ids}-panel-design`, field, wholePanel: true });
       return;
     }
-    setEditorTab("content");
+    selectEditorTab("content");
     setJump({ target, itemId, field });
   };
 
@@ -789,7 +830,9 @@ export function BuilderApp() {
   const storageProblem = saveState === "unavailable" || saveState === "quota" || saveState === "conflict";
 
   const toolbarSelectClass =
-    "mt-1 min-h-10 rounded-sm border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-steel";
+    "mt-1 min-h-10 rounded-[3px] border border-control-line bg-raised px-2 text-sm text-fg transition-colors hover:border-fg";
+  // Shown panels fade in, but only once the person has switched tabs or edited (not on page load).
+  const fadeIn = interacted ? "motion-fade" : "";
 
   const editorTabs: TabSpec<EditorTab>[] = [
     { key: "content", label: dt.editorTabs.content, tabId: `${ids}-tab-content`, panelId: `${ids}-panel-content` },
@@ -807,7 +850,9 @@ export function BuilderApp() {
             <>
               <span
                 aria-hidden="true"
-                className={`rounded-sm border px-1.5 text-xs leading-5 tabular-nums ${BADGE[scoreBand(checkResult.score)]}`}
+                className={`rounded-[3px] border px-1.5 text-sm leading-5 font-semibold tabular-nums ${
+                  editorTab === "check" ? BADGE[scoreBand(checkResult.score)] : "border-white/70 text-white"
+                }`}
                 data-testid="check-score-badge"
               >
                 {checkResult.score}
@@ -836,10 +881,10 @@ export function BuilderApp() {
           Toolbar. Its z-index must beat the sticky Edit/Preview bar below it, or the menus
           that open from here (download formats, More) slide under that bar on phones.
         */}
-        <div className="relative z-30 border-b border-line bg-surface lg:sticky lg:top-0">
+        <div className={`relative z-30 bg-surface ${PAPER_SHADOW} lg:sticky lg:top-0`}>
           <div className="mx-auto flex max-w-[1600px] flex-wrap items-end gap-3 px-4 py-3">
             <div className="flex min-w-0 flex-auto flex-wrap items-end gap-3">
-              <div className="flex w-full min-w-0 flex-col text-xs text-fg-muted sm:w-auto sm:max-w-[20rem]">
+              <div className="flex w-full min-w-0 flex-col text-sm text-fg-muted sm:w-auto sm:max-w-[20rem]">
                 <span id={switcherLabelId}>{dt.switcher.label}</span>
                 <button
                   ref={switcherRef}
@@ -848,16 +893,16 @@ export function BuilderApp() {
                   aria-haspopup="dialog"
                   aria-labelledby={`${switcherLabelId} ${switcherId}`}
                   title={dt.switcher.hint}
-                  className="mt-1 flex min-h-10 min-w-0 items-center gap-2 rounded-sm border border-control-line bg-raised px-2 text-left text-sm text-fg transition-colors hover:border-steel"
+                  className="mt-1 flex min-h-10 min-w-0 items-center gap-2 rounded-[3px] border border-control-line bg-raised px-2 text-left text-sm text-fg transition-colors hover:border-fg"
                   onClick={() => openDocsDialog()}
                   data-testid="document-switcher"
                 >
                   <span className="min-w-0 truncate">{docName}</span>
-                  <span className="shrink-0 text-xs text-fg-muted">{kindLabel}</span>
+                  <span className="shrink-0 text-sm text-fg-muted">{kindLabel}</span>
                   <Chevron width={16} height={16} className="ml-auto shrink-0 text-fg-muted" />
                 </button>
               </div>
-              <label className="flex flex-col text-xs text-fg-muted">
+              <label className="flex flex-col text-sm text-fg-muted">
                 {b.template}
                 <select
                   className={toolbarSelectClass}
@@ -876,7 +921,7 @@ export function BuilderApp() {
                 </select>
               </label>
               {/* The hint is the select's description, so touch, keyboard and screen reader users get it too. */}
-              <label className="flex flex-col text-xs text-fg-muted" title={languageHint}>
+              <label className="flex flex-col text-sm text-fg-muted" title={languageHint}>
                 {isCV ? b.cvLanguage : dt.letterLanguage}
                 <select
                   className={toolbarSelectClass}
@@ -902,7 +947,7 @@ export function BuilderApp() {
             <div className="flex w-full flex-wrap items-center gap-x-2 gap-y-2 sm:ml-auto sm:w-auto">
               {/* The one save status, at every width (its own line on phones). */}
               <p
-                className={`flex items-center gap-1.5 text-xs max-sm:w-full max-sm:empty:hidden sm:mr-2 ${
+                className={`flex items-center gap-1.5 text-sm max-sm:w-full max-sm:empty:hidden sm:mr-2 ${
                   storageProblem ? "text-danger-text sm:max-w-[22rem]" : "text-fg-muted"
                 }`}
                 role="status"
@@ -912,7 +957,13 @@ export function BuilderApp() {
                   b.loading
                 ) : empty && saveState === "saved" ? null : (
                   <>
-                    {saveState === "saved" && <Check width={14} height={14} className="shrink-0" />}
+                    {/* Saved: the tick comes in after each save. Unsaved: a slowly breathing ink dot. Problems stay still. */}
+                    {saveState === "saved" && (
+                      <Check key="saved" width={14} height={14} className={`shrink-0 ${interacted ? "motion-enter" : ""}`} />
+                    )}
+                    {saveState === "dirty" && (
+                      <span key="dirty" aria-hidden="true" className="mx-1 size-1.5 shrink-0 rounded-full bg-fg motion-pulse" />
+                    )}
                     {statusText}
                   </>
                 )}
@@ -973,7 +1024,10 @@ export function BuilderApp() {
           </div>
         </div>
 
-        {/* Mobile: switch between editor and preview instead of a cramped split screen. */}
+        {/*
+          Mobile: switch between editor and preview instead of a cramped split screen. Folder
+          tabs on the kraft board, kept at the top while the page scrolls.
+        */}
         <Tabs
           label={b.title}
           tabs={(["edit", "preview"] as const).map((key) => ({
@@ -983,15 +1037,15 @@ export function BuilderApp() {
             panelId: `panel-${key}`,
           }))}
           selected={mobileTab}
-          onSelect={setMobileTab}
-          className="sticky top-0 z-20 border-b border-line bg-surface px-4 lg:hidden"
+          onSelect={selectMobileTab}
+          className="sticky top-0 z-20 bg-canvas px-4 pt-3 shadow-[0_2px_0_var(--color-kraft-deep)] lg:hidden"
         />
 
         {conflict && (
-          <div className="mx-auto w-full max-w-[1600px] px-4 pt-3">
+          <div className="motion-enter mx-auto w-full max-w-[1600px] px-4 pt-3">
             <div
               role="alert"
-              className="rounded-sm border border-l-2 border-line border-l-danger-text bg-surface px-4 py-2.5 text-sm text-fg"
+              className={`${SLIP} px-4 py-3 text-sm text-fg`}
               data-testid="conflict-notice"
             >
               <p className="break-words">{fmt(dt.conflict.text, { name: docName })}</p>
@@ -1007,21 +1061,25 @@ export function BuilderApp() {
           </div>
         )}
 
-        {/* Errors keep a danger bar; info and success are a plain line, since the toolbar already shows save state. */}
+        {/*
+          Errors are a slip of paper with a stamp-red edge; info and success are a plain ink
+          line on the board, since the toolbar already shows the save state. Each new notice
+          comes in (except the ones shown while the page loads).
+        */}
         {notice && (
-          <div className="mx-auto w-full max-w-[1600px] px-4 pt-3">
+          <div key={notice.id} className={`mx-auto w-full max-w-[1600px] px-4 pt-3 ${notice.enter ? "motion-enter" : ""}`}>
             <div
               role={notice.kind === "error" ? "alert" : "status"}
-              className={`flex items-baseline justify-between gap-4 text-sm ${
-                notice.kind === "error"
-                  ? "rounded-sm border border-l-2 border-line border-l-danger-text bg-surface px-4 py-2.5 text-fg"
-                  : "text-fg-muted"
+              className={`flex items-baseline justify-between gap-4 text-sm text-fg ${
+                notice.kind === "error" ? `${SLIP} px-4 py-3` : ""
               }`}
             >
               <span className="min-w-0 break-words">{notice.text(t)}</span>
               <button
                 type="button"
-                className="shrink-0 text-fg-muted underline underline-offset-2 hover:text-fg"
+                className={`inline-flex min-h-10 shrink-0 items-center underline underline-offset-2 -my-2.5 ${
+                  notice.kind === "error" ? "text-fg-muted hover:text-fg" : "text-kraft-ink hover:text-fg"
+                }`}
                 onClick={() => setNotice(null)}
               >
                 {b.dismiss}
@@ -1035,79 +1093,77 @@ export function BuilderApp() {
             id="panel-edit"
             role="tabpanel"
             aria-labelledby="tab-edit"
-            className={`${mobileTab === "edit" ? "block" : "hidden"} min-w-0 lg:block`}
+            className={`${mobileTab === "edit" ? "block" : "hidden"} min-w-0 lg:block ${fadeIn}`}
           >
             <h1 className="sr-only">{b.title}</h1>
             {loaded ? (
               <>
-                <Tabs
-                  label={dt.editorTabs.label}
-                  tabs={editorTabs}
-                  selected={editorTab}
-                  onSelect={setEditorTab}
-                  className="mb-2 border-b border-line"
-                />
-                <div
-                  id={`${ids}-panel-content`}
-                  role="tabpanel"
-                  aria-labelledby={`${ids}-tab-content`}
-                  hidden={editorTab !== "content"}
-                >
-                  {doc.kind === "cv" ? (
-                    <CVForm key={editorKey} cv={doc.data} dispatch={cvDispatch} />
-                  ) : (
-                    <LetterForm
-                      key={editorKey}
-                      letter={doc.data}
-                      dispatch={letterDispatch}
-                      cvOptions={cvOptions}
-                      loadCV={loadCV}
-                    />
-                  )}
-                </div>
-                <div
-                  id={`${ids}-panel-design`}
-                  role="tabpanel"
-                  aria-labelledby={`${ids}-tab-design`}
-                  hidden={editorTab !== "design"}
-                  tabIndex={-1}
-                  className="pt-4"
-                >
-                  {editorTab === "design" &&
-                    (doc.kind === "cv" ? (
-                      <DesignPanel
-                        key={editorKey}
-                        style={doc.data.meta.style}
-                        template={doc.data.meta.template}
-                        onStyleChange={(patch) => cvDispatch({ type: "setStyle", patch })}
-                        cv={doc.data}
-                        dispatch={cvDispatch}
-                      />
-                    ) : (
-                      <DesignPanel
-                        key={editorKey}
-                        style={doc.data.meta.style}
-                        template={doc.data.meta.template}
-                        onStyleChange={(patch) => letterDispatch({ type: "setStyle", patch })}
-                      />
-                    ))}
-                </div>
-                {isCV && (
+                {/* Folder tabs on one sheet of paper: the selected tab joins the sheet below it. */}
+                <Tabs label={dt.editorTabs.label} tabs={editorTabs} selected={editorTab} onSelect={selectEditorTab} />
+                <div className={`rounded-tr-[2px] rounded-b-[2px] bg-surface px-4 pt-6 pb-2 sm:px-6 xl:px-8 ${PAPER_SHADOW}`}>
                   <div
-                    id={`${ids}-panel-check`}
+                    id={`${ids}-panel-content`}
                     role="tabpanel"
-                    aria-labelledby={`${ids}-tab-check`}
-                    hidden={editorTab !== "check"}
-                    className="pt-4"
+                    aria-labelledby={`${ids}-tab-content`}
+                    hidden={editorTab !== "content"}
+                    className={fadeIn}
                   >
-                    {editorTab === "check" && doc.kind === "cv" && (
-                      <ChecksPanel cv={doc.data} pages={pages} onJump={onJump} />
+                    {doc.kind === "cv" ? (
+                      <CVForm key={editorKey} cv={doc.data} dispatch={cvDispatch} />
+                    ) : (
+                      <LetterForm
+                        key={editorKey}
+                        letter={doc.data}
+                        dispatch={letterDispatch}
+                        cvOptions={cvOptions}
+                        loadCV={loadCV}
+                      />
                     )}
                   </div>
-                )}
+                  <div
+                    id={`${ids}-panel-design`}
+                    role="tabpanel"
+                    aria-labelledby={`${ids}-tab-design`}
+                    hidden={editorTab !== "design"}
+                    tabIndex={-1}
+                    className={fadeIn}
+                  >
+                    {editorTab === "design" &&
+                      (doc.kind === "cv" ? (
+                        <DesignPanel
+                          key={editorKey}
+                          style={doc.data.meta.style}
+                          template={doc.data.meta.template}
+                          onStyleChange={(patch) => cvDispatch({ type: "setStyle", patch })}
+                          cv={doc.data}
+                          dispatch={cvDispatch}
+                        />
+                      ) : (
+                        <DesignPanel
+                          key={editorKey}
+                          style={doc.data.meta.style}
+                          template={doc.data.meta.template}
+                          onStyleChange={(patch) => letterDispatch({ type: "setStyle", patch })}
+                        />
+                      ))}
+                  </div>
+                  {isCV && (
+                    <div
+                      id={`${ids}-panel-check`}
+                      role="tabpanel"
+                      aria-labelledby={`${ids}-tab-check`}
+                      hidden={editorTab !== "check"}
+                      className={fadeIn}
+                    >
+                      {editorTab === "check" && doc.kind === "cv" && (
+                        <ChecksPanel cv={doc.data} pages={pages} onJump={onJump} />
+                      )}
+                    </div>
+                  )}
+                </div>
               </>
             ) : (
-              <p className="text-fg-muted">{b.loading}</p>
+              <p className="text-kraft-ink">{b.loading}</p>
             )}
           </div>
           <div
@@ -1122,7 +1178,7 @@ export function BuilderApp() {
             data-testid="preview-panel"
           >
             <div className="lg:sticky lg:top-24">
-              <DocumentPreview doc={doc} onPagesChange={setPages} />
+              <DocumentPreview doc={doc} onPagesChange={setPages} fadeOnChange={loaded} />
             </div>
           </div>
         </div>

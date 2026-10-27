@@ -14,6 +14,7 @@ import {
 import { fmt, useI18n } from "@/lib/i18n";
 import { ConfirmDialog } from "../ui/Dialog";
 import { Trash } from "../ui/Icons";
+import { prefersReducedMotion, useFlipList } from "../ui/motion";
 import { btn } from "../ui/styles";
 import { AddCustomSection, CustomSectionEditor } from "./CustomSections";
 import {
@@ -55,13 +56,17 @@ function EyeOff() {
   );
 }
 
-/** One form section: a rule-separated group (no boxed card), headed by an H2. */
+/**
+ * One form section on the editor's sheet of paper: a group headed by an H2 and set apart
+ * by space (no rules, no boxed card). `flipKey` marks it for the reorder animation.
+ */
 function FormSection({
   id,
   title,
   untitled = false,
   hiddenFromCV = false,
   actions,
+  flipKey,
   children,
 }: {
   id: string;
@@ -70,19 +75,18 @@ function FormSection({
   untitled?: boolean;
   hiddenFromCV?: boolean;
   actions?: ReactNode;
+  flipKey?: string;
   children: ReactNode;
 }) {
   const { t } = useI18n();
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="scroll-mt-32 border-t border-line pt-6 pb-8 first-of-type:border-t-0"
-    >
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-32 pt-10 pb-2" data-flip-key={flipKey}>
       <div className="mb-5 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <h2
           id={`${id}-title`}
-          className={`min-w-0 font-display text-lg font-semibold break-words ${untitled ? "text-fg-muted" : "text-fg"}`}
+          className={`min-w-0 font-display text-[21px] leading-tight font-semibold break-words ${
+            untitled ? "text-fg-muted" : "text-fg"
+          }`}
         >
           {title}
         </h2>
@@ -155,6 +159,7 @@ export function CVForm(props: SectionProps) {
 
   const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   const addButtonRef = useRef<HTMLButtonElement>(null);
+  const sectionsRef = useRef<HTMLDivElement>(null);
   // Element to focus once the CV change that creates or removes it has rendered.
   const focusRequest = useRef<(() => HTMLElement | null | undefined) | null>(null);
 
@@ -165,7 +170,7 @@ export function CVForm(props: SectionProps) {
     if (!el) return;
     focusRequest.current = null;
     el.focus();
-    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    el.scrollIntoView({ block: "center", behavior: prefersReducedMotion() ? "auto" : "smooth" });
   }, [cv]);
 
   const entries: FormEntry[] = [
@@ -219,39 +224,48 @@ export function CVForm(props: SectionProps) {
   const deleting = pendingDelete === null ? undefined : findCustomSection(cv, customSectionKey(pendingDelete));
   const deletingTitle = deleting?.title.trim() ?? "";
 
+  // Sections slide to their new place when their order changes (moved in the Design tab).
+  useFlipList(
+    sectionsRef,
+    entries.map((s) => s.key),
+  );
+
   return (
     <div>
-      <nav aria-label={f.sectionNav} className="border-b border-line">
-        {/* scroll-padding + scrollIntoView keep a focused link clear of the right-edge fade. */}
-        <div className="flex scroll-pr-10 scroll-pl-1 gap-x-5 overflow-x-auto p-1 pr-8 [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:flex-wrap md:gap-y-1 md:overflow-visible md:pr-1 md:[mask-image:none]">
+      {/* The section index: ink links that wrap; the one quiet line on the sheet sits under it. */}
+      <nav aria-label={f.sectionNav} className="border-b border-line pb-3">
+        <ul className="-mx-1 flex flex-wrap gap-x-1">
           {entries.map((s) => (
-            <a
-              key={s.key}
-              href={`#${s.domId}`}
-              aria-label={s.hidden ? `${s.title} (${t.sections.hiddenNav})` : undefined}
-              className={`inline-flex shrink-0 items-center gap-1.5 py-2 text-sm hover:text-fg ${
-                s.hidden ? "text-fg-subtle" : "text-fg-muted"
-              }`}
-              onFocus={(e) => e.currentTarget.scrollIntoView({ block: "nearest", inline: "nearest" })}
-            >
-              <span className="max-w-[16rem] truncate">{s.title}</span>
-              {s.hidden && <EyeOff />}
-            </a>
+            <li key={s.key} className="min-w-0">
+              <a
+                href={`#${s.domId}`}
+                aria-label={s.hidden ? `${s.title} (${t.sections.hiddenNav})` : undefined}
+                className={`inline-flex min-h-10 max-w-full items-center gap-1.5 rounded-[3px] px-1 text-sm underline decoration-transparent underline-offset-4 transition-colors duration-150 hover:decoration-current ${
+                  s.hidden ? "text-fg-subtle" : "text-fg"
+                }`}
+              >
+                <span className="max-w-[16rem] truncate">{s.title}</span>
+                {s.hidden && <EyeOff />}
+              </a>
+            </li>
           ))}
-        </div>
+        </ul>
       </nav>
-      {entries.map((s) => (
-        <FormSection
-          key={s.key}
-          id={s.domId}
-          title={s.title}
-          untitled={s.untitled}
-          hiddenFromCV={s.hidden}
-          actions={s.actions}
-        >
-          {s.node}
-        </FormSection>
-      ))}
+      <div ref={sectionsRef}>
+        {entries.map((s) => (
+          <FormSection
+            key={s.key}
+            id={s.domId}
+            title={s.title}
+            untitled={s.untitled}
+            hiddenFromCV={s.hidden}
+            actions={s.actions}
+            flipKey={s.key}
+          >
+            {s.node}
+          </FormSection>
+        ))}
+      </div>
       <AddCustomSection
         cv={cv}
         dispatch={dispatch}

@@ -19,28 +19,32 @@ const id: Dictionary = {
     menu: "Navigasi utama",
   },
   landing: {
-    title: "Tulis CV di browser, lalu unduh sebagai PDF",
+    title: "Tulis CV Anda, lalu unduh sebagai PDF A4",
     subtitle:
-      "Saat Anda mengisi formulir, CV langsung tersusun di pratinjau berukuran A4. Tab Periksa menunjukkan data yang belum diisi dan masalah yang sering muncul. Setelah hasilnya sesuai, unduh sebagai PDF, file Word, atau teks biasa.",
+      "Isi formulirnya, dan pratinjau langsung menyusun CV Anda di halaman A4 selagi Anda mengetik. Jika sudah sesuai, unduh sebagai PDF, file Word, atau teks biasa.",
     ctaPrimary: "Buat CV gratis",
     ctaSecondary: "Lihat template",
     ctaContinue: "Lanjutkan dokumen yang tersimpan",
+    folder: {
+      template: "Template",
+      colour: "Warna",
+      playAgain: "Putar lagi",
+    },
     facts: [
-      { label: "Biaya", value: "Pembuat CV dan semua format unduhannya gratis. Tidak ada iklan atau paket berbayar." },
-      { label: "Akun", value: "Tidak perlu membuat akun." },
+      { title: "Gratis, tanpa iklan", body: "Pembuat CV dan semua format unduhan bisa dipakai tanpa biaya. Tidak ada paket berbayar." },
+      { title: "Tanpa akun", body: "Buka Pembuat CV dan langsung mulai menulis. Tidak perlu mendaftar." },
       {
-        label: "Dokumen Anda",
-        value:
-          "Disimpan di penyimpanan lokal browser ini, pada perangkat Anda. Anda bisa menyimpan beberapa CV dan surat lamaran, dan tidak ada yang diunggah ke server.",
+        title: "Tersimpan di browser ini",
+        body: "CV dan surat lamaran Anda tetap ada di perangkat Anda. Tidak ada yang diunggah ke server.",
       },
       {
-        label: "Unduhan",
-        value: "PDF A4 dengan teks yang bisa dipilih, tanpa watermark. Anda juga bisa mengunduh file Word (.docx) atau teks biasa.",
+        title: "PDF, Word, atau teks biasa",
+        body: "PDF A4 berisi teks asli yang bisa dipilih, tanpa watermark. Tersedia juga file Word (.docx) dan teks biasa.",
       },
     ],
     templatesTitle: "Template",
     templatesBody:
-      "Template bisa diganti kapan saja di Pembuat CV, dan data yang sudah Anda isi tetap terbawa. Di tab Desain, Anda juga bisa mengubah warna aksen, jenis huruf, ukuran teks, jarak, dan margin. Surat lamaran memakai template yang sama, jadi tampilannya bisa serasi dengan CV Anda.",
+      "Template bisa diganti kapan saja di Pembuat CV, dan isian Anda tetap terbawa. Tab Desain mengubah warna, jenis huruf, ukuran teks, jarak, dan margin. Surat lamaran memakai template yang sama, jadi surat bisa serasi dengan CV-nya.",
     privacyTitle: "Privasi",
     privacyBody:
       "Tidak ada akun dan tidak ada analitik. Pemberitahuan privasi menjelaskan apa saja yang disimpan di browser Anda dan cara menghapusnya.",
@@ -56,8 +60,8 @@ const id: Dictionary = {
         a: "Bisa, jika Anda menghapus data browser atau menulisnya di mode penyamaran (incognito). Dokumen Anda juga tidak akan ada di perangkat lain. Untuk menyimpan salinan, klik “Semua format” di samping “Unduh PDF” (di ponsel, tanda panahnya), lalu pilih “Cadangan JSON”. Untuk memuatnya lagi, gunakan “Impor file” di “Dokumen Anda”.",
       },
       {
-        q: "Apakah CV bisa dibuat dalam bahasa Indonesia?",
-        a: "Bisa. Pilih Indonesia di “Bahasa CV”, dan judul bagian serta nama bulan akan berganti ke bahasa Indonesia. Teks yang Anda tulis sendiri tidak diterjemahkan, jadi tulis dalam bahasa yang Anda inginkan. Surat lamaran punya pengaturan yang sama, namanya “Bahasa surat”.",
+        q: "CV bisa dibuat dalam bahasa apa saja?",
+        a: "Bahasa Inggris atau Indonesia. Pilih di “Bahasa CV”, dan judul bagian serta nama bulan akan mengikutinya. Teks yang Anda tulis sendiri tidak diterjemahkan, jadi tulis dalam bahasa yang Anda inginkan. Surat lamaran punya pengaturan yang sama, namanya “Bahasa surat”.",
       },
       {
         q: "Apakah CV saya bisa dibaca oleh sistem pelacak pelamar (ATS)?",
@@ -77,14 +81,17 @@ const id: Dictionary = {
   templates: {
     "ats-minimal": {
       name: "ATS Minimal",
+      short: "ATS Minimal",
       description: "Untuk portal lowongan kerja dan formulir lamaran online. Satu kolom, tanpa foto.",
     },
     "modern-professional": {
       name: "Profesional Modern",
+      short: "Profesional Modern",
       description: "Untuk lamaran yang dikirim lewat email atau diserahkan langsung. Ada warna aksen dan tempat untuk foto.",
     },
     graduate: {
       name: "Lulusan / Mahasiswa",
+      short: "Lulusan",
       description:
         "Untuk mahasiswa dan lulusan baru. Pendidikan dan proyek ditampilkan sebelum pengalaman kerja, dan keahlian muncul sebagai tag.",
     },
@@ -127,9 +134,9 @@ const id: Dictionary = {
     preview: {
       label: "Pratinjau CV",
       empty: "Pratinjau akan muncul di sini saat Anda mengisi formulir.",
-      pageGuide: "Perkiraan batas halaman",
-      pageOne: "1 halaman",
-      pageMany: "{count} halaman",
+      pageGuide: "Halaman {page}",
+      pageOne: "A4, 1 halaman",
+      pageMany: "A4, {count} halaman",
       atsPhotoNote: "Template ATS Minimal tidak menampilkan foto.",
     },
   },
@@ -149,7 +156,7 @@ const id: Dictionary = {
       website: "URL portofolio / situs web",
       photo: "Foto profil",
       photoHint:
-        "Banyak perusahaan di luar Indonesia lebih suka CV tanpa foto, sedangkan di Indonesia foto masih umum dicantumkan.",
+        "Perlu tidaknya foto tergantung ke mana Anda melamar. Banyak perusahaan di Inggris, Amerika Serikat, dan Kanada lebih suka CV tanpa foto, sedangkan di sebagian Eropa dan Asia foto umum dicantumkan.",
       photoUpload: "Unggah foto",
       photoChange: "Ganti foto",
       photoRemove: "Hapus foto",
@@ -327,7 +334,7 @@ const id: Dictionary = {
         ],
         steps: [
           "Klik “Unduh PDF”. Jendela cetak browser akan terbuka dan hanya berisi CV atau surat dalam halaman A4.",
-          "Pilih “Simpan sebagai PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows), atau “PDF → Simpan sebagai PDF” (macOS / Safari).",
+          "Pilih “Simpan sebagai PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows), atau “PDF”, lalu “Simpan sebagai PDF” (Safari di Mac).",
           "Atur ukuran kertas ke A4 dan margin ke Default.",
           "Matikan “Header dan footer”, lalu aktifkan “Grafis latar belakang”.",
         ],

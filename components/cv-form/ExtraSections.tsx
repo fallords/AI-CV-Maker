@@ -60,7 +60,7 @@ export function OrganizationsSection(props: SectionProps) {
         addLabel={f.add}
         emptyText={f.empty}
         itemLabel={f.item}
-        getTitle={(o) => joinNonEmpty([o.role, o.organization], " · ")}
+        getTitle={(o) => joinNonEmpty([o.role, o.organization], ", ")}
         renderFields={(o, update) => (
           <div className="grid gap-4 sm:grid-cols-2">
             <TextField
@@ -169,7 +169,7 @@ export function ReferencesSection(props: SectionProps) {
         addLabel={f.add}
         emptyText={f.empty}
         itemLabel={f.item}
-        getTitle={(r) => joinNonEmpty([r.name, r.organization], " · ")}
+        getTitle={(r) => joinNonEmpty([r.name, r.organization], ", ")}
         renderFields={(r, update) => (
           // autoComplete="off": these are someone else's details, not the user's own.
           <div className="grid gap-4 sm:grid-cols-2">

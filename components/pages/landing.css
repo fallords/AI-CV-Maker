@@ -1,0 +1,103 @@
+/*
+ * The landing page's folder demo (components/pages/HeroFolder.tsx). Global CSS stays loaded
+ * after navigating away, so every rule is scoped to `.hf`.
+ *
+ * Geometry: the folder back is kraft board; the white A4 sheet stands in it, and the
+ * window above the front flap shows the top 60% of the sheet. The window's height comes
+ * from its width (60% of the A4 ratio), so the folder needs no JS to have the right size.
+ * The flap lies over the rest of the sheet and has the half-moon thumb cut real folders
+ * have. Motion: see data-demo below; everything moving is opt-in under
+ * prefers-reduced-motion: no-preference.
+ */
+
+.hf-back {
+  background: var(--color-kraft-deep);
+  border-radius: 0 6px 3px 3px;
+  padding: 22px 10px 10px;
+}
+
+/* Holds the sheet and the flap, and cuts the sheet off at the flap's bottom edge. */
+.hf-stage {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 0.6 × 297/210 = 0.8486: the part of the sheet above the flap. */
+.hf-window {
+  position: relative;
+  margin-inline: 14px;
+  aspect-ratio: 1000 / 849;
+}
+
+.hf-sheet {
+  position: absolute;
+  inset: 0 0 auto;
+  aspect-ratio: 210 / 297;
+  overflow: hidden;
+  background: var(--color-paper);
+  box-shadow: 0 1px 0 rgb(74 48 25 / 0.5);
+}
+
+/* The flap: a kraft-deep board layer with the thumb cut, and the kraft face 2px lower with a
+   2px wider cut, so an even dark edge runs along the top and round the cut. drop-shadow
+   follows that shape and lets the flap lie on the sheet. */
+.hf-flap {
+  --hf-cut: 26px;
+  position: relative;
+  z-index: 1;
+  filter: drop-shadow(0 -1px 2px rgb(74 48 25 / 0.45));
+}
+.hf-flap-board,
+.hf-flap-face {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 2px 2px;
+}
+.hf-flap-board {
+  background: var(--color-kraft-deep);
+  mask: radial-gradient(circle var(--hf-cut) at 50% -12px, transparent calc(100% - 0.5px), #000 100%);
+}
+.hf-flap-face {
+  top: 2px;
+  background: var(--color-kraft);
+  mask: radial-gradient(circle calc(var(--hf-cut) + 2px) at 50% -14px, transparent calc(100% - 0.5px), #000 100%);
+}
+
+@media (min-width: 640px) {
+  .hf-back {
+    padding: 28px 14px 14px;
+  }
+  .hf-window {
+    margin-inline: 26px;
+  }
+  .hf-flap {
+    --hf-cut: 32px;
+  }
+}
+
+@media (forced-colors: active) {
+  .hf-flap-board,
+  .hf-flap-face {
+    mask: none;
+  }
+}
+
+/*
+ * The sequence. data-demo on .hf:
+ *   pending  static HTML, before hydration
+ *   still    reduced motion or no IntersectionObserver: the finished sheet, nothing moves
+ *   armed    waiting for the folder to come into view: an empty sheet, sunk 24px
+ *   playing  the sheet has slid up (a Web Animation in HeroFolder) and fills in
+ *   done     the finished sheet
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .hf[data-demo="armed"] .hf-sheet {
+    translate: 0 24px;
+  }
+}
+/* Before hydration a visitor who allows motion is about to see the sheet rise, so start low. */
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .hf[data-demo="pending"] .hf-sheet {
+    translate: 0 24px;
+  }
+}

@@ -53,7 +53,7 @@ export function CustomSectionEditor({
         emptyText={f.empty}
         itemLabel={f.item}
         maxItems={MAX_CUSTOM_ITEMS}
-        getTitle={(item) => joinNonEmpty([item.title, item.subtitle], " · ")}
+        getTitle={(item) => joinNonEmpty([item.title, item.subtitle], ", ")}
         isFilled={isItemFilled}
         onAdd={() => {
           const id = createId();
@@ -151,13 +151,13 @@ export function AddCustomSection({
   const duplicate = titleExists(cv, title, t);
 
   return (
-    <div className="border-t border-line pt-6 pb-8">
-      <h2 className="font-display text-lg font-semibold text-fg">{f.title}</h2>
-      <p className="mt-1 max-w-[65ch] text-sm text-fg-muted">{f.body}</p>
+    <div className="pt-10 pb-6">
+      <h2 className="font-display text-[21px] leading-tight font-semibold text-fg">{f.title}</h2>
+      <p className="mt-2 max-w-[65ch] text-sm text-fg-muted">{f.body}</p>
       <button ref={buttonRef} type="button" className={`${btn.secondary} mt-4`} onClick={start} disabled={atLimit}>
         <Plus /> {f.button}
       </button>
-      {atLimit && <p className="mt-2 text-xs text-fg-muted">{fmt(f.limit, { max: MAX_CUSTOM_SECTIONS })}</p>}
+      {atLimit && <p className="mt-2 text-sm text-fg-muted">{fmt(f.limit, { max: MAX_CUSTOM_SECTIONS })}</p>}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

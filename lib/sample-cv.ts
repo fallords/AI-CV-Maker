@@ -278,3 +278,86 @@ export function sampleLetter(template: TemplateId = "ats-minimal"): LetterData {
     signature: "Alex Example",
   };
 }
+
+/**
+ * Indonesian wording of showcaseCV()'s own text, for the landing page in Indonesian. Same
+ * person, same facts; names of places, companies, tools and projects stay as they are.
+ */
+const SHOWCASE_ID = {
+  title: "Analis Data",
+  summary:
+    "Analis data dengan pengalaman empat tahun mengolah data operasional menjadi laporan dan dasbor yang jelas. Terbiasa memakai SQL, Python, dan perangkat BI, serta menjelaskan temuan kepada rekan kerja nonteknis.",
+  experience: {
+    exp1: {
+      jobTitle: "Analis Data",
+      description:
+        "- Mengelola dasbor mingguan kinerja pengiriman yang dipakai manajer regional\n- Mengotomatiskan laporan SQL rutin dengan skrip Python\n- Bersama staf operasional menyusun definisi KPI yang seragam\n- Mendokumentasikan sumber data dan logika pelaporan untuk tim",
+    },
+    exp2: {
+      jobTitle: "Analis Bisnis Junior",
+      description:
+        "- Menyusun laporan penjualan bulanan untuk manajer toko\n- Membersihkan dan mencocokkan data ekspor kasir (POS) di spreadsheet\n- Membantu pemindahan laporan ke perangkat BI",
+    },
+    exp3: {
+      jobTitle: "Magang Data",
+      description: "- Membantu entri dan validasi data survei\n- Menyusun statistik deskriptif untuk laporan internal",
+    },
+  } as Record<string, { jobTitle: string; description: string }>,
+  education: {
+    edu1: { degree: "Sarjana (S1)", field: "Statistika", description: "Skripsi tentang metode peramalan permintaan ritel." },
+    edu2: { degree: "Ijazah SMA", field: "IPA", description: "" },
+  } as Record<string, { degree: string; field: string; description: string }>,
+  projects: {
+    prj1: {
+      role: "Pengembang tunggal",
+      description:
+        "- Membuat dasbor kecil yang memvisualisasikan data jadwal transportasi umum\n- Menulis dokumentasi agar analisisnya bisa diulang",
+    },
+    prj2: {
+      role: "",
+      description: "Template spreadsheet dengan ringkasan bulanan otomatis, dibagikan kepada teman dan keluarga.",
+    },
+  } as Record<string, { role: string; description: string }>,
+  softSkills: {
+    ss1: "Komunikasi tertulis yang jelas",
+    ss2: "Kerja sama dengan pemangku kepentingan",
+    ss3: "Teliti",
+  } as Record<string, string>,
+};
+
+/**
+ * showcaseCV() written in the CV language: English as it is, or the same CV in Indonesian.
+ * Used by the landing page, whose example CVs follow the interface language.
+ */
+export function localShowcaseCV(template: TemplateId = "modern-professional", cvLanguage: Language = "en"): CVData {
+  const cv = showcaseCV(template, cvLanguage);
+  if (cvLanguage !== "id") return cv;
+  const t = SHOWCASE_ID;
+  return {
+    ...cv,
+    personal: { ...cv.personal, title: t.title },
+    summary: t.summary,
+    experience: cv.experience.map((e) => ({ ...e, ...t.experience[e.id] })),
+    education: cv.education.map((e) => ({ ...e, ...t.education[e.id] })),
+    projects: cv.projects.map((p) => ({ ...p, ...t.projects[p.id] })),
+    softSkills: cv.softSkills.map((s) => ({ ...s, name: t.softSkills[s.id] ?? s.name })),
+  };
+}
+
+/**
+ * The example CV on the landing page (the folder demo and the template thumbnails):
+ * localShowcaseCV() trimmed to one A4 page in every template (the newest two jobs, the
+ * degree, the main project and the technical skills). Nothing is added; it's still the
+ * fictional Nadia Rahmawati.
+ */
+export function heroCV(template: TemplateId = "ats-minimal", cvLanguage: Language = "en"): CVData {
+  const cv = localShowcaseCV(template, cvLanguage);
+  return {
+    ...cv,
+    experience: cv.experience.filter((e) => e.id === "exp1" || e.id === "exp2"),
+    education: cv.education.filter((e) => e.id === "edu1"),
+    projects: cv.projects.filter((p) => p.id === "prj1"),
+    softSkills: [],
+    certifications: [],
+  };
+}
