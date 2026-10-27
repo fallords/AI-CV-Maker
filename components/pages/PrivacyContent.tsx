@@ -7,7 +7,8 @@ import { useI18n } from "@/lib/i18n";
 import { eraseAllLocalData } from "@/lib/storage";
 
 /** The title sits on the kraft folder; the notice is on one sheet of paper. */
-const pageTitle = "max-w-[22ch] text-4xl leading-[1.08] font-extrabold tracking-[-0.01em] text-balance text-fg [font-stretch:125%]";
+const pageTitle =
+  "max-w-[22ch] text-4xl leading-[1.08] font-extrabold tracking-[-0.01em] text-balance text-fg max-sm:[font-stretch:112%] sm:[font-stretch:125%]";
 const h2Class = "font-display text-[21px] leading-snug font-semibold text-fg";
 const prose = "text-base leading-[1.55] text-pretty text-fg-body";
 
