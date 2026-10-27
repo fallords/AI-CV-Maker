@@ -12,8 +12,10 @@ export interface TabSpec<T extends string> {
 }
 
 /**
- * Text tabs with a 2px accent underline on the selected one (ARIA tabs pattern with a
- * roving tabindex: arrow keys, Home and End move between tabs and select them).
+ * Folder tabs (ARIA tabs pattern with a roving tabindex: arrow keys, Home and End move
+ * between tabs and select them). The selected tab is white paper with a stamp-red edge and
+ * joins the white panel below it; the others are the darker folder board. Put the tab list
+ * directly on top of a `bg-surface` panel so the selected tab connects to it.
  */
 export function Tabs<T extends string>({
   label,
@@ -47,7 +49,7 @@ export function Tabs<T extends string>({
   };
 
   return (
-    <div ref={listRef} role="tablist" aria-label={label} className={`flex gap-6 ${className}`} onKeyDown={onKeyDown}>
+    <div ref={listRef} role="tablist" aria-label={label} className={`flex items-end gap-1 ${className}`} onKeyDown={onKeyDown}>
       {tabs.map((tab) => {
         const active = tab.key === selected;
         return (
@@ -60,8 +62,10 @@ export function Tabs<T extends string>({
             aria-controls={tab.panelId}
             tabIndex={active ? 0 : -1}
             onClick={() => onSelect(tab.key)}
-            className={`-mb-px inline-flex min-h-11 items-center gap-2 border-b-2 px-1 text-sm font-medium transition-colors ${
-              active ? "border-accent-text text-fg" : "border-transparent text-fg-muted hover:text-fg"
+            className={`inline-flex min-h-11 items-center gap-2 rounded-t-[6px] px-4 text-sm font-medium transition-colors duration-150 ${
+              active
+                ? "bg-surface text-fg shadow-[inset_0_3px_0_var(--color-stamp)]"
+                : "bg-kraft-deep text-white hover:bg-[#7d5938]"
             }`}
           >
             {tab.label}

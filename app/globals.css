@@ -1,60 +1,65 @@
 @import "tailwindcss";
 
 /*
- * Website theme: professional dark graphite with a Prussian blue accent.
- * True-neutral surfaces, warm off-white text, one restrained accent, no neon. Every text pairing below meets WCAG AA
- * (4.5:1); control borders and checkbox fills meet 3:1 against their backgrounds.
- * The CV document further down keeps its own white "paper" colours.
+ * Website theme: the application folder. The page is kraft board, the work happens on
+ * white paper, text is ink, and stamp red is kept for marks made on paper (the selected
+ * folder tab, the CV check score, errors). Text on kraft is always ink or kraft-ink
+ * (>= 5.3:1); muted greys are only used on paper. Control borders meet 3:1 on paper.
+ * The CV document further down keeps its own colours.
  */
 @theme {
-  /* Surfaces, darkest to lightest */
-  --color-canvas: #121313; /* page background */
-  --color-surface: #18191a; /* cards, header, footer */
-  --color-raised: #1f2021; /* inputs, menus, dialogs */
-  --color-overlay: #27282b; /* hover on raised surfaces */
-  /* Lines */
-  --color-line: #2b2c2f; /* dividers, card borders */
-  --color-line-strong: #3a3b3f; /* emphasised dividers */
-  --color-control-line: #6e7075; /* form control borders (>= 3:1) */
-  /* Text */
-  --color-fg: #e8e7e4;
-  --color-fg-body: #d6d5d1; /* running prose: softer than fg, not grey */
-  --color-fg-muted: #b0b2b5;
-  --color-fg-subtle: #939599;
-  /* Prussian blue accent (print-ink blue, not a UI-kit blue) */
-  --color-accent: #21507a; /* solid buttons, selected states */
-  --color-accent-hover: #285a85;
-  --color-accent-fg: #f4f6f8; /* text on accent */
-  --color-accent-text: #a3bdd2; /* links, active nav, focus ring */
-  --color-accent-soft: #182128; /* tinted panels */
-  --color-accent-line: #2d5a80; /* borders of accent elements */
-  --color-accent-control: #5d8fb5; /* checkbox fill: >= 3:1 on dark surfaces */
-  /* Neutral detail colour */
-  --color-steel: #8f9296;
-  /* Status (muted, never bright) */
-  --color-danger: #7e3029;
-  --color-danger-hover: #8f3830;
-  --color-danger-text: #e4a69f;
-  --color-danger-soft: #261614;
-  --color-danger-line: #5b2c27;
-  --color-warn-text: #e0cd9f;
-  --color-warn-soft: #242015;
-  --color-warn-line: #4a4029;
+  /* The folder */
+  --color-kraft: #c29a6e; /* page ground (ink on it: 6.2:1) */
+  --color-kraft-deep: #8c6440; /* folder back, unselected tabs, footer (paper text on it: 5.2:1) */
+  --color-kraft-ink: #3a2a1c; /* secondary text on kraft (5.3:1) */
+  --color-stamp: #b3261e; /* marks on paper (6.5:1 on paper); never text on kraft */
+  /* Semantic surfaces */
+  --color-canvas: var(--color-kraft); /* page background */
+  --color-surface: #ffffff; /* paper panels */
+  --color-raised: #ffffff; /* inputs, menus, dialogs */
+  --color-overlay: #f1f0ed; /* hover on paper */
+  /* Lines (on paper) */
+  --color-line: #e3e0db;
+  --color-line-strong: #cbc6bf;
+  --color-control-line: #6e727a; /* form control borders: 4.8:1 on paper */
+  /* Text (on paper) */
+  --color-fg: #1e2229; /* ink */
+  --color-fg-body: #2a2e35;
+  --color-fg-muted: #5a5e66; /* 6.5:1 */
+  --color-fg-subtle: #676b73; /* 5.4:1 */
+  /* Ink is the action colour */
+  --color-accent: #1e2229; /* solid buttons, checked states */
+  --color-accent-hover: #363b44;
+  --color-accent-fg: #ffffff;
+  --color-accent-text: #1e2229; /* links, active nav, focus ring (6.2:1 on kraft, 16:1 on paper) */
+  --color-accent-soft: #f3f1ee; /* selected rows on paper */
+  --color-accent-line: #8a8e96; /* link underlines, outlines of selected items */
+  --color-accent-control: #1e2229; /* checkbox fill */
+  --color-steel: #6e727a;
+  /* Status */
+  --color-danger: #b3261e;
+  --color-danger-hover: #9a1f18;
+  --color-danger-text: #b3261e;
+  --color-danger-soft: #fcedeb;
+  --color-danger-line: #e5aea8;
+  --color-warn-text: #7a4e00;
+  --color-warn-soft: #fff4da;
+  --color-warn-line: #e1bf74;
   /* The CV preview sheet */
   --color-paper: #ffffff;
 
   --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, "Noto Sans",
     "Liberation Sans", sans-serif;
   --font-serif: Georgia, Cambria, "Times New Roman", "Noto Serif", "Liberation Serif", serif;
-  /* Website UI type (self-hosted IBM Plex, see app/layout.tsx). --font-sans above stays
-     the CV document font so CV output is unchanged. */
-  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  /* Website UI type: Archivo (self-hosted variable font with a width axis, see app/layout.tsx).
+     --font-sans above stays the CV document font so CV output is unchanged. */
+  --font-ui: "Archivo Variable", "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-display: var(--font-ui);
-  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -62,6 +67,11 @@ body {
   color: var(--color-fg);
   font-family: var(--font-ui);
   font-feature-settings: "kern", "liga";
+}
+
+/* Headings set in Archivo's wider cut; the hero goes further (font-stretch 125%). */
+.font-display {
+  font-stretch: 112%;
 }
 
 ::selection {
@@ -93,7 +103,78 @@ label:has(> [data-jumped]:focus) {
 }
 
 dialog::backdrop {
-  background: rgb(0 0 0 / 0.7);
+  background: rgb(30 34 41 / 0.55);
+}
+
+/* ===================================================================== */
+/* Motion. One orchestrated moment (the landing demo) plus feedback for   */
+/* things the person does (open, add, move, save). No page-load or scroll */
+/* entrances. Short, decelerating, no overshoot, opt-in under             */
+/* prefers-reduced-motion: no-preference; content is visible without it. */
+/* JS helpers: components/ui/motion.ts.                                  */
+/* ===================================================================== */
+:root {
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 320ms;
+}
+
+@keyframes motion-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Fade and rise a few pixels when inserted or un-hidden (menus, notices, new entries, status icons). */
+  .motion-enter {
+    transition:
+      opacity var(--motion-base) var(--motion-ease),
+      translate var(--motion-base) var(--motion-ease);
+  }
+  @starting-style {
+    .motion-enter {
+      opacity: 0;
+      translate: 0 6px;
+    }
+  }
+
+  /* Opacity only (tab panels, the preview after a template change). */
+  .motion-fade {
+    transition: opacity var(--motion-base) var(--motion-ease);
+  }
+  @starting-style {
+    .motion-fade {
+      opacity: 0;
+    }
+  }
+
+  /* A slow breathing dot for "unsaved changes". */
+  .motion-pulse {
+    animation: motion-pulse 1.6s ease-in-out infinite;
+  }
+
+  /* Modal dialogs and their backdrop fade in; closing is immediate. */
+  dialog.app-dialog[open] {
+    transition:
+      opacity var(--motion-base) var(--motion-ease),
+      scale var(--motion-base) var(--motion-ease);
+  }
+  @starting-style {
+    dialog.app-dialog[open] {
+      opacity: 0;
+      scale: 0.97;
+    }
+  }
+  dialog.app-dialog[open]::backdrop {
+    transition: background-color var(--motion-base) var(--motion-ease);
+  }
+  @starting-style {
+    dialog.app-dialog[open]::backdrop {
+      background-color: rgb(0 0 0 / 0);
+    }
+  }
 }
 
 /* ===================================================================== */

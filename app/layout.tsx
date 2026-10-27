@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { I18nProvider } from "@/lib/i18n";
+// Website UI type: Archivo with its width axis (the wider cut is used for headings).
+import "@fontsource-variable/archivo/standard.css";
+// IBM Plex is only used by CV/letter documents set in it (lib/doc-style.ts font options).
+// Bundled like the UI font, so PDFs never depend on remote assets.
 import "@fontsource/ibm-plex-sans/400.css";
 import "@fontsource/ibm-plex-sans/500.css";
 import "@fontsource/ibm-plex-sans/600.css";
-// Weights only used by CV/letter documents set in IBM Plex (lib/doc-style.ts font options).
-// Bundled like the UI fonts, so PDFs never depend on remote assets.
 import "@fontsource/ibm-plex-sans/700.css";
 import "@fontsource/ibm-plex-serif/400.css";
 import "@fontsource/ibm-plex-serif/600.css";
 import "@fontsource/ibm-plex-serif/700.css";
-import "@fontsource/ibm-plex-mono/400.css";
-import "@fontsource/ibm-plex-mono/500.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#121313",
+  themeColor: "#c29a6e",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
