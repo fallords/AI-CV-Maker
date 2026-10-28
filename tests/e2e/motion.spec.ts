@@ -63,6 +63,16 @@ async function expectMotionAllowed(page: Page) {
 const accentOf = (doc: Locator) =>
   doc.evaluate((el) => getComputedStyle(el).getPropertyValue("--cv-accent").trim().toLowerCase());
 
+/**
+ * Chooses a visually hidden radio the way a person does: by clicking its label (the folder
+ * tab or the swatch). Playwright's check() can't, because the hidden input itself is never
+ * under the pointer.
+ */
+async function pick(radio: Locator) {
+  await radio.locator("xpath=ancestor::label[1]").click();
+  await expect(radio).toBeChecked();
+}
+
 async function expectNoOverflow(page: Page, where: string) {
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow, `horizontal overflow ${where}`).toBeLessThanOrEqual(0);
@@ -122,14 +132,14 @@ test.describe("landing page folder demo", () => {
       ["Graduate", "tpl-graduate"],
       ["ATS Minimal", "tpl-ats"],
     ]) {
-      await templates.getByRole("radio", { name }).check();
+      await pick(templates.getByRole("radio", { name }));
       await expect(doc).toHaveClass(new RegExp(`\\b${cls}\\b`));
       await expect(sheet).toContainText("Nadia Rahmawati");
       // A new template doesn't start the sequence again.
       await expect(folder).toHaveAttribute("data-demo", "done");
     }
 
-    await templates.getByRole("radio", { name: "Modern Professional" }).check();
+    await pick(templates.getByRole("radio", { name: "Modern Professional" }));
     await expect(doc).toHaveClass(/\btpl-modern\b/);
     await expect(colours.getByRole("radio")).toHaveCount(5);
     await expect(colours.getByRole("radio", { name: "Template colour" })).toBeChecked();
@@ -140,12 +150,11 @@ test.describe("landing page folder demo", () => {
       ["Prussian blue", "#21507a"],
       ["Forest green", "#1b4332"],
     ]) {
-      await colours.getByRole("radio", { name }).check();
-      await expect(colours.getByRole("radio", { name })).toBeChecked();
+      await pick(colours.getByRole("radio", { name }));
       await expect.poll(() => accentOf(doc)).toBe(hex);
       await expect(doc).toHaveClass(/\bcv-accented\b/);
     }
-    await colours.getByRole("radio", { name: "Template colour" }).check();
+    await pick(colours.getByRole("radio", { name: "Template colour" }));
     await expect.poll(() => accentOf(doc)).toBe("#245740");
     await expect(doc).not.toHaveClass(/\bcv-accented\b/);
     await expect(folder).toHaveAttribute("data-demo", "done");
