@@ -727,7 +727,10 @@ describe("ChecksPanel", () => {
     const meter = screen.getByRole("meter", { name: "Score" });
     expect(meter).toHaveAttribute("aria-valuenow", String(score));
     expect(meter).toHaveAttribute("aria-valuetext", `${score} out of 100`);
-    expect(screen.getByTestId("checks-score")).toHaveTextContent(`${score} out of 100`);
+    // The stamp holds only the number; "out of 100" is printed beside it.
+    const stamp = screen.getByTestId("checks-score");
+    expect(stamp.textContent).toBe(String(score));
+    expect(stamp.parentElement).toHaveTextContent(`${score} out of 100`);
     expect(screen.getByText(/1 error, 1 warning and 2 tips\./)).toBeInTheDocument();
     expect(screen.getByText(checksEn.score.withErrors, { exact: false })).toBeInTheDocument();
 

@@ -1,65 +1,60 @@
 "use client";
 
 import Link from "next/link";
+import { btn, card } from "@/components/ui/styles";
 import { useI18n } from "@/lib/i18n";
 
-/** Same split as the landing page: heading in the left third, text in the right two thirds. */
-const sectionRow =
-  "grid gap-x-12 gap-y-3 border-t border-line py-8 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]";
-const h2Class = "font-display text-xl leading-snug font-semibold tracking-[-0.01em] text-fg";
-const prose = "text-[15px] leading-relaxed text-pretty text-fg-body";
-const textLink =
-  "font-medium text-accent-text underline decoration-accent-line underline-offset-4 hover:decoration-accent-text";
+/** The title sits on the kraft folder; the instructions are on one sheet of paper. */
+const pageTitle =
+  "max-w-[22ch] text-4xl leading-[1.08] font-extrabold tracking-[-0.01em] text-balance text-fg max-sm:[font-stretch:112%] sm:[font-stretch:125%]";
+const h2Class = "font-display text-[21px] leading-snug font-semibold text-fg";
+const prose = "text-base leading-[1.55] text-pretty text-fg-body";
 
 export function HelpContent() {
   const { t } = useI18n();
   return (
-    <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-12 pb-16 sm:pt-16 sm:pb-20">
-      <div className="max-w-[68ch]">
-        <h1 className="font-display text-3xl leading-tight font-semibold tracking-[-0.015em] text-fg">
-          {t.help.title}
-        </h1>
-        <p className="mt-4 text-base leading-relaxed text-fg-body">{t.help.intro}</p>
-      </div>
-      <div className="mt-10">
-        {t.help.sections.map((s, i) => {
-          const headingId = `help-section-${i + 1}`;
-          return (
-            <section key={s.title} aria-labelledby={headingId} className={sectionRow}>
-              <h2 id={headingId} className={h2Class}>
-                {s.title}
-              </h2>
-              <div className="max-w-[65ch] space-y-3">
-                {s.body.map((para) => (
-                  <p key={para} className={prose}>
-                    {para}
-                  </p>
-                ))}
-                {s.steps && (
-                  <ol className={`list-decimal space-y-2 pl-5 marker:text-fg-muted ${prose}`}>
-                    {s.steps.map((step) => (
-                      <li key={step} className="pl-1">
-                        {step}
-                      </li>
-                    ))}
-                  </ol>
-                )}
-                {s.after?.map((para) => (
-                  <p key={para} className={prose}>
-                    {para}
-                  </p>
-                ))}
-              </div>
-            </section>
-          );
-        })}
-        <div className="grid gap-x-12 border-t border-line pt-8 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-          <p className="text-[15px] md:col-start-2">
-            <Link href="/builder/" className={textLink}>
-              {t.landing.ctaPrimary}
-            </Link>
-          </p>
+    <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-10 pb-20 sm:pt-14 sm:pb-28">
+      <h1 className={pageTitle}>{t.help.title}</h1>
+      <p className="mt-4 max-w-[60ch] text-lg leading-[1.55] text-pretty text-kraft-ink">{t.help.intro}</p>
+      <div className={`${card} mt-10 max-w-[46rem] px-5 py-8 sm:px-12 sm:py-12`}>
+        <div className="space-y-12">
+          {t.help.sections.map((s, i) => {
+            const headingId = `help-section-${i + 1}`;
+            return (
+              <section key={s.title} aria-labelledby={headingId}>
+                <h2 id={headingId} className={h2Class}>
+                  {s.title}
+                </h2>
+                <div className="mt-3 space-y-3">
+                  {s.body.map((para) => (
+                    <p key={para} className={prose}>
+                      {para}
+                    </p>
+                  ))}
+                  {s.steps && (
+                    <ol className={`list-decimal space-y-2 pl-6 marker:font-semibold marker:text-fg ${prose}`}>
+                      {s.steps.map((step) => (
+                        <li key={step} className="pl-1">
+                          {step}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                  {s.after?.map((para) => (
+                    <p key={para} className={prose}>
+                      {para}
+                    </p>
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
+        <p className="mt-12">
+          <Link href="/builder/" className={`${btn.primary} min-h-12 px-6 text-base`}>
+            {t.landing.ctaPrimary}
+          </Link>
+        </p>
       </div>
     </main>
   );

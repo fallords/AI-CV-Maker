@@ -150,7 +150,7 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
         <div className="flex flex-wrap items-center gap-3">
           {p.photo && (
             // eslint-disable-next-line @next/next/no-img-element -- local data URL
-            <img src={p.photo} alt={f.photoAlt} className="size-16 rounded-sm border border-line object-cover" />
+            <img src={p.photo} alt={f.photoAlt} className="size-16 rounded-[2px] border border-line-strong object-cover" />
           )}
           <input
             ref={fileRef}
@@ -169,9 +169,9 @@ export function PersonalSection({ cv, dispatch }: SectionProps) {
             </button>
           )}
         </div>
-        <p className="mt-1 text-xs text-fg-muted">{f.photoHint}</p>
+        <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{f.photoHint}</p>
         {photoError && (
-          <p className="mt-1 text-xs font-medium text-danger-text" role="alert">
+          <p className="mt-1 text-sm font-medium text-danger-text" role="alert">
             {photoError}
           </p>
         )}

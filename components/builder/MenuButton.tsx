@@ -139,7 +139,7 @@ export function MenuButton({
           role="group"
           aria-label={panelLabel}
           onKeyDown={onPanelKeyDown}
-          className="absolute top-full right-0 z-30 mt-1 w-[min(19rem,calc(100vw-2rem))] rounded-sm border border-line-strong bg-raised py-1 shadow-lg shadow-black/40"
+          className="absolute top-full right-0 z-30 mt-1 w-[min(19rem,calc(100vw-2rem))] motion-enter rounded-[3px] border border-line-strong bg-raised py-1 shadow-[0_10px_24px_-10px_rgb(30_34_41/0.45)]"
         >
           {children(run)}
         </div>

@@ -147,7 +147,7 @@ export function DownloadMenu({ doc, onBeforeExport, onNotice }: DownloadMenuProp
                 <span id={`${ids}-${format}`} className="font-medium">
                   {x.formats[format].label}
                 </span>
-                <span id={`${ids}-${format}-desc`} className="text-xs text-fg-muted">
+                <span id={`${ids}-${format}-desc`} className="text-sm text-fg-muted">
                   {format === "docx" && preparingWord ? x.preparing : x.formats[format].description}
                 </span>
               </button>

@@ -18,28 +18,33 @@ const en = {
     menu: "Main navigation",
   },
   landing: {
-    title: "Write your CV in the browser and download it as a PDF",
+    title: "Write your CV and download it as an A4 PDF",
     subtitle:
-      "As you fill in the form, the preview lays out your CV on A4 pages. The Check tab points out missing details and common problems. When it looks right, download it as a PDF, a Word file or plain text.",
+      "Fill in the form and the preview lays out your CV on A4 pages as you type. When it looks right, download it as a PDF, a Word file or plain text.",
     ctaPrimary: "Create Your Free CV",
     ctaSecondary: "See the templates",
     ctaContinue: "Continue with your saved documents",
+    /** The folder demo in the hero. Colour names come from `design.accent.names`. */
+    folder: {
+      template: "Template",
+      colour: "Colour",
+      playAgain: "Play again",
+    },
     facts: [
-      { label: "Price", value: "The builder and every download format are free. There are no ads or paid plans." },
-      { label: "Account", value: "You don’t need one." },
+      { title: "Free, with no ads", body: "The builder and every download format cost nothing. There are no paid plans." },
+      { title: "No account", body: "Open the builder and start writing. There’s nothing to sign up for." },
       {
-        label: "Your documents",
-        value:
-          "Kept in this browser’s local storage, on your device. You can have several CVs and cover letters, and none of them are uploaded to a server.",
+        title: "Saved in this browser",
+        body: "Your CVs and cover letters stay on your device. None of them are uploaded to a server.",
       },
       {
-        label: "Downloads",
-        value: "A4 PDF with selectable text and no watermark. You can also download a Word file (.docx) or plain text.",
+        title: "PDF, Word or plain text",
+        body: "The A4 PDF has real, selectable text and no watermark. Word (.docx) and plain text are there too.",
       },
     ],
     templatesTitle: "Templates",
     templatesBody:
-      "You can switch templates at any time in the builder, and your details carry over. In the Design tab you can also change the accent colour, font, text size, spacing and margins. Cover letters use the same templates, so a letter can match its CV.",
+      "Switch templates at any time in the builder, and what you’ve written carries over. The Design tab changes the colour, font, text size, spacing and margins. Cover letters use the same templates, so a letter can match its CV.",
     privacyTitle: "Privacy",
     privacyBody:
       "There are no accounts and no analytics. The privacy notice lists exactly what’s kept in your browser and how to delete it.",
@@ -55,8 +60,8 @@ const en = {
         a: "Yes, if you clear your browsing data or work in a private (incognito) window. They also won’t be on another device. To keep a copy, click “All formats” next to “Download PDF” (on a phone, the arrow) and choose “JSON backup”. To load it again, use “Import file” in “Your documents”.",
       },
       {
-        q: "Can the CV be in Indonesian?",
-        a: "Yes. Set “CV language” to Indonesian and the section headings and month names switch to Indonesian. Your own text isn’t translated, so write it in the language you want. Cover letters have the same setting, called “Letter language”.",
+        q: "Which languages can a CV be in?",
+        a: "English or Indonesian. Set “CV language” and the section headings and month names follow it. Your own text isn’t translated, so write it in the language you want. Cover letters have the same setting, called “Letter language”.",
       },
       {
         q: "Will applicant tracking systems (ATS) read my CV?",
@@ -77,14 +82,18 @@ const en = {
   templates: {
     "ats-minimal": {
       name: "ATS Minimal",
+      /** On the landing page's folder tabs, where three names share a phone's width. */
+      short: "ATS Minimal",
       description: "For job portals and online application forms. It has one column and no photo.",
     },
     "modern-professional": {
       name: "Modern Professional",
+      short: "Modern Professional",
       description: "For applications you send by email or hand over in person. It has an accent colour and room for a photo.",
     },
     graduate: {
       name: "Graduate / Student",
+      short: "Graduate",
       description:
         "For students and recent graduates. Education and projects come before work experience, and skills are shown as tags.",
     },
@@ -127,9 +136,10 @@ const en = {
     preview: {
       label: "CV preview",
       empty: "The preview appears here as you fill in the form.",
-      pageGuide: "Approximate page break",
-      pageOne: "1 page",
-      pageMany: "{count} pages",
+      /** Label on the dashed line where printed page {page} approximately starts. */
+      pageGuide: "Page {page}",
+      pageOne: "A4, 1 page",
+      pageMany: "A4, {count} pages",
       atsPhotoNote: "The ATS Minimal template doesn’t show a photo.",
     },
   },
@@ -148,7 +158,8 @@ const en = {
       linkedin: "LinkedIn URL",
       website: "Portfolio / website URL",
       photo: "Profile photo",
-      photoHint: "Many employers outside Indonesia prefer CVs without a photo. In Indonesia a photo is common.",
+      photoHint:
+        "Whether to add a photo depends on where you apply. Many employers in the UK, US and Canada prefer CVs without one; in parts of Europe and Asia a photo is common.",
       photoUpload: "Upload photo",
       photoChange: "Change photo",
       photoRemove: "Remove photo",
@@ -327,7 +338,7 @@ const en = {
         ],
         steps: [
           "Click “Download PDF”. Your browser’s print dialog opens with only the CV or letter, on A4 pages.",
-          "Choose “Save as PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows) or “PDF → Save as PDF” (macOS / Safari).",
+          "Choose “Save as PDF” (Chrome, Edge), “Microsoft Print to PDF” (Windows) or “PDF”, then “Save as PDF” (Safari on a Mac).",
           "Set paper size to A4 and margins to Default.",
           "Turn off “Headers and footers” and turn on “Background graphics”.",
         ],

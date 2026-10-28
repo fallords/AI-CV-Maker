@@ -19,7 +19,7 @@ export function ExperienceSection(props: SectionProps) {
       addLabel={f.add}
       emptyText={f.empty}
       itemLabel={f.item}
-      getTitle={(e) => joinNonEmpty([e.jobTitle, e.company], " · ")}
+      getTitle={(e) => joinNonEmpty([e.jobTitle, e.company], ", ")}
       renderFields={(e, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField field="jobTitle" label={f.jobTitle} value={e.jobTitle} onChange={(v) => update({ jobTitle: v })} />
@@ -76,7 +76,7 @@ export function EducationSection(props: SectionProps) {
       addLabel={f.add}
       emptyText={f.empty}
       itemLabel={f.item}
-      getTitle={(e) => joinNonEmpty([e.institution, e.degree], " · ")}
+      getTitle={(e) => joinNonEmpty([e.institution, e.degree], ", ")}
       renderFields={(e, update) => (
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField

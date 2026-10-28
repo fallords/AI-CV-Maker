@@ -1,12 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { richSampleCV, sampleCV, sampleLetter } from "@/lib/sample-cv";
-import { editorTab, fullNameField, openDocuments, seedCV, seedDocs } from "./helpers";
-
-async function expectNoAxeViolations(page: Page) {
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
-}
+import { editorTab, expectNoAxeViolations, fullNameField, openDocuments, seedCV, seedDocs } from "./helpers";
 
 for (const path of ["/", "/builder/", "/help/", "/privacy/"]) {
   test(`no detectable accessibility violations on ${path}`, async ({ page }) => {

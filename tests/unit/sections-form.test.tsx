@@ -116,7 +116,7 @@ describe("new section editors", SLOW, () => {
     await user.click(within(orgs).getByRole("button", { name: "Add organisation" }));
     await user.type(within(orgs).getByLabelText("Role"), "Treasurer");
     await user.type(within(orgs).getByLabelText("Organisation"), "Student Union");
-    expect(within(orgs).getByRole("heading", { level: 3 })).toHaveTextContent("Treasurer · Student Union");
+    expect(within(orgs).getByRole("heading", { level: 3 })).toHaveTextContent("Treasurer, Student Union");
 
     await user.selectOptions(within(orgs).getByLabelText("Start date: Year"), "2022");
     await user.selectOptions(within(orgs).getByLabelText("End date: Year"), "2020");
@@ -269,11 +269,11 @@ describe("custom sections", SLOW, () => {
     const user = userEvent.setup();
     const { state } = renderForm(richSampleCV());
     const card = section("custom-courses");
-    // Entry headings read "<n>. <title> · <subtitle>"; the zero-padded index is decorative.
+    // Entry headings read "<n>. <title>, <subtitle>"; the number is for screen readers only.
     const headings = within(card).getAllByRole("heading", { level: 3 });
     expect(headings).toHaveLength(2);
-    expect(headings[0]).toHaveAccessibleName(/^1\.\s?Introduction to Machine Learning · Sample Online Academy$/);
-    expect(headings[1]).toHaveAccessibleName(/^2\.\s?Data Visualisation Basics · Example Learning Platform$/);
+    expect(headings[0]).toHaveAccessibleName(/^1\.\s?Introduction to Machine Learning, Sample Online Academy$/);
+    expect(headings[1]).toHaveAccessibleName(/^2\.\s?Data Visualisation Basics, Example Learning Platform$/);
 
     await user.click(within(card).getByRole("button", { name: "Add entry" }));
     const titles = within(card).getAllByLabelText("Title");
@@ -285,7 +285,7 @@ describe("custom sections", SLOW, () => {
     expect(within(card).getByRole("alert")).toHaveTextContent("The end date is before the start date.");
     await user.type(within(card).getAllByLabelText("Description")[2], "- Window functions");
 
-    await user.click(within(card).getByRole("button", { name: "Move up: SQL for Analysts · Example Academy" }));
+    await user.click(within(card).getByRole("button", { name: "Move up: SQL for Analysts, Example Academy" }));
     const items = () => state.cv.customSections[0].items.map((i) => i.title);
     expect(items()).toEqual(["Introduction to Machine Learning", "SQL for Analysts", "Data Visualisation Basics"]);
     expect(state.cv.customSections[0].items[1]).toMatchObject({
@@ -295,7 +295,7 @@ describe("custom sections", SLOW, () => {
       description: "- Window functions",
     });
 
-    await user.click(within(card).getByRole("button", { name: "Remove: Data Visualisation Basics · Example Learning Platform" }));
+    await user.click(within(card).getByRole("button", { name: "Remove: Data Visualisation Basics, Example Learning Platform" }));
     await user.click(within(screen.getByRole("dialog", { name: "Remove this entry?" })).getByRole("button", { name: "Remove" }));
     expect(items()).toEqual(["Introduction to Machine Learning", "SQL for Analysts"]);
   });

@@ -80,7 +80,7 @@ function focusControlIn(ref: RefObject<HTMLElement | null>) {
   ref.current?.querySelector<HTMLElement>("input, textarea")?.focus();
 }
 
-/** One form section: a rule-separated group headed by an H2, like the CV form. */
+/** One form section: a group headed by an H2 and set apart by space, like the CV form. */
 function LetterSection({
   id,
   title,
@@ -93,12 +93,8 @@ function LetterSection({
   children: ReactNode;
 }) {
   return (
-    <section
-      id={id}
-      aria-labelledby={`${id}-title`}
-      className="scroll-mt-32 border-t border-line pt-6 pb-8 first-of-type:border-t-0"
-    >
-      <h2 id={`${id}-title`} className="mb-5 font-display text-lg font-semibold text-fg">
+    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-32 pb-8 not-first:pt-4">
+      <h2 id={`${id}-title`} className="mb-5 font-display text-[21px] leading-tight font-semibold text-fg">
         {title}
       </h2>
       {intro && <p className="-mt-3 mb-5 max-w-[65ch] text-sm text-fg-muted">{intro}</p>}
@@ -182,7 +178,7 @@ function FillFromCV({ letter, dispatch, cvOptions, loadCV }: LetterFormProps) {
           {f.button}
         </button>
       </div>
-      <p id={`${id}-hint`} className="mt-1 text-xs text-fg-muted">
+      <p id={`${id}-hint`} className="mt-1 text-sm text-fg-muted">
         {f.hint}
       </p>
       <div role="status">
@@ -245,7 +241,7 @@ function DateField({ letter, onChange }: { letter: LetterData; onChange: (value:
           </button>
         )}
       </div>
-      <p id={`${id}-hint`} className="mt-1 text-xs text-fg-muted">
+      <p id={`${id}-hint`} className="mt-1 text-sm text-fg-muted">
         {shown ? fmt(d.dateShown, { date: shown }) : d.dateEmpty}
       </p>
     </div>
@@ -275,7 +271,7 @@ function BodyField({
       <label htmlFor={id} className="mb-1 block text-sm font-medium text-fg">
         {c.body}
       </label>
-      <p id={`${id}-hint`} className="mb-2 text-xs text-fg-muted">
+      <p id={`${id}-hint`} className="mb-2 text-sm text-fg-muted">
         {c.bodyHint}
       </p>
       <textarea
@@ -292,7 +288,7 @@ function BodyField({
       <p
         id={`${id}-count`}
         data-testid="letter-body-count"
-        className="mt-1 flex flex-wrap justify-between gap-x-4 text-xs text-fg-muted tabular-nums"
+        className="mt-1 flex flex-wrap justify-between gap-x-4 text-sm text-fg-muted tabular-nums"
       >
         <span>
           {[
@@ -304,7 +300,7 @@ function BodyField({
         {left <= NEAR_LIMIT && <span>{fmt(c.charactersLeft, { count: nf.format(left) })}</span>}
       </p>
       <div role="status">
-        {tooLong && <p className="mt-1 text-xs text-warn-text">{fmt(c.tooLong, { limit: LONG_LETTER_WORDS })}</p>}
+        {tooLong && <p className="mt-1 text-sm text-warn-text">{fmt(c.tooLong, { limit: LONG_LETTER_WORDS })}</p>}
       </div>
     </div>
   );

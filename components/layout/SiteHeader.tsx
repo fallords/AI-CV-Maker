@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { LANGUAGES } from "@/lib/cv-schema";
 import { useI18n } from "@/lib/i18n";
 
-/** Wordmark only: the name set in Plex Sans 600, no badge. */
+/** Wordmark only: the name in Archivo's widest cut, like a label on a folder. No badge. */
 export function Logo() {
-  return <span className="font-display text-[15px] font-semibold tracking-[-0.01em] text-fg">Free AI CV Maker</span>;
+  return (
+    <span className="text-[17px] font-extrabold tracking-[-0.005em] text-fg [font-stretch:125%]">Free AI CV Maker</span>
+  );
 }
 
-/** Plain text "EN / ID" toggle. The active language is underlined in the accent colour. */
+/** Plain text "EN / ID" toggle. The active language is underlined in ink. */
 export function LanguageSwitcher() {
   const { lang, setLang, t } = useI18n();
   return (
@@ -18,7 +20,7 @@ export function LanguageSwitcher() {
       {LANGUAGES.map((l, i) => (
         <span key={l} className="flex items-center">
           {i > 0 && (
-            <span aria-hidden="true" className="px-0.5 text-fg-subtle">
+            <span aria-hidden="true" className="px-0.5 text-kraft-ink">
               /
             </span>
           )}
@@ -30,8 +32,8 @@ export function LanguageSwitcher() {
             aria-label={l === "en" ? "English" : "Bahasa Indonesia"}
             className={`inline-flex min-h-10 min-w-8 items-center justify-center rounded-sm px-1 uppercase transition-colors ${
               lang === l
-                ? "text-fg underline decoration-accent-text decoration-2 underline-offset-4"
-                : "text-fg-subtle hover:text-fg"
+                ? "text-fg underline decoration-fg decoration-2 underline-offset-4"
+                : "text-kraft-ink hover:text-fg"
             }`}
           >
             {l}
@@ -53,10 +55,10 @@ export function SiteHeader() {
     { href: "/privacy/", label: t.nav.privacy },
   ];
   return (
-    <header className="no-print border-b border-line">
+    <header className="no-print">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-sm focus:border focus:border-line-strong focus:bg-raised focus:px-3 focus:py-2 focus:text-fg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-sm focus:border focus:border-fg focus:bg-raised focus:px-3 focus:py-2 focus:text-fg"
       >
         {t.nav.skip}
       </a>
@@ -78,10 +80,10 @@ export function SiteHeader() {
                     <Link
                       href={l.href}
                       aria-current={active ? "page" : undefined}
-                      className={`inline-flex min-h-10 items-center rounded-sm transition-colors ${
+                      className={`inline-flex min-h-10 items-center rounded-sm font-medium transition-[color,text-decoration-color] duration-150 ${
                         active
-                          ? "text-fg underline decoration-accent-text decoration-2 underline-offset-[6px]"
-                          : "text-fg-muted hover:text-fg"
+                          ? "text-fg underline decoration-fg decoration-2 underline-offset-[6px]"
+                          : "text-kraft-ink underline decoration-transparent decoration-2 underline-offset-[6px] hover:text-fg hover:decoration-fg/40"
                       }`}
                     >
                       {l.label}
@@ -91,7 +93,6 @@ export function SiteHeader() {
               })}
             </ul>
           </nav>
-          <span aria-hidden="true" className="hidden h-4 w-px bg-line-strong sm:block" />
           <LanguageSwitcher />
         </div>
       </div>

@@ -52,19 +52,19 @@ describe("DocumentPreview page count", () => {
       </I18nProvider>,
     );
     expect(onPages).toHaveBeenLastCalledWith(4);
-    expect(screen.getByText("A4 · 4 pages")).toBeInTheDocument();
+    expect(screen.getByText("A4, 4 pages")).toBeInTheDocument();
 
     // Hidden with display: none (e.g. a phone showing the Edit tab): everything measures 0.
     layout.rendered = false;
     resize();
     expect(onPages).toHaveBeenLastCalledWith(4);
-    expect(screen.getByText("A4 · 4 pages")).toBeInTheDocument();
+    expect(screen.getByText("A4, 4 pages")).toBeInTheDocument();
 
     // Shown again with less content: the new measurement counts.
     layout.rendered = true;
     layout.height = 1000;
     resize();
     expect(onPages).toHaveBeenLastCalledWith(1);
-    expect(screen.getByText("A4 · 1 page")).toBeInTheDocument();
+    expect(screen.getByText("A4, 1 page")).toBeInTheDocument();
   });
 });

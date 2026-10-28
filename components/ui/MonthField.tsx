@@ -83,7 +83,7 @@ export function MonthField({
         </select>
       </div>
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-danger-text" role="alert">
+        <p id={`${id}-error`} className="mt-1 text-sm font-medium text-danger-text" role="alert">
           {error}
         </p>
       )}

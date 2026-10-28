@@ -8,7 +8,6 @@ import {
   scoreBand,
   type CheckItem,
   type CheckLevel,
-  type ScoreBand,
 } from "@/lib/cv-checks";
 import { isCVEmpty, type CVData, type Language } from "@/lib/cv-schema";
 import { findCustomSection, isBuiltinSection } from "@/lib/cv-sections";
@@ -34,16 +33,11 @@ export interface ChecksPanelProps {
   onJump: (target: string, itemId?: string, field?: string) => void;
 }
 
-const BAR: Record<CheckLevel, string> = {
-  error: "bg-danger-text",
+/** Round status dot before each finding (decorative; the level is also read out). */
+const DOT: Record<CheckLevel, string> = {
+  error: "bg-stamp",
   warning: "bg-warn-text",
   tip: "bg-fg-subtle",
-};
-
-const METER: Record<ScoreBand, string> = {
-  high: "bg-accent-control",
-  medium: "bg-warn-text",
-  low: "bg-danger-text",
 };
 
 function formatNumber(value: string | number, lang: Language): string {
@@ -88,8 +82,9 @@ function countsText(items: readonly CheckItem[], t: Dictionary): string {
 }
 
 /**
- * The CV checker: a score meter and the findings grouped by severity. Every finding
- * is a button that jumps to the place where it can be fixed. Everything runs locally.
+ * The CV checker: the score, stamped on the paper, a quiet meter and the findings grouped
+ * by severity. Every finding is a button that jumps to the place where it can be fixed.
+ * Everything runs locally.
  */
 export function ChecksPanel({ cv, pages, onJump }: ChecksPanelProps) {
   const { t, lang } = useI18n();
@@ -101,31 +96,35 @@ export function ChecksPanel({ cv, pages, onJump }: ChecksPanelProps) {
   const band = scoreBand(score);
 
   return (
-    <section aria-labelledby={`${id}-title`} className="min-w-0" data-testid="checks-panel">
-      <h2 id={`${id}-title`} className="font-display text-lg font-semibold text-fg">
+    <section aria-labelledby={`${id}-title`} className="min-w-0 pb-6" data-testid="checks-panel">
+      <h2 id={`${id}-title`} className="font-display text-[21px] leading-tight font-semibold text-fg">
         {c.heading}
       </h2>
-      <p className="mt-1 max-w-[65ch] text-sm text-fg-muted">{c.intro}</p>
+      <p className="mt-2 max-w-[65ch] text-sm leading-relaxed text-fg-muted">{c.intro}</p>
 
       {empty ? (
-        <div className="mt-6 rounded-sm border border-dashed border-line-strong px-4 py-4">
-          <p className="text-sm text-fg-muted">{c.empty}</p>
+        <div className="mt-8">
+          <p className="max-w-[65ch] text-sm text-fg-body">{c.empty}</p>
           <button type="button" className={`${btn.secondary} mt-3`} onClick={() => onJump("personal")}>
             {c.emptyAction}
           </button>
         </div>
       ) : (
         <>
-          <div className="mt-6 border-t border-line pt-5">
-            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-              <p id={`${id}-score`} className="text-sm font-medium text-fg">
-                {c.score.label}
-              </p>
-              <p aria-hidden="true" className="text-sm text-fg-muted" data-testid="checks-score">
-                <span className="font-display text-3xl font-semibold text-fg tabular-nums">{score}</span>{" "}
-                {c.score.outOf}
-              </p>
-            </div>
+          <div className="mt-8">
+            <p id={`${id}-score`} className="text-sm font-medium text-fg">
+              {c.score.label}
+            </p>
+            {/* The score as a stamp on the paper. The meter below carries the value for assistive technology. */}
+            <p aria-hidden="true" className="mt-2 flex items-center gap-3">
+              <span
+                className="inline-flex min-w-[3.25rem] justify-center rounded-[3px] border-2 border-stamp px-2 py-1 font-display text-[36px] leading-none font-bold text-stamp tabular-nums"
+                data-testid="checks-score"
+              >
+                {score}
+              </span>{" "}
+              <span className="text-sm text-fg-muted">{c.score.outOf}</span>
+            </p>
             <div
               role="meter"
               aria-labelledby={`${id}-score`}
@@ -133,20 +132,20 @@ export function ChecksPanel({ cv, pages, onJump }: ChecksPanelProps) {
               aria-valuemax={100}
               aria-valuenow={score}
               aria-valuetext={fmt(c.score.valueText, { score })}
-              className="mt-2 h-2 w-full overflow-hidden rounded-sm bg-raised"
+              className="mt-4 h-1.5 w-full max-w-md overflow-hidden bg-line"
             >
-              <div className={`h-full ${METER[band]}`} style={{ width: `${score}%` }} />
+              <div className="h-full bg-fg" style={{ width: `${score}%` }} />
             </div>
             <p className="mt-3 text-sm text-fg-body">
               {items.some((item) => item.level === "error") ? c.score.withErrors : c.score.bands[band]}
               {items.length > 0 && <span className="text-fg-muted"> {countsText(items, t)}.</span>}
             </p>
-            <p className="mt-1 text-xs text-fg-muted">{c.score.basis}</p>
+            <p className="mt-1 text-sm text-fg-muted">{c.score.basis}</p>
           </div>
 
           {items.length === 0 ? (
-            <p className="mt-6 flex max-w-[65ch] gap-2 border-t border-line pt-5 text-sm text-fg-body">
-              <Check className="mt-0.5 shrink-0 text-accent-text" />
+            <p className="mt-8 flex max-w-[65ch] gap-2 text-sm text-fg-body">
+              <Check className="mt-0.5 shrink-0 text-fg" />
               <span>{c.allClear}</span>
             </p>
           ) : (
@@ -155,26 +154,26 @@ export function ChecksPanel({ cv, pages, onJump }: ChecksPanelProps) {
               if (group.length === 0) return null;
               const headingId = `${id}-${level}`;
               return (
-                <div key={level} className="mt-6">
+                <div key={level} className="mt-8">
                   <h3 id={headingId} className="text-sm font-semibold text-fg">
                     {c.groups[level]} <span className="font-normal text-fg-muted tabular-nums">({group.length})</span>
                   </h3>
-                  <ul aria-labelledby={headingId} className="mt-2 divide-y divide-line border-y border-line">
+                  <ul aria-labelledby={headingId} className="-mx-2 mt-2 space-y-0.5">
                     {group.map((item) => (
                       <li key={item.id}>
                         <button
                           type="button"
-                          className="group flex min-h-11 w-full items-start gap-3 py-3 pr-2 pl-1 text-left hover:bg-raised focus-visible:outline-offset-[-2px]"
+                          className="group flex min-h-11 w-full items-start gap-3 rounded-[3px] px-2 py-2.5 text-left transition-colors duration-150 hover:bg-overlay"
                           onClick={() => onJump(item.target, item.itemId, item.field)}
                           data-check-id={item.id}
                         >
-                          <span aria-hidden="true" className={`w-0.5 shrink-0 self-stretch ${BAR[level]}`} />
+                          <span aria-hidden="true" className={`mt-[7px] size-2 shrink-0 rounded-full ${DOT[level]}`} />
                           <span className="min-w-0 flex-1">
                             <span className="sr-only">{c.levels[level]}:</span>{" "}
                             <span className="block text-sm break-words text-fg-body">
                               {checkMessage(item, t, lang)}
                             </span>{" "}
-                            <span className="mt-0.5 block text-xs break-words text-fg-muted">
+                            <span className="mt-0.5 block text-sm break-words text-fg-muted">
                               {checkPlace(item, cv, t)}
                             </span>
                           </span>

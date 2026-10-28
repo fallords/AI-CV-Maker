@@ -14,7 +14,7 @@ for (const template of TEMPLATE_IDS) {
     await expect(page.getByLabel(/Full name/)).toHaveValue("Alex Example");
 
     // The preview shows page guides for a multi-page CV.
-    await expect(page.getByText(/A4 · [2-9] pages/)).toBeVisible();
+    await expect(page.getByText(/A4, [2-9] pages/)).toBeVisible();
 
     const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
     const file = testInfo.outputPath(`${template}.pdf`);

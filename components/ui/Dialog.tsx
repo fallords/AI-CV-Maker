@@ -52,7 +52,7 @@ export function Dialog({
         e.preventDefault();
         onClose();
       }}
-      className="no-print m-auto w-[min(92vw,32rem)] rounded-sm border border-line-strong bg-raised p-0 text-fg shadow-lg shadow-black/40"
+      className="app-dialog no-print m-auto w-[min(92vw,32rem)] rounded-[2px] border-0 bg-raised p-0 text-fg shadow-[0_2px_0_var(--color-kraft-deep),0_18px_40px_-12px_rgb(30_34_41/0.45)]"
     >
       {open && (
         <>

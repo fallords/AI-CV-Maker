@@ -611,7 +611,7 @@ describe("DocumentPreview", () => {
     render(<DocumentPreview doc={cvDoc(sampleCV())} onPagesChange={onPagesChange} />);
     const preview = screen.getByRole("document", { name: "CV preview" });
     expect(preview).toHaveTextContent("Alex Example");
-    expect(screen.getByText("A4 · 1 page")).toBeInTheDocument();
+    expect(screen.getByText("A4, 1 page")).toBeInTheDocument();
     expect(onPagesChange).toHaveBeenCalledWith(1);
   });
 
@@ -638,7 +638,7 @@ describe("DocumentPreview", () => {
   it("shows the empty-state hint for an empty CV and the photo note for ATS Minimal", () => {
     const { rerender } = render(<DocumentPreview doc={cvDoc(createEmptyCV())} />);
     expect(screen.getByText("The preview appears here as you fill in the form.")).toBeInTheDocument();
-    expect(screen.queryByText(/A4 ·/)).toBeNull();
+    expect(screen.queryByText(/^A4,/)).toBeNull();
 
     const cv = sampleCV("ats-minimal");
     cv.personal.photo = PHOTO;

@@ -48,9 +48,9 @@ export interface DocumentsDialogProps {
 
 /** Plain-text row action button (secondary actions inside the list). */
 const rowAction =
-  "inline-flex min-h-10 items-center rounded-sm px-2.5 text-sm text-fg-muted transition-colors hover:bg-overlay hover:text-fg";
+  "inline-flex min-h-10 items-center rounded-[4px] px-2.5 text-sm text-fg-muted transition-colors duration-150 hover:bg-overlay hover:text-fg";
 const rowDanger =
-  "inline-flex min-h-10 items-center rounded-sm px-2.5 text-sm text-danger-text transition-colors hover:bg-danger-soft";
+  "inline-flex min-h-10 items-center rounded-[4px] px-2.5 text-sm text-danger-text transition-colors duration-150 hover:bg-danger-soft";
 
 function formatEdited(iso: string, lang: Language): string {
   const date = new Date(iso);
@@ -245,7 +245,7 @@ export function DocumentsDialog({
             {d.importFile}
           </button>
         </div>
-        <p id={`${ids}-import-hint`} className="mt-2 text-xs text-fg-muted">
+        <p id={`${ids}-import-hint`} className="mt-2 text-sm text-fg-muted">
           {d.importHint}
         </p>
         <input
@@ -265,7 +265,7 @@ export function DocumentsDialog({
         {letterSetup && (
           <section
             aria-labelledby={`${ids}-letter`}
-            className="mt-4 rounded-sm border border-line px-4 py-4"
+            className="mt-4 rounded-[3px] border border-line-strong px-4 py-4"
             data-testid="new-letter-setup"
           >
             <h3 id={`${ids}-letter`} className="text-sm font-semibold text-fg">
@@ -314,11 +314,9 @@ export function DocumentsDialog({
           {d.listLabel}
         </h3>
         {docs.length === 0 ? (
-          <p className="mt-2 rounded-sm border border-dashed border-line-strong px-4 py-3 text-fg-muted">
-            {storageAvailable ? d.empty : d.emptyUnavailable}
-          </p>
+          <p className="mt-2 text-fg-muted">{storageAvailable ? d.empty : d.emptyUnavailable}</p>
         ) : (
-          <ul ref={listRef} aria-labelledby={listTitleId} className="mt-2 border-b border-line">
+          <ul ref={listRef} aria-labelledby={listTitleId} className="mt-2 divide-y divide-line">
             {docs.map((m) => {
               const current = m.id === activeId;
               const edited = formatEdited(m.updatedAt, lang);
@@ -327,7 +325,7 @@ export function DocumentsDialog({
                   key={m.id}
                   data-doc-id={m.id}
                   aria-current={current ? "true" : undefined}
-                  className={`border-t border-line py-3 ${current ? "border-l-2 border-l-accent-text pl-3" : ""}`}
+                  className={`-mx-3 px-3 py-3 ${current ? "rounded-[2px] bg-accent-soft" : ""}`}
                 >
                   {renaming?.id === m.id ? (
                     <RenameForm
@@ -344,11 +342,17 @@ export function DocumentsDialog({
                     <>
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                         <p className="min-w-0 font-medium break-words text-fg">{m.name}</p>
-                        {current && <span className="shrink-0 text-xs text-accent-text">{d.current}</span>}
+                        {current && <span className="shrink-0 text-sm font-medium text-fg">{d.current}</span>}
                       </div>
-                      <p className="text-xs text-fg-muted">
-                        {kindLabel(m)}
-                        {edited && <> · {fmt(d.edited, { date: edited })}</>}
+                      {/* Kind and date as two pieces of text, not a dotted meta string. */}
+                      <p className="flex flex-wrap gap-x-3 text-sm text-fg-muted">
+                        <span className="font-medium text-fg-body">{kindLabel(m)}</span>
+                        {edited && (
+                          <span>
+                            <span className="sr-only">, </span>
+                            {fmt(d.edited, { date: edited })}
+                          </span>
+                        )}
                       </p>
                       <div className="mt-1 -ml-2.5 flex flex-wrap">
                         {!current && (
@@ -477,7 +481,7 @@ export function RenameForm({
         }}
       />
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-xs font-medium text-danger-text" role="alert">
+        <p id={`${id}-error`} className="mt-1 text-sm font-medium text-danger-text" role="alert">
           {error}
         </p>
       )}
