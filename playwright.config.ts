@@ -11,6 +11,10 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",
+    // Animations are decorative and gated on this preference; tests run without them unless
+    // they opt in (tests/e2e/motion.spec.ts covers the motion-on paths). Playwright 1.56 takes
+    // reducedMotion through contextOptions; a test that sets contextOptions replaces this object.
+    contextOptions: { reducedMotion: "reduce" },
   },
   // Tests run against the real static export (`npm run build` first).
   webServer: {

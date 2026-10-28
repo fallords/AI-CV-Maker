@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import AxeBuilder from "@axe-core/playwright";
 import { expect, type Download, type Page } from "@playwright/test";
 import { CV_SCHEMA_VERSION, type CVData } from "@/lib/cv-schema";
 import { LETTER_SCHEMA_VERSION } from "@/lib/letter-schema";
@@ -96,6 +97,12 @@ export async function appStorage(page: Page): Promise<Record<string, string>> {
 export async function storedIndex(page: Page): Promise<DocMeta[]> {
   const raw = await page.evaluate((k) => localStorage.getItem(k), DOCS_INDEX_KEY);
   return raw ? (JSON.parse(raw) as DocMeta[]) : [];
+}
+
+/** Runs axe with the WCAG 2.0/2.1 A and AA rules and expects no violations. */
+export async function expectNoAxeViolations(page: Page) {
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
 }
 
 /** The builder's "Full name" field (the CV form's, not the letter's). */

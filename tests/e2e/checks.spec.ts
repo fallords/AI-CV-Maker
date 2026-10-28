@@ -22,7 +22,10 @@ test("the Check tab scores an incomplete CV and each suggestion jumps to its fie
   await editorTab(page, "Check");
   const panel = page.getByTestId("checks-panel");
   await expect(panel.getByRole("meter", { name: "Score" })).toHaveAttribute("aria-valuenow", String(badgeScore));
-  await expect(panel.getByTestId("checks-score")).toContainText(`${badgeScore} out of 100`);
+  // The stamp holds only the number; the line it sits on reads "N out of 100".
+  const stamp = panel.getByTestId("checks-score");
+  await expect(stamp).toHaveText(String(badgeScore));
+  await expect(stamp.locator("xpath=..")).toHaveText(`${badgeScore} out of 100`);
   await expect(panel.getByRole("list", { name: /Errors/ })).toBeVisible();
 
   // Missing email → the Email field.
