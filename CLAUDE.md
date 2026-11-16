@@ -48,7 +48,11 @@ Notes for Claude about this project and its owner. Read them at the start of eve
   1. Install Node.js 22 and Git.
   2. Run `git clone https://github.com/fallords/AI-CV-Maker.git`, then `cd AI-CV-Maker`, `npm install` and `npm run dev`.
   3. Open http://localhost:3000.
-- **Editing from a cloud session.** The owner connects the folder through Remote Control: either the Claude desktop app (Settings → Claude Code → Remote Control, then add the folder) or `claude remote-control` run inside the folder. A cloud session then uses `list_computer_folders` and `request_computer_folder`, and the owner approves the request. The folder must not be the home directory or a hidden folder.
+- **Editing from a cloud session:**
+  - The owner adds the folder in the Claude desktop app on that computer (Settings → Claude Code → Remote Control). Running `claude remote-control` in a terminal usually does not make a folder available to cloud sessions, so don't suggest it.
+  - A cloud session then uses `list_computer_folders` and `request_computer_folder`, and the owner approves the request.
+  - The folder must not be the home directory or a hidden folder.
+  - Using a computer folder from a cloud session is not available to every account yet. If it isn't listed or can't be used, the work can still be done in a Claude session running on that computer.
 - **Before merging, run the full suite:**
   1. `npm run lint`
   2. `npm run typecheck`
